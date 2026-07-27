@@ -29,7 +29,9 @@
   Game.prototype.spawnEnemy = function (id, x, y, elite) {
     const d = DATA.enemies[id];
     const m = this.time / 60;
-    const hp = d.hp * DATA.hpScale(m) * (elite ? 9 : 1);
+    // Elites get their own linear curve: the quadratic trash curve times 9
+    // would out-tank the linearly scaled final boss by minute 12.
+    const hp = d.hp * (elite ? (1 + m * 0.55) * 9 : DATA.hpScale(m));
     const e = {
       kind: id, spr: d.spr, move: d.move,
       x, y, hp, maxhp: hp,
@@ -94,18 +96,17 @@
       }
       return;
     }
+    // Queued spawns store only an angle: the queue drains over seconds, and
+    // a position baked now can be on screen by the time it drains.
     if (sp.mode === 'side') {
       const side = rand(0, TAU);
-      const r = this.viewRadius();
       for (let i = 0; i < sp.n; i++) {
-        const a = side + rand(-0.5, 0.5);
-        this.spawnQueue.push({ id: sp.id, x: p.x + Math.cos(a) * r, y: p.y + Math.sin(a) * r });
+        this.spawnQueue.push({ id: sp.id, a: side + rand(-0.5, 0.5) });
       }
       return;
     }
     for (let i = 0; i < sp.n; i++) {
-      const pos = this.spawnPos();
-      this.spawnQueue.push({ id: sp.id, x: pos.x, y: pos.y });
+      this.spawnQueue.push({ id: sp.id, a: rand(0, TAU) });
     }
   };
 
@@ -117,7 +118,8 @@
       this._qt = (this._qt || 0) - dt;
       while (this._qt <= 0 && this.spawnQueue.length) {
         const q = this.spawnQueue.shift();
-        this.spawnEnemy(q.id, q.x, q.y, false);
+        const rr = this.viewRadius();
+        this.spawnEnemy(q.id, this.player.x + Math.cos(q.a) * rr, this.player.y + Math.sin(q.a) * rr, false);
         this._qt += 0.06;
       }
     }

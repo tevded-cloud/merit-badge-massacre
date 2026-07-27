@@ -1,7 +1,7 @@
 // Merit Badge Massacre: UI shell. Screens, HUD, input, settings, records.
 'use strict';
 
-const INPUT = { keys: new Set(), mx: window.innerWidth / 2, my: window.innerHeight / 2, fire: false };
+const INPUT = { keys: new Set(), mx: window.innerWidth / 2, my: window.innerHeight / 2, fire: false, mdown: false };
 
 const SETTINGS = { musicVol: 0.8, sfxVol: 0.8, shake: true, dmgNums: true };
 try {
@@ -54,7 +54,9 @@ function fmtTime(s) {
 const SCREENS = ['title', 'select', 'levelup', 'pause', 'over', 'options', 'shop'];
 function setState(s) {
   App.state = s;
-  INPUT.fire = false;
+  // Held fire must survive pause/levelup round trips: no new keydown or
+  // pointerdown event fires for an input that never got released.
+  INPUT.fire = s === 'play' && (INPUT.keys.has('Space') || INPUT.mdown);
   for (const id of SCREENS) {
     const el = $(id);
     if (el) el.classList.toggle('hidden', id !== s);
@@ -126,6 +128,13 @@ function enterCamp() {
 }
 
 function quitToTitle() {
+  // A decided run (death or dawn animation in progress) must still credit
+  // badges, counts and Brock's memory; only a live run may be forfeited.
+  const g = App.game;
+  if (g && g.phase !== 'play') {
+    showOver(g.phase === 'dawn' || g.phase === 'win');
+    return;
+  }
   App.game = null;
   AudioSys.stopMusic();
   setState('title');
@@ -489,14 +498,18 @@ window.addEventListener('pointermove', (e) => {
 });
 cv.addEventListener('pointerdown', (e) => {
   bootAudio();
-  if (e.button === 0 && App.state === 'play') INPUT.fire = true;
+  if (e.button === 0) {
+    INPUT.mdown = true;
+    if (App.state === 'play') INPUT.fire = true;
+  }
 });
 window.addEventListener('pointerup', (e) => {
-  if (e.button === 0) INPUT.fire = false;
+  if (e.button === 0) { INPUT.mdown = false; INPUT.fire = false; }
 });
 window.addEventListener('blur', () => {
   INPUT.keys.clear();
   INPUT.fire = false;
+  INPUT.mdown = false;
   if (App.state === 'play' && App.game) showPause();
 });
 window.addEventListener('contextmenu', (e) => e.preventDefault());

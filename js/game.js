@@ -358,8 +358,12 @@ class Game {
       if (e.final) this.triggerDawn();
       else this.toast(e.name + ' IS DOWN', '#f4c542');
     } else {
-      if (Math.random() < 0.015 && this.pickups.length < 8) this.pickups.push({ type: 'cocoa', x: e.x, y: e.y, t: 0 });
-      else if (Math.random() < 0.006 && this.pickups.length < 8) this.pickups.push({ type: 'magnet', x: e.x, y: e.y, t: 0 });
+      // The litter cap is for random consumables only; uncollected chests
+      // must never starve cocoa and magnet drops for the rest of the run.
+      let litter = 0;
+      for (const pk of this.pickups) if (pk.type !== 'chest') litter++;
+      if (Math.random() < 0.015 && litter < 8) this.pickups.push({ type: 'cocoa', x: e.x, y: e.y, t: 0 });
+      else if (Math.random() < 0.006 && litter < 8) this.pickups.push({ type: 'magnet', x: e.x, y: e.y, t: 0 });
     }
   }
 
@@ -433,6 +437,14 @@ class Game {
     if (this.phase !== 'play') return;
     this.phase = 'dawn';
     this.phaseT = 0;
+    // Nothing collects loot after the phase flip, so bank the field now:
+    // every gem at face value, every unopened chest as a badge bonus.
+    let banked = 0;
+    for (const g of this.gems) banked += g.v;
+    for (const pk of this.pickups) if (pk.type === 'chest') banked += 10;
+    this.badges += banked;
+    this.gems.length = 0;
+    this.pickups.length = 0;
     AudioSys.play('victory');
     this.toast('THE SUN RISES', '#f4c542');
     this.bark('win');
@@ -824,10 +836,17 @@ class Game {
           remove = true;
           break;
         }
+        // A stone overlaps a surviving enemy for several frames; without a
+        // hit record the pierce charge is burned re-hitting the same target.
+        if (s.hit && s.hit.has(e)) continue;
         this.dealDamage(e, s.dmg, { knock: 70, fx: s.x, fy: s.y });
-        if (s.pierce > 0) { s.pierce--; }
-        else { remove = true; }
-        break;
+        if (s.pierce > 0) {
+          s.pierce--;
+          (s.hit || (s.hit = new Set())).add(e);
+        } else {
+          remove = true;
+          break;
+        }
       }
       if (remove) this.shots.splice(i, 1);
     }
