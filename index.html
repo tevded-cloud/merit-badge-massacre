@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Merit Badge Massacre</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#07090c; }
+  body { font-family: Verdana, 'Segoe UI', Tahoma, sans-serif; color:#d9d2c0; user-select:none; -webkit-user-select:none; }
+  #wrap { position:fixed; inset:0; }
+  canvas#cv { position:absolute; inset:0; width:100%; height:100%; display:block; cursor:none; }
+  #vignette { position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 38%, rgba(2,3,6,0.55) 78%, rgba(1,2,4,0.85) 100%),
+      linear-gradient(180deg, rgba(120,20,20,0.10) 0%, rgba(0,0,0,0) 30%);
+  }
+  .hidden { display:none !important; }
+
+  /* ---------- HUD ---------- */
+  #hud { position:absolute; inset:0; pointer-events:none; }
+  #xpwrap { position:absolute; top:0; left:0; right:0; height:14px; background:rgba(10,12,16,0.85); border-bottom:1px solid #1c2027; }
+  #xpfill { height:100%; width:0%; background:linear-gradient(90deg,#8a6a1d,#f4c542); box-shadow:0 0 10px rgba(244,197,66,0.5); transition:width 0.15s; }
+  #lvl { position:absolute; top:20px; left:14px; font-weight:bold; font-size:13px; color:#f4c542; text-shadow:0 2px 4px #000; }
+  #hpwrap { position:absolute; top:40px; left:14px; width:190px; height:16px; background:rgba(10,12,16,0.8); border:1px solid #2a2f38; border-radius:8px; overflow:hidden; }
+  #hpfill { height:100%; width:100%; background:linear-gradient(180deg,#d84b3a,#9c2418); transition:width 0.12s; }
+  #hptext { position:absolute; top:39px; left:14px; width:190px; text-align:center; font-size:11px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; line-height:18px; }
+  #timer { position:absolute; top:22px; left:50%; transform:translateX(-50%); font-size:30px; font-weight:bold; letter-spacing:3px; color:#e8e0cc; text-shadow:0 0 14px rgba(200,60,40,0.55), 0 2px 4px #000; }
+  #kills { position:absolute; top:26px; right:18px; font-size:16px; font-weight:bold; color:#d84b3a; text-shadow:0 2px 4px #000; }
+  #buildrow { position:absolute; top:64px; left:14px; display:flex; gap:6px; flex-wrap:wrap; max-width:320px; }
+  .slot { width:34px; height:40px; background:rgba(10,12,16,0.75); border:1px solid #2a2f38; border-radius:6px; display:flex; flex-direction:column; align-items:center; }
+  .slot canvas { width:28px; height:28px; margin-top:2px; }
+  .pips { display:flex; gap:2px; margin-top:1px; }
+  .pip { width:4px; height:4px; border-radius:2px; background:#3a3f46; }
+  .pip.on { background:#f4c542; }
+  #toast { position:absolute; top:96px; left:50%; transform:translateX(-50%); font-size:20px; font-weight:bold; letter-spacing:2px; color:#ff5b45; text-shadow:0 0 16px rgba(220,60,40,0.8), 0 2px 4px #000; opacity:0; transition:opacity 0.25s; text-align:center; }
+  #bossbar { position:absolute; bottom:26px; left:50%; transform:translateX(-50%); width:44%; min-width:300px; text-align:center; }
+  #bossname { font-size:14px; font-weight:bold; letter-spacing:3px; color:#ff5b45; text-shadow:0 0 12px rgba(220,60,40,0.8); }
+  #bossfillwrap { margin-top:4px; height:12px; background:rgba(10,12,16,0.85); border:1px solid #4a1512; border-radius:6px; overflow:hidden; }
+  #bossfill { height:100%; width:100%; background:linear-gradient(180deg,#ff5b45,#8c1d12); transition:width 0.1s; }
+
+  /* ---------- Screens ---------- */
+  .screen { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; text-align:center; }
+  .screen.solid { background:radial-gradient(ellipse at 50% 30%, #131820 0%, #07090c 70%); }
+  .screen.trans { background:rgba(4,5,8,0.78); }
+  h1.logo { font-size:56px; letter-spacing:4px; color:#e8e0cc; line-height:1.05;
+    text-shadow:0 0 24px rgba(216,75,58,0.55), 0 4px 0 #1a0c08, 0 6px 18px #000; }
+  h1.logo .red { color:#d84b3a; }
+  .sub { font-size:16px; color:#9aa08c; letter-spacing:1px; }
+  .tag { font-size:13px; color:#6d7361; font-style:italic; }
+  .btn { pointer-events:auto; cursor:pointer; font-family:inherit; font-size:16px; font-weight:bold; letter-spacing:2px;
+    color:#e8e0cc; background:#161b23; border:2px solid #3a4150; border-radius:8px; padding:12px 34px; transition:all 0.12s; }
+  .btn:hover { border-color:#f4c542; color:#f4c542; transform:translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,0.6); }
+  .btn.danger:hover { border-color:#d84b3a; color:#d84b3a; }
+  .hint { font-size:12px; color:#5d6370; letter-spacing:1px; }
+  .best { font-size:13px; color:#f4c542; letter-spacing:1px; }
+
+  .cardrow { display:flex; gap:18px; flex-wrap:wrap; justify-content:center; }
+  .card { pointer-events:auto; cursor:pointer; width:230px; background:linear-gradient(180deg,#151a22,#0e1218); border:2px solid #333a46; border-radius:12px;
+    padding:16px 14px; display:flex; flex-direction:column; align-items:center; gap:8px; transition:all 0.13s; }
+  .card:hover { border-color:#f4c542; transform:translateY(-4px); box-shadow:0 10px 26px rgba(0,0,0,0.65); }
+  .card .cname { font-size:16px; font-weight:bold; color:#e8e0cc; }
+  .card .ctitle { font-size:11px; color:#f4c542; letter-spacing:1px; }
+  .card .cdesc { font-size:12px; color:#8d947f; line-height:1.45; min-height:50px; }
+  .card .cstats { font-size:11px; color:#6d7361; line-height:1.5; }
+  .card canvas { image-rendering:auto; }
+  .card .newchip { font-size:10px; font-weight:bold; color:#0d1015; background:#f4c542; border-radius:4px; padding:2px 8px; letter-spacing:1px; }
+  .card .lvchip { font-size:10px; font-weight:bold; color:#f4c542; border:1px solid #f4c542; border-radius:4px; padding:2px 8px; letter-spacing:1px; }
+  .card .key { font-size:10px; color:#5d6370; }
+
+  #pause .panel, #over .panel { background:linear-gradient(180deg,#151a22,#0e1218); border:2px solid #333a46; border-radius:14px; padding:26px 34px; min-width:420px; }
+  .statgrid { display:grid; grid-template-columns:1fr 1fr; gap:6px 26px; font-size:13px; text-align:left; margin:12px 0; }
+  .statgrid .k { color:#6d7361; }
+  .statgrid .v { color:#e8e0cc; text-align:right; font-weight:bold; }
+  #overtitle { font-size:44px; letter-spacing:6px; }
+  #overtitle.lose { color:#d84b3a; text-shadow:0 0 26px rgba(216,75,58,0.7); }
+  #overtitle.win { color:#f4c542; text-shadow:0 0 26px rgba(244,197,66,0.7); }
+  #oversub { font-size:14px; color:#8d947f; font-style:italic; }
+  .btnrow { display:flex; gap:14px; justify-content:center; }
+  /* Badge Board */
+  .shoprow { display:flex; align-items:center; gap:14px; padding:10px 8px; border-bottom:1px solid #1f242e; text-align:left; }
+  .shoprow canvas { flex:0 0 44px; }
+  .shopinfo { flex:1; }
+  .shopname { font-size:14px; font-weight:bold; color:#e8e0cc; }
+  .shopper { font-size:11px; color:#f4c542; }
+  .shopdesc { font-size:11px; color:#6d7361; font-style:italic; }
+  .shoppips { display:flex; gap:3px; margin-top:3px; }
+  .shoppips .pip { width:8px; height:8px; border-radius:4px; }
+  .shopbuy { flex:0 0 auto; }
+  .btn.small { padding:8px 16px; font-size:12px; }
+  .btn.small:disabled { opacity:0.4; cursor:default; border-color:#3a4150; color:#8d947f; transform:none; box-shadow:none; }
+
+  /* Dialogue box */
+  #dialog { position:absolute; left:50%; bottom:60px; transform:translateX(-50%); width:min(680px, 86vw);
+    background:rgba(12,14,18,0.94); border:2px solid #3a4150; border-radius:12px; padding:16px 22px 12px; z-index:30; }
+  #dlgname { font-size:11px; font-weight:bold; letter-spacing:2px; color:#f4c542; margin-bottom:6px; }
+  #dlgtext { font-size:14px; line-height:1.55; color:#d9d2c0; min-height:44px; }
+  #dlghint { font-size:10px; color:#5d6370; text-align:right; margin-top:6px; letter-spacing:1px; }
+
+  #camphint { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); font-size:11px; letter-spacing:1px; color:#5d6370; }
+
+  .optrow { display:flex; align-items:center; justify-content:space-between; gap:24px; margin:12px 0; font-size:13px; letter-spacing:1px; color:#8d947f; }
+  .optrow input[type=range] { width:180px; accent-color:#f4c542; }
+  .optrow input[type=checkbox] { width:18px; height:18px; accent-color:#f4c542; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="cv"></canvas>
+  <div id="vignette"></div>
+
+  <div id="hud" class="hidden">
+    <div id="xpwrap"><div id="xpfill"></div></div>
+    <div id="lvl">LV 1</div>
+    <div id="hpwrap"><div id="hpfill"></div></div>
+    <div id="hptext">100 / 100</div>
+    <div id="timer">00:00</div>
+    <div id="kills">0 SLAIN</div>
+    <div id="buildrow"></div>
+    <div id="toast"></div>
+    <div id="bossbar" class="hidden">
+      <div id="bossname"></div>
+      <div id="bossfillwrap"><div id="bossfill"></div></div>
+    </div>
+  </div>
+
+  <div id="title" class="screen solid">
+    <h1 class="logo">MERIT BADGE<br><span class="red">MASSACRE</span></h1>
+    <div class="sub">Troop 13 vs. the Cult of the Antlered One</div>
+    <div class="tag">The critters found a religion. It has horns.</div>
+    <button class="btn" id="btnstart">ENTER CAMP</button>
+    <button class="btn" id="btnoptions">OPTIONS</button>
+    <div class="best hidden" id="bestline"></div>
+    <div class="hint">WASD move &nbsp;|&nbsp; MOUSE aim &nbsp;|&nbsp; HOLD CLICK to attack &nbsp;|&nbsp; P pause &nbsp;|&nbsp; M mute</div>
+  </div>
+
+  <div id="select" class="screen solid hidden">
+    <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:3px;">CHOOSE YOUR SCOUT</div>
+    <div class="cardrow" id="selcards"></div>
+    <div class="hint">Click a scout, or press 1 / 2 / 3. Esc to go back.</div>
+  </div>
+
+  <div id="levelup" class="screen trans hidden">
+    <div class="sub" style="font-size:24px;color:#f4c542;letter-spacing:4px;">RANK UP</div>
+    <div class="cardrow" id="lucards"></div>
+    <div class="hint">Click a reward, or press 1 / 2 / 3</div>
+  </div>
+
+  <div id="pause" class="screen trans hidden">
+    <div class="panel">
+      <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;margin-bottom:8px;">PAUSED</div>
+      <div id="pbuild" style="font-size:12px;color:#8d947f;line-height:1.7;"></div>
+      <div class="statgrid" id="pstats"></div>
+      <div class="btnrow">
+        <button class="btn" id="btnresume">RESUME</button>
+        <button class="btn" id="btnpauseopts">OPTIONS</button>
+        <button class="btn" id="btnmute">MUTE</button>
+        <button class="btn danger" id="btnquit">ABANDON RUN</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="shop" class="screen trans hidden">
+    <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:22px 28px;min-width:560px;max-height:82vh;overflow-y:auto;">
+      <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;">THE BADGE BOARD</div>
+      <div id="shopbal" class="best" style="margin:8px 0 14px;">0 BADGES</div>
+      <div id="shoprows"></div>
+      <div class="hint" style="margin:12px 0 4px;">Ranks are permanent. Badges come back from every run, kept or not.</div>
+      <div class="btnrow"><button class="btn" id="btnshopback">BACK TO CAMP</button></div>
+    </div>
+  </div>
+
+  <div id="dialog" class="hidden">
+    <div id="dlgname">SCOUTMASTER BROCK</div>
+    <div id="dlgtext"></div>
+    <div id="dlghint">E to close</div>
+  </div>
+
+  <div id="camphint" class="hidden">WASD walk &nbsp;|&nbsp; E interact &nbsp;|&nbsp; Esc leave camp</div>
+
+  <div id="options" class="screen solid hidden">
+    <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:26px 34px;min-width:420px;">
+      <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;margin-bottom:16px;">OPTIONS</div>
+      <div class="optrow"><label for="optmusic">MUSIC VOLUME</label><input type="range" id="optmusic" min="0" max="100" value="80"></div>
+      <div class="optrow"><label for="optsfx">SOUND VOLUME</label><input type="range" id="optsfx" min="0" max="100" value="80"></div>
+      <div class="optrow"><label for="optshake">SCREEN SHAKE</label><input type="checkbox" id="optshake" checked></div>
+      <div class="optrow"><label for="optnums">DAMAGE NUMBERS</label><input type="checkbox" id="optnums" checked></div>
+      <div class="hint" style="margin:14px 0;">F fullscreen &nbsp;|&nbsp; M mute &nbsp;|&nbsp; Esc back</div>
+      <div class="btnrow"><button class="btn" id="btnoptback">BACK</button></div>
+    </div>
+  </div>
+
+  <div id="over" class="screen trans hidden">
+    <div class="panel" style="text-align:center;">
+      <div id="overtitle" class="lose">DEVOURED</div>
+      <div id="oversub">The forest keeps your badges.</div>
+      <div class="statgrid" id="overstats"></div>
+      <div class="btnrow">
+        <button class="btn" id="btnretry">RETRY</button>
+        <button class="btn" id="btntitle">TITLE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/sprites.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/data.js"></script>
+<script src="js/meta.js"></script>
+<script src="js/dialogue.js"></script>
+<script src="js/game.js"></script>
+<script src="js/director.js"></script>
+<script src="js/camp.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "name": "merit-badge-massacre",
+  "productName": "Merit Badge Massacre",
+  "version": "1.0.0",
+  "description": "Troop 13 vs. the Cult of the Antlered One. A survivors-like of cute damnation.",
+  "private": true,
+  "main": "electron/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^31.3.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "org.teddy.meritbadgemassacre",
+    "productName": "Merit Badge Massacre",
+    "files": [
+      "index.html",
+      "js/**/*",
+      "electron/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": ["nsis", "dir"]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    }
+  }
+}
