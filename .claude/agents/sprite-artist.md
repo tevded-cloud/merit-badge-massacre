@@ -44,6 +44,40 @@ style; you extend the one that exists.
    edge highlights, bench shadows, and a reason to believe someone built it, not
    six rectangles.
 
+## The 3.0 bar: costume and prop density (added 2026-07-28)
+
+Teddy set a new target from a scout animal illustration reference (a fox, an owl
+and a bear in full scout kit). The thing to take from it is not linework, it is
+COSTUME AND PROP DENSITY: every character dressed and equipped. Uniform shirt
+with pockets, neckerchief and slide, belt and buckle, shorts, boots, a pack with
+straps and a rolled bedroll, a hiking staff.
+
+The constraint that decides how you apply it: a trash critter draws about 30 to
+48 px tall at the shipped zoom, and that reference is illustration at poster
+size. Stitching, buckles and pack straps cannot resolve at 40 px. So fidelity
+goes where it is SEEN, and the tier decides how much you spend:
+
+- PORTRAITS and FIELD GUIDE art: the largest canvases in the game. Full reference
+  density. This is where the 3.0 bar lives in its purest form.
+- CAMP CHARACTERS: seen close and standing still. Full kit, every strap.
+- BOSSES: already large on screen. Full kit, scaled to their own drama.
+- TRASH CRITTERS: only what survives the 40 px squint test, which means
+  SILHOUETTE and COSTUME SHAPES. A knotted neckerchief reads. Its stitching does
+  not. If a detail does not change the 40 px read, it is noise, and noise at this
+  scale reads as mud.
+
+THE LORE RULE THAT MAKES IT WORK AT EVERY SIZE: the Signed wear SCAVENGED SCOUT
+GEAR. The Mark makes them imitate, so a rabbit carries a bedroll lashed on wrong,
+a fox wears half a uniform shirt, a bat knots a neckerchief like a cape, a
+raccoon has a stolen slide. This reads at any scale, explains itself in fiction,
+and makes the enemy roster feel like a rival troop, which is the joke the game is
+built on. Prefer a scavenged-gear tell over an abstract one when both would work.
+
+Note that a Signed tell (the stamped tin Token, red eyes, the eye-in-ring Sign)
+is still required and is separate from scavenged gear. Gear says "it is copying
+scouts". The Token says "it has been Signed". A critter needs the second; the
+first is what makes it characterful.
+
 ## Hard rules
 
 - Touch ONLY the files your task names. Never modify existing painters or helpers
