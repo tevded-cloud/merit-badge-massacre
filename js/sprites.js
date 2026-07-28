@@ -5,10 +5,19 @@
 const SPR = (() => {
   const TAU = Math.PI * 2;
   const OUT = '#181008';
+  // Angular-era style constants (see ART_STYLE.md amendment 2026-07-27).
+  const LW_SIL = 2.4;   // silhouette edge weight
+  const LW_INT = 1.0;   // interior detail weight
+  const FUR = '#b85a24', FUR_D = '#8f3f18', FUR_L = '#cc6d2c', TAN = '#d7a45f';
+  const GREY = '#98a4b2', MARK = '#d4402c';
+  const PINK = '#f08a9a', BONE = '#f0ead8';
+  const RIM_WARM = 'rgba(255,152,70,0.5)';
+  const RIM_COOL = 'rgba(152,196,246,0.45)';
+  const RIM_GREEN = 'rgba(198,224,112,0.5)';
   const cache = new Map();
 
   function mk(w, h, fn) {
-    const SS = 2;
+    const SS = 3;
     const c = document.createElement('canvas');
     c.width = Math.ceil(w * SS); c.height = Math.ceil(h * SS);
     const g = c.getContext('2d');
@@ -19,7 +28,28 @@ const SPR = (() => {
     return { c, w, h, eyes, wc: null };
   }
 
-  // Rounded organic shape with baked-in shading and outline.
+  // Five-level baked lighting, shared by blob and apoly: midtone band, core
+  // shadow, warm ground bounce on the underside, upper-left highlight, and
+  // an opt-in hue-shifted rim arc. Caller must have clipped to the form.
+  function shadePass(g, cx, cy, rx, ry, o) {
+    g.beginPath(); g.ellipse(cx, cy + ry * 0.42, rx * 1.25, ry * 0.95, 0, 0, TAU);
+    g.fillStyle = o.mid || 'rgba(12,5,3,0.11)'; g.fill();
+    g.beginPath(); g.ellipse(cx, cy + ry * 0.7, rx * 1.05, ry * 0.6, 0, 0, TAU);
+    g.fillStyle = o.shade || 'rgba(12,5,3,0.18)'; g.fill();
+    g.beginPath(); g.ellipse(cx, cy + ry * 1.04, rx * 0.8, ry * 0.32, 0, 0, TAU);
+    g.fillStyle = o.bounce || 'rgba(255,166,92,0.1)'; g.fill();
+    g.beginPath(); g.ellipse(cx - rx * 0.28, cy - ry * 0.44, rx * 0.62, ry * 0.5, 0, 0, TAU);
+    g.fillStyle = o.hi || 'rgba(255,244,214,0.17)'; g.fill();
+    if (o.rim) {
+      g.strokeStyle = o.rim; g.lineWidth = o.rimW || 2; g.lineCap = 'round';
+      g.beginPath();
+      g.ellipse(cx, cy, Math.max(1, rx - 1.1), Math.max(1, ry - 1.1), 0, Math.PI * 1.02, Math.PI * 1.82);
+      g.stroke();
+    }
+  }
+
+  // Rounded organic shape with baked-in shading and outline. Carrying forms
+  // mostly use apoly now; blob stays for soft masses and interior details.
   function blob(g, x, y, rx, ry, fill, o) {
     o = o || {};
     g.save();
@@ -29,16 +59,123 @@ const SPR = (() => {
     g.fillStyle = fill; g.fill();
     if (!o.flat) {
       g.save(); g.clip();
-      g.beginPath(); g.ellipse(0, ry * 0.55, rx * 1.15, ry * 0.8, 0, 0, TAU);
-      g.fillStyle = o.shade || 'rgba(12,5,3,0.24)'; g.fill();
-      g.beginPath(); g.ellipse(-rx * 0.28, -ry * 0.45, rx * 0.6, ry * 0.46, 0, 0, TAU);
-      g.fillStyle = o.hi || 'rgba(255,244,214,0.17)'; g.fill();
+      shadePass(g, 0, 0, rx, ry, o);
       g.restore();
     }
     if (!o.noline) {
       g.beginPath(); g.ellipse(0, 0, rx, ry, 0, 0, TAU);
       g.lineWidth = o.lw || 1.7; g.strokeStyle = o.line || OUT; g.stroke();
     }
+    g.restore();
+  }
+
+  // Rounded-corner polygon path. pts is [[x, y, r], ...] where r is that
+  // corner's rounding radius (default 3): the style dial of the angular era.
+  function apath(g, pts) {
+    const n = pts.length;
+    g.beginPath();
+    g.moveTo((pts[n - 1][0] + pts[0][0]) / 2, (pts[n - 1][1] + pts[0][1]) / 2);
+    for (let i = 0; i < n; i++) {
+      const p = pts[i], q = pts[(i + 1) % n];
+      g.arcTo(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2, p[2] != null ? p[2] : 3);
+    }
+    g.closePath();
+  }
+
+  // The silhouette workhorse: angular carrying form with baked shading,
+  // two-tier outline, and an opt-in rim light along the upper left.
+  function apoly(g, pts, fill, o) {
+    o = o || {};
+    g.save();
+    if (o.rot) {
+      let cx0 = 0, cy0 = 0;
+      for (const p of pts) { cx0 += p[0]; cy0 += p[1]; }
+      cx0 /= pts.length; cy0 /= pts.length;
+      g.translate(cx0, cy0); g.rotate(o.rot); g.translate(-cx0, -cy0);
+    }
+    apath(g, pts);
+    if (fill) { g.fillStyle = fill; g.fill(); }
+    if (fill && !o.flat) {
+      let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+      for (const p of pts) {
+        if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0];
+        if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1];
+      }
+      const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+      const rx = Math.max(1, (x1 - x0) / 2), ry = Math.max(1, (y1 - y0) / 2);
+      g.save(); g.clip();
+      shadePass(g, cx, cy, rx, ry, o);
+      g.restore();
+    }
+    if (!o.noline) {
+      apath(g, pts);
+      g.lineWidth = o.lw || LW_SIL; g.strokeStyle = o.line || OUT; g.stroke();
+    }
+    g.restore();
+  }
+
+  // A shaped fur clump: a petal pointing along ang (0 points up in local
+  // space). Laid in rows back to front with alternating value steps, this is
+  // how painted fur is built. o.hi adds a micro highlight on the left flank,
+  // o.line outlines the clump (for tufts that cross the silhouette).
+  function clump(g, x, y, w2, len, ang, fill, o) {
+    o = o || {};
+    g.save(); g.translate(x, y); g.rotate(ang);
+    g.beginPath();
+    g.moveTo(-w2 / 2, 0);
+    g.quadraticCurveTo(-w2 * 0.55, -len * 0.6, 0, -len);
+    g.quadraticCurveTo(w2 * 0.55, -len * 0.6, w2 / 2, 0);
+    g.quadraticCurveTo(0, len * 0.2, -w2 / 2, 0);
+    g.closePath();
+    g.fillStyle = fill; g.fill();
+    if (o.line) { g.lineWidth = o.lw || LW_INT; g.strokeStyle = o.line; g.stroke(); }
+    if (o.hi) {
+      g.strokeStyle = o.hi; g.lineWidth = Math.max(0.5, w2 * 0.16); g.lineCap = 'round';
+      g.beginPath(); g.moveTo(-w2 * 0.2, -len * 0.28);
+      g.quadraticCurveTo(-w2 * 0.14, -len * 0.6, 0, -len * 0.82);
+      g.stroke();
+    }
+    g.restore();
+  }
+
+  // A row of clumps between two points, colors alternating through cols.
+  function furRow(g, x0, y0, x1, y1, n, w2, len, ang, cols, o) {
+    for (let i = 0; i < n; i++) {
+      const t = n === 1 ? 0.5 : i / (n - 1);
+      clump(g, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, w2, len, ang, cols[i % cols.length], o);
+    }
+  }
+
+  // Horizontal lens: two quadratics meeting in naturally sharp tips. arcTo
+  // trims acute corners hard, so brims and leaf shapes use this instead.
+  function lens(g, x, y, rx, ry, fill, lw) {
+    const p2 = () => {
+      g.beginPath();
+      g.moveTo(x - rx, y);
+      g.quadraticCurveTo(x, y - ry * 2, x + rx, y);
+      g.quadraticCurveTo(x, y + ry * 2, x - rx, y);
+      g.closePath();
+    };
+    p2(); g.fillStyle = fill; g.fill();
+    g.save(); p2(); g.clip();
+    g.fillStyle = 'rgba(12,5,3,0.18)'; g.fillRect(x - rx, y + ry * 0.15, rx * 2, ry * 2);
+    g.fillStyle = 'rgba(255,244,214,0.2)'; g.fillRect(x - rx, y - ry * 1.6, rx, ry * 1.3);
+    g.restore();
+    p2(); g.lineWidth = lw || 1.6; g.strokeStyle = OUT; g.stroke();
+  }
+
+  // Tiny curved claw with a wet specular dot. ang 0 points down.
+  function claw(g, x, y, ang, len, fill) {
+    g.save(); g.translate(x, y); g.rotate(ang);
+    g.beginPath();
+    g.moveTo(-len * 0.3, 0);
+    g.quadraticCurveTo(-len * 0.12, len * 0.55, 0, len);
+    g.quadraticCurveTo(len * 0.12, len * 0.55, len * 0.3, 0);
+    g.closePath();
+    g.fillStyle = fill || BONE; g.fill();
+    g.lineWidth = 0.7; g.strokeStyle = OUT; g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.7)';
+    g.beginPath(); g.arc(-len * 0.05, len * 0.32, len * 0.12, 0, TAU); g.fill();
     g.restore();
   }
 
@@ -62,12 +199,16 @@ const SPR = (() => {
     g.closePath();
   }
 
-  // Glossy possessed eye. Registers its center so the renderer can pulse a glow.
-  function demonEye(g, eyes, x, y, r) {
-    blob(g, x, y, r * 1.3, r * 1.25, '#170a06', { flat: true, lw: 1.1 });
+  // Glossy possessed eye. Registers its center so the renderer can pulse a
+  // glow. Renders 20 percent bigger than the call radius, with a second wet
+  // specular at lower right and a lower lid crescent in the head's darker
+  // tint (pass lid, defaults to a neutral dark).
+  function demonEye(g, eyes, x, y, r, lid) {
+    r *= 1.2;
+    blob(g, x, y, r * 1.3, r * 1.25, '#170a06', { flat: true, lw: LW_INT });
     const grd = g.createRadialGradient(x - r * 0.2, y - r * 0.25, r * 0.1, x, y, r);
     grd.addColorStop(0, '#ff9a52');
-    grd.addColorStop(0.55, '#f03818');
+    grd.addColorStop(0.55, '#ff4a20');
     grd.addColorStop(1, '#8c0f06');
     g.beginPath(); g.ellipse(x, y, r, r * 0.95, 0, 0, TAU);
     g.fillStyle = grd; g.fill();
@@ -75,13 +216,26 @@ const SPR = (() => {
     g.fillStyle = '#1a0402'; g.fill();
     g.beginPath(); g.arc(x - r * 0.32, y - r * 0.38, r * 0.22, 0, TAU);
     g.fillStyle = 'rgba(255,240,230,0.85)'; g.fill();
+    g.beginPath(); g.arc(x + r * 0.36, y + r * 0.4, r * 0.13, 0, TAU);
+    g.fillStyle = 'rgba(255,224,208,0.75)'; g.fill();
+    g.strokeStyle = lid || 'rgba(28,13,7,0.6)';
+    g.lineWidth = Math.max(0.7, r * 0.16); g.lineCap = 'round';
+    g.beginPath(); g.arc(x, y + r * 0.08, r * 1.12, Math.PI * 0.24, Math.PI * 0.76); g.stroke();
     eyes.push([x, y]);
   }
 
+  // Friendly bead eye. Renders 15 percent bigger, with the wet lower-right
+  // specular and a lower lid highlight: about eleven, about to be brave.
   function cuteEye(g, x, y, r) {
+    r *= 1.15;
     g.beginPath(); g.arc(x, y, r, 0, TAU); g.fillStyle = '#221a12'; g.fill();
     g.beginPath(); g.arc(x - r * 0.3, y - r * 0.35, r * 0.35, 0, TAU);
     g.fillStyle = 'rgba(255,255,255,0.9)'; g.fill();
+    g.beginPath(); g.arc(x + r * 0.34, y + r * 0.38, r * 0.18, 0, TAU);
+    g.fillStyle = 'rgba(255,255,255,0.75)'; g.fill();
+    g.strokeStyle = 'rgba(255,236,205,0.55)';
+    g.lineWidth = Math.max(0.6, r * 0.2); g.lineCap = 'round';
+    g.beginPath(); g.arc(x, y + r * 0.12, r * 1.14, Math.PI * 0.26, Math.PI * 0.74); g.stroke();
   }
 
   function pendant(g, x, y, r) {
@@ -96,197 +250,469 @@ const SPR = (() => {
   const P = {};
 
   P.squirrel = () => mk(56, 52, (g, eyes) => {
-    blob(g, 13, 28, 10, 15, '#8a4423', { rot: 0.35 });            // tail lower
-    blob(g, 17, 14, 8, 10, '#a4552c', { rot: -0.4 });             // tail curl
-    blob(g, 33, 37, 14, 12, '#a4552c');                            // body
-    blob(g, 33, 40, 8, 6.5, '#e8cfa5', { flat: true, noline: true });
-    blob(g, 30, 9, 3.6, 5.2, '#a4552c', { rot: -0.15 });          // ears
-    blob(g, 43, 9, 3.6, 5.2, '#a4552c', { rot: 0.15 });
-    blob(g, 30, 10, 1.6, 2.4, '#e88f7a', { flat: true, noline: true });
-    blob(g, 43, 10, 1.6, 2.4, '#e88f7a', { flat: true, noline: true });
-    blob(g, 36.5, 19, 11.5, 10, '#b25f31');                        // head
-    blob(g, 41, 24, 5, 3.8, '#e8cfa5', { flat: true, noline: true });
-    g.beginPath(); g.arc(43, 22.5, 1.4, 0, TAU); g.fillStyle = '#221108'; g.fill();
-    demonEye(g, eyes, 32, 17, 3);
-    demonEye(g, eyes, 41.5, 17, 3);
-    blob(g, 27, 46, 4, 2.6, '#8a4423', { flat: true });
-    blob(g, 39, 46, 4, 2.6, '#8a4423', { flat: true });
+    // tail: sweeping crescent, fur breaks cut into the inner edge
+    const tailPts = [
+      [6, 46, 3], [3, 33, 6], [6, 18, 5], [13, 6, 4], [21, 3, 3], [26, 8, 3],
+      [23, 12.5, 2], [25, 16.5, 2], [20, 19.5, 2], [21.5, 25, 2], [16.5, 30, 2],
+      [18, 37, 2], [13, 46, 3],
+    ];
+    apoly(g, tailPts, FUR, { rim: RIM_WARM, mid: 'rgba(70,28,8,0.16)', shade: 'rgba(70,28,8,0.26)' });
+    g.save(); apath(g, tailPts); g.clip();
+    furRow(g, 9, 41, 6.5, 24, 4, 4.4, 8, -2.1, ['#8f3f18', '#9c4a1c'], null);
+    furRow(g, 11, 28, 13, 12, 4, 4.2, 8, -1.7, ['#cc6d2c', '#c06026'], { hi: 'rgba(255,214,160,0.45)' });
+    furRow(g, 16, 9, 22, 7, 3, 3.8, 7, -0.7, ['#dd7f36', '#cc6d2c'], { hi: 'rgba(255,224,178,0.5)' });
+    g.restore();
+    apath(g, tailPts); g.lineWidth = LW_SIL; g.strokeStyle = OUT; g.stroke();
+    // body: chest rising to the right, haunch overlapping behind
+    apoly(g, [[20, 28, 5], [31, 25, 6], [42, 29, 5], [46, 36, 4], [44, 44, 3], [36, 48, 3], [24, 48, 4], [17, 42, 4], [16, 33, 4]], FUR, { rim: RIM_WARM });
+    apoly(g, [[21, 32, 5], [29, 30, 5], [33.5, 38, 5], [29.5, 46, 4], [21, 46, 4], [16.5, 39, 5]], '#ad5120', { lw: LW_INT, line: 'rgba(24,10,4,0.55)' });
+    clump(g, 24, 31.5, 4, 4.5, -0.5, '#c06026', { hi: 'rgba(255,214,160,0.4)' });
+    clump(g, 28.5, 30.5, 4, 4.5, -0.2, '#cc6d2c', null);
+    // belly with a contact shadow tucked under the chest
+    blob(g, 35, 36.5, 7, 2.4, 'rgba(60,24,8,0.22)', { flat: true, noline: true });
+    blob(g, 34.5, 41, 6.5, 5, '#e8cfa5', { flat: true, noline: true });
+    blob(g, 32.5, 39, 3.4, 2.2, 'rgba(255,250,232,0.5)', { flat: true, noline: true });
+    // ears: pointed, translucent pink inside (the accent)
+    apoly(g, [[27.5, 2.5, 1.5], [33, 11, 2], [24.5, 11.5, 2]], FUR);
+    apoly(g, [[45, 2.5, 1.5], [40, 11, 2], [48.5, 11.5, 2]], FUR);
+    apoly(g, [[28, 4.8, 0.8], [31.4, 10, 1], [26.4, 10.2, 1]], PINK, { flat: true, noline: true });
+    apoly(g, [[44.6, 4.8, 0.8], [41.6, 10, 1], [46.6, 10.2, 1]], PINK, { flat: true, noline: true });
+    blob(g, 28.8, 6.8, 1, 1.6, 'rgba(255,186,176,0.75)', { flat: true, noline: true, rot: 0.2 });
+    blob(g, 44.2, 6.8, 1, 1.6, 'rgba(255,186,176,0.75)', { flat: true, noline: true, rot: -0.2 });
+    // head: big and forward, cheek tufts breaking the left edge
+    clump(g, 25, 21, 4.4, 5, -1.9, FUR_L, { line: OUT, lw: 1.4 });
+    clump(g, 25.5, 24.5, 4, 4.4, -2.2, '#c06026', { line: OUT, lw: 1.4 });
+    apoly(g, [[26, 9, 6], [38, 7.5, 5], [46, 12, 4], [48.5, 19, 3.5], [44, 26, 3], [34, 29, 4], [26.5, 26.5, 4], [23.5, 17, 5]], FUR_L, { rim: RIM_WARM });
+    blob(g, 36, 12.5, 8, 3.6, 'rgba(255,236,200,0.2)', { flat: true, noline: true });
+    blob(g, 31, 24, 5.5, 3.4, 'rgba(90,40,14,0.14)', { flat: true, noline: true });
+    // muzzle: cream patch, wet nose, buck teeth
+    blob(g, 42, 23.5, 5, 3.6, '#e8cfa5', { flat: true, noline: true });
+    g.strokeStyle = '#8a5a3c'; g.lineWidth = LW_INT;
+    g.beginPath(); g.moveTo(43, 24.8); g.quadraticCurveTo(44.6, 26, 46, 24.9); g.stroke();
+    apoly(g, [[44.6, 20.6, 0.9], [47.6, 21.8, 0.9], [45.2, 23.4, 0.9]], '#221108', { flat: true, noline: true });
+    g.fillStyle = 'rgba(255,255,255,0.75)';
+    g.beginPath(); g.arc(45.4, 21.5, 0.55, 0, TAU); g.fill();
+    g.fillStyle = '#fffdf6'; g.strokeStyle = OUT; g.lineWidth = 0.6;
+    g.fillRect(43.4, 25.6, 1.9, 2.3); g.strokeRect(43.4, 25.6, 1.9, 2.3);
+    demonEye(g, eyes, 32, 16.5, 3, '#7c3a13');
+    demonEye(g, eyes, 41.5, 16.5, 3, '#7c3a13');
+    // paws: little hands over the chest, claws with speculars
+    apoly(g, [[24, 42.5, 2], [30.5, 42.5, 2], [31.5, 47.5, 1.5], [23, 47.5, 1.5]], '#9c4a1c', { lw: 1.4 });
+    apoly(g, [[34.5, 42, 2], [41, 42, 2], [42, 47, 1.5], [33.5, 47, 1.5]], '#9c4a1c', { lw: 1.4 });
+    claw(g, 25.6, 47, 0.15, 2.6, BONE); claw(g, 28.6, 47.3, 0, 2.6, BONE);
+    claw(g, 36.2, 46.5, 0.15, 2.6, BONE); claw(g, 39.2, 46.8, 0, 2.6, BONE);
     pendant(g, 33, 33, 2.8);
   });
 
   P.rabbit = () => mk(48, 56, (g, eyes) => {
-    blob(g, 18, 12, 4.4, 12, '#e9e4da', { rot: -0.12 });          // ears
-    blob(g, 30, 12, 4.4, 12, '#e9e4da', { rot: 0.12 });
-    blob(g, 18, 13, 2, 8, '#e8a0a0', { rot: -0.12, flat: true, noline: true });
-    blob(g, 30, 13, 2, 8, '#e8a0a0', { rot: 0.12, flat: true, noline: true });
-    blob(g, 24, 45, 12.5, 10, '#e9e4da');                          // body
-    blob(g, 24, 30, 11.5, 10.5, '#f2ede3');                        // head
-    demonEye(g, eyes, 19, 28, 3.1);
-    demonEye(g, eyes, 29.5, 28, 3.1);
-    blob(g, 24, 34, 2, 1.4, '#e8a0a0', { flat: true, noline: true });
+    const CRM = '#e9e4da', CRM_L = '#f6f2e9', CRM_D = '#cfc7b8';
+    // ears: long blades, translucent pink cores with a hot streak
+    apoly(g, [[15, 1.5, 2], [21.5, 7, 3], [20.5, 22.5, 3], [14, 23, 3], [11.5, 8, 3]], CRM, { rim: RIM_COOL });
+    apoly(g, [[33, 1.5, 2], [26.5, 7, 3], [27.5, 22.5, 3], [34, 23, 3], [36.5, 8, 3]], CRM, { rim: RIM_COOL });
+    apoly(g, [[15.6, 5, 1.5], [19.6, 8.8, 1.5], [18.8, 20, 2], [15.2, 20.2, 2], [13.8, 9, 1.5]], '#e8a0a0', { flat: true, noline: true });
+    apoly(g, [[32.4, 5, 1.5], [28.4, 8.8, 1.5], [29.2, 20, 2], [32.8, 20.2, 2], [34.2, 9, 1.5]], '#e8a0a0', { flat: true, noline: true });
+    blob(g, 16.6, 11, 1.1, 5, 'rgba(255,190,184,0.8)', { flat: true, noline: true, rot: -0.06 });
+    blob(g, 31.4, 11, 1.1, 5, 'rgba(255,190,184,0.8)', { flat: true, noline: true, rot: 0.06 });
+    // body: chest over haunches, both flanks called out as forms
+    apoly(g, [[15, 37, 4], [33, 37, 4], [37.4, 45, 4], [36, 52.5, 3], [12, 52.5, 3], [10.6, 45, 4]], CRM, { rim: RIM_COOL, mid: 'rgba(80,70,58,0.1)', shade: 'rgba(80,70,58,0.18)' });
+    apoly(g, [[12.5, 41, 3], [18, 39.5, 3], [20, 46, 3], [16.5, 51.5, 3], [12, 51, 3], [10.9, 45.5, 3]], CRM_D, { lw: LW_INT, line: 'rgba(90,80,66,0.55)', flat: true });
+    apoly(g, [[35.5, 41, 3], [30, 39.5, 3], [28, 46, 3], [31.5, 51.5, 3], [36, 51, 3], [37.1, 45.5, 3]], CRM_D, { lw: LW_INT, line: 'rgba(90,80,66,0.55)', flat: true });
+    // chest fluff row peeking under the chin
+    furRow(g, 18, 39.5, 30, 39.5, 4, 4, 4.6, 0, [CRM_L, CRM], { hi: 'rgba(255,255,255,0.5)' });
+    // head: big, soft, cheek fluff breaking the sides
+    clump(g, 13.6, 31, 3.8, 4.2, -1.9, CRM_L, { line: OUT, lw: 1.4 });
+    clump(g, 34.4, 31, 3.8, 4.2, 1.9, CRM_L, { line: OUT, lw: 1.4 });
+    apoly(g, [[14, 21.5, 6], [34, 21.5, 6], [36.5, 30, 5], [31, 38.5, 5], [17, 38.5, 5], [11.5, 30, 5]], '#f2ede3', { rim: RIM_COOL, mid: 'rgba(80,70,58,0.09)', shade: 'rgba(80,70,58,0.16)' });
+    blob(g, 24, 25, 8, 3.2, 'rgba(255,255,255,0.35)', { flat: true, noline: true });
+    demonEye(g, eyes, 19, 28, 3.1, '#b0a494');
+    demonEye(g, eyes, 29.5, 28, 3.1, '#b0a494');
+    // nose, whiskers, the little fangs with glints
+    apoly(g, [[22.6, 33, 0.8], [25.4, 33, 0.8], [24, 35.2, 0.8]], '#e8a0a0', { flat: true, noline: true });
+    g.fillStyle = 'rgba(255,255,255,0.7)';
+    g.beginPath(); g.arc(23.4, 33.6, 0.45, 0, TAU); g.fill();
     g.strokeStyle = '#9a938a'; g.lineWidth = 0.8;
     g.beginPath(); g.moveTo(20, 34); g.lineTo(13, 33); g.moveTo(20, 35.5); g.lineTo(13.5, 36.5);
     g.moveTo(28, 34); g.lineTo(35, 33); g.moveTo(28, 35.5); g.lineTo(34.5, 36.5); g.stroke();
-    poly(g, [[21.5, 37], [23.5, 37], [22.5, 40.5]], '#fffdf6', { lw: 0.7 });   // little fangs
+    poly(g, [[21.5, 37], [23.5, 37], [22.5, 40.5]], '#fffdf6', { lw: 0.7 });
     poly(g, [[24.5, 37], [26.5, 37], [25.5, 40.5]], '#fffdf6', { lw: 0.7 });
-    blob(g, 16, 53, 5, 2.8, '#e9e4da', { flat: true });
-    blob(g, 32, 53, 5, 2.8, '#e9e4da', { flat: true });
+    g.fillStyle = 'rgba(255,255,255,0.9)';
+    g.beginPath(); g.arc(22.1, 38, 0.4, 0, TAU); g.fill();
+    g.beginPath(); g.arc(25.1, 38, 0.4, 0, TAU); g.fill();
+    // big split feet, toe ticks
+    apoly(g, [[11.5, 50, 2], [21, 50, 2], [22, 55, 2], [10.5, 55, 2]], CRM);
+    apoly(g, [[27, 50, 2], [36.5, 50, 2], [37.5, 55, 2], [26, 55, 2]], CRM);
+    g.strokeStyle = 'rgba(120,110,100,0.6)'; g.lineWidth = LW_INT; g.lineCap = 'round';
+    [14.5, 18, 30.5, 34].forEach(tx => { g.beginPath(); g.moveTo(tx, 52); g.lineTo(tx, 54.4); g.stroke(); });
     pendant(g, 24, 44, 2.8);
   });
 
   P.doe = () => mk(60, 62, (g, eyes) => {
-    blob(g, 13, 13, 5.4, 9, '#c69a63', { rot: -0.55 });           // ears
-    blob(g, 47, 13, 5.4, 9, '#c69a63', { rot: 0.55 });
-    blob(g, 13.5, 13.5, 2.4, 5, '#e8b0a0', { rot: -0.55, flat: true, noline: true });
-    blob(g, 46.5, 13.5, 2.4, 5, '#e8b0a0', { rot: 0.55, flat: true, noline: true });
-    // legs behind chest
-    g.lineWidth = 4; g.strokeStyle = '#a97a4a';
+    // ears: leaf shapes rooted at the head corners, translucent pink inside
+    apoly(g, [[8, 7, 2], [18.5, 9, 2.5], [21.5, 17.5, 3], [11, 15.5, 3]], TAN, { rim: RIM_WARM });
+    apoly(g, [[52, 7, 2], [41.5, 9, 2.5], [38.5, 17.5, 3], [49, 15.5, 3]], TAN, { rim: RIM_WARM });
+    apoly(g, [[10.4, 9, 1.2], [16.6, 10.6, 1.5], [18.8, 15.2, 2], [12.6, 13.8, 2]], '#e8b0a0', { flat: true, noline: true });
+    apoly(g, [[49.6, 9, 1.2], [43.4, 10.6, 1.5], [41.2, 15.2, 2], [47.4, 13.8, 2]], '#e8b0a0', { flat: true, noline: true });
+    blob(g, 13.6, 11.8, 2, 1.2, 'rgba(255,196,184,0.75)', { flat: true, noline: true, rot: 0.5 });
+    blob(g, 46.4, 11.8, 2, 1.2, 'rgba(255,196,184,0.75)', { flat: true, noline: true, rot: -0.5 });
+    // segmented legs: knee break, dark hoof with a specular chip
+    g.lineCap = 'round'; g.lineJoin = 'round';
     [[21, 46, 20, 59], [39, 46, 40, 59], [26, 48, 25, 60], [34, 48, 35, 60]].forEach(l => {
-      g.beginPath(); g.moveTo(l[0], l[1]); g.lineTo(l[2], l[3]); g.stroke();
+      const kx = (l[0] + l[2]) / 2 + 1.3, ky = (l[1] + l[3]) / 2;
+      g.strokeStyle = '#b98a52'; g.lineWidth = 4;
+      g.beginPath(); g.moveTo(l[0], l[1]); g.lineTo(kx, ky); g.lineTo(l[2], l[3] - 1.6); g.stroke();
+      g.strokeStyle = 'rgba(120,80,40,0.5)'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(kx - 1.2, ky); g.lineTo(kx + 1.2, ky); g.stroke();
+      g.strokeStyle = OUT; g.lineWidth = 4.4;
+      g.beginPath(); g.moveTo(l[2], l[3] - 2.4); g.lineTo(l[2], l[3]); g.stroke();
+      g.fillStyle = 'rgba(255,255,255,0.4)';
+      g.beginPath(); g.arc(l[2] - 1, l[3] - 2, 0.6, 0, TAU); g.fill();
     });
-    g.lineWidth = 4.4; g.strokeStyle = OUT;
-    [[20, 57, 20, 60], [40, 57, 40, 60], [25, 58, 25, 61], [35, 58, 35, 61]].forEach(l => {
-      g.beginPath(); g.moveTo(l[0], l[1]); g.lineTo(l[2], l[3]); g.stroke();
+    // neck joins head to chest, tucked behind the chest form
+    apoly(g, [[25, 22, 4], [35, 22, 4], [37, 33, 4], [23, 33, 4]], '#d0a061', { flat: true, noline: true });
+    // chest and torso: shoulder planes, spot constellation, chest fluff
+    apoly(g, [[17, 30, 6], [30, 26, 7], [43, 30, 6], [45.5, 41, 5], [38, 50, 4], [22, 50, 4], [14.5, 41, 5]], TAN, { rim: RIM_WARM });
+    blob(g, 30, 31, 8, 2.2, 'rgba(70,38,12,0.18)', { flat: true, noline: true });
+    furRow(g, 22, 35, 38, 35, 5, 3.6, 4.2, 0, ['#e2b271', TAN], { hi: 'rgba(255,232,190,0.4)' });
+    [[23, 39], [37, 39], [26, 45], [34, 45], [30, 42], [20.5, 44]].forEach(s => {
+      blob(g, s[0], s[1], 1.6, 1.6, '#efe0c2', { flat: true, noline: true });
+      blob(g, s[0] - 0.4, s[1] - 0.4, 0.7, 0.7, 'rgba(255,255,255,0.5)', { flat: true, noline: true });
     });
-    blob(g, 30, 40, 14, 13, '#c69a63');                            // chest
-    [[24, 36], [36, 36], [27, 43], [33, 43]].forEach(s => blob(g, s[0], s[1], 1.7, 1.7, '#efe0c2', { flat: true, noline: true }));
-    blob(g, 30, 17, 11.5, 10.5, '#c69a63');                        // head
-    blob(g, 30, 25, 6, 4.6, '#dab98a', { flat: true, noline: true });
-    g.beginPath(); g.arc(30, 24, 1.7, 0, TAU); g.fillStyle = '#221108'; g.fill();
-    demonEye(g, eyes, 24.5, 15, 3.2);
-    demonEye(g, eyes, 35.5, 15, 3.2);
+    // head: gentle taper to the muzzle
+    apoly(g, [[19.5, 8, 6], [40.5, 8, 6], [43, 17, 5], [36, 25.5, 4], [24, 25.5, 4], [17, 17, 5]], TAN, { rim: RIM_WARM });
+    blob(g, 26, 10.8, 3.4, 2, 'rgba(255,238,204,0.3)', { flat: true, noline: true, rot: -0.2 });
+    // muzzle: soft wedge, big wet nose
+    apoly(g, [[24.5, 19.5, 3], [35.5, 19.5, 3], [34, 28.5, 3], [26, 28.5, 3]], '#dab98a', { lw: LW_INT });
+    apoly(g, [[26.9, 23.4, 1.3], [33.1, 23.4, 1.3], [30, 27.8, 1.3]], '#221108', { flat: true, noline: true });
+    g.fillStyle = 'rgba(255,255,255,0.65)';
+    g.beginPath(); g.arc(28.5, 24.4, 0.8, 0, TAU); g.fill();
+    g.strokeStyle = 'rgba(120,80,40,0.5)'; g.lineWidth = LW_INT;
+    g.beginPath(); g.moveTo(30, 27.8); g.lineTo(30, 28.5); g.stroke();
+    demonEye(g, eyes, 24.5, 15, 3.2, '#a3743f');
+    demonEye(g, eyes, 35.5, 15, 3.2, '#a3743f');
     pendant(g, 30, 35, 3.2);
   });
 
   P.bat = () => mk(56, 36, (g, eyes) => {
     const wing = (sx) => {
       g.save(); g.translate(28, 18); g.scale(sx, 1);
-      g.beginPath();
-      g.moveTo(4, -2);
-      g.quadraticCurveTo(14, -12, 25, -8);
-      g.quadraticCurveTo(22, -2, 24, 4);
-      g.quadraticCurveTo(18, 2, 16, 8);
-      g.quadraticCurveTo(12, 4, 4, 8);
-      g.closePath();
-      g.fillStyle = '#4a3c5c'; g.fill();
-      g.lineWidth = 1.6; g.strokeStyle = OUT; g.stroke();
+      const memb = () => {
+        g.beginPath();
+        g.moveTo(4, -2);
+        g.lineTo(12, -10);
+        g.lineTo(25.5, -8.5);      // finger tip 1
+        g.quadraticCurveTo(21.5, -4.5, 20.5, -3);
+        g.lineTo(26, 3.5);         // finger tip 2
+        g.quadraticCurveTo(20, 2, 17.5, 3);
+        g.lineTo(19.5, 9);         // finger tip 3
+        g.quadraticCurveTo(13.5, 5.5, 11, 5);
+        g.lineTo(4, 8);
+        g.closePath();
+      };
+      memb(); g.fillStyle = '#4a3c5c'; g.fill();
+      g.save(); memb(); g.clip();
+      // translucent membrane glow between the fingers
+      g.fillStyle = 'rgba(150,110,190,0.28)';
+      g.beginPath(); g.ellipse(16, -3, 8, 6, -0.3, 0, TAU); g.fill();
+      g.fillStyle = 'rgba(20,12,30,0.35)';
+      g.beginPath(); g.ellipse(9, 6, 9, 5, 0, 0, TAU); g.fill();
+      g.restore();
+      memb(); g.lineWidth = LW_SIL; g.strokeStyle = OUT; g.stroke();
+      g.strokeStyle = 'rgba(24,14,34,0.65)'; g.lineWidth = LW_INT; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(6, 0); g.lineTo(24, -7.5); g.stroke();
+      g.beginPath(); g.moveTo(6, 1.5); g.lineTo(24, 2.5); g.stroke();
+      g.strokeStyle = 'rgba(200,170,230,0.4)'; g.lineWidth = 0.7;
+      g.beginPath(); g.moveTo(7, -0.8); g.lineTo(22, -7); g.stroke();
       g.restore();
     };
     wing(1); wing(-1);
-    poly(g, [[23, 8], [26, 12], [21, 13]], '#5a4a6e');             // ears
-    poly(g, [[33, 8], [30, 12], [35, 13]], '#5a4a6e');
-    blob(g, 28, 19, 8.5, 9, '#5a4a6e');                            // body
-    demonEye(g, eyes, 24.8, 17, 2.6);
-    demonEye(g, eyes, 31.2, 17, 2.6);
+    // ears: tall, translucent pink inside (the accent)
+    apoly(g, [[21.5, 5.5, 1], [27, 12.5, 1.5], [19, 13.5, 1.5]], '#5a4a6e');
+    apoly(g, [[34.5, 5.5, 1], [29, 12.5, 1.5], [37, 13.5, 1.5]], '#5a4a6e');
+    apoly(g, [[22.3, 7.8, 0.7], [25.6, 12, 0.8], [21.2, 12.6, 0.8]], PINK, { flat: true, noline: true });
+    apoly(g, [[33.7, 7.8, 0.7], [30.4, 12, 0.8], [34.8, 12.6, 0.8]], PINK, { flat: true, noline: true });
+    blob(g, 22.9, 9.6, 0.7, 1.3, 'rgba(255,186,176,0.8)', { flat: true, noline: true, rot: 0.3 });
+    blob(g, 33.1, 9.6, 0.7, 1.3, 'rgba(255,186,176,0.8)', { flat: true, noline: true, rot: -0.3 });
+    // body: fuzzy chest, fur fringe along the belly
+    apoly(g, [[21, 11.5, 4], [35, 11.5, 4], [37, 20, 4.5], [32, 27.5, 4], [24, 27.5, 4], [19, 20, 4.5]], '#5a4a6e', { rim: RIM_COOL, mid: 'rgba(24,14,36,0.16)', shade: 'rgba(24,14,36,0.26)' });
+    furRow(g, 23.5, 26.5, 32.5, 26.5, 4, 3, 3.4, Math.PI, ['#6e5c84', '#645278'], null);
+    blob(g, 28, 21.5, 4.4, 3.6, '#6e5c84', { flat: true, noline: true });
+    demonEye(g, eyes, 24.2, 17, 2.6, '#3c3050');
+    demonEye(g, eyes, 31.8, 17, 2.6, '#3c3050');
+    // nose leaf and fangs with glints
+    apoly(g, [[27, 20.4, 0.6], [29, 20.4, 0.6], [28, 22, 0.6]], '#8a7aa4', { flat: true, noline: true });
     poly(g, [[25.5, 23.5], [27.5, 23.5], [26.5, 26.5]], '#fffdf6', { lw: 0.6 });
     poly(g, [[28.5, 23.5], [30.5, 23.5], [29.5, 26.5]], '#fffdf6', { lw: 0.6 });
+    g.fillStyle = 'rgba(255,255,255,0.9)';
+    g.beginPath(); g.arc(26.1, 24.4, 0.4, 0, TAU); g.fill();
+    g.beginPath(); g.arc(29.1, 24.4, 0.4, 0, TAU); g.fill();
+    // hook claws
+    g.strokeStyle = '#2e2440'; g.lineWidth = 1.2; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(25, 27.5); g.quadraticCurveTo(24, 28.8, 24.8, 29.5); g.stroke();
+    g.beginPath(); g.moveTo(31, 27.5); g.quadraticCurveTo(32, 28.8, 31.2, 29.5); g.stroke();
   });
 
   P.raccoon = () => mk(54, 48, (g, eyes) => {
-    blob(g, 45, 30, 6, 9, '#8a9097', { rot: 0.4 });               // ringed tail
-    blob(g, 46.5, 25, 5, 4, '#3c3f45', { rot: 0.4, flat: true, noline: true });
-    blob(g, 44, 35, 5, 4, '#3c3f45', { rot: 0.4, flat: true, noline: true });
-    blob(g, 26, 34, 14, 11.5, '#9aa0a8');                          // body
-    blob(g, 26, 38, 8, 6, '#c9cdd2', { flat: true, noline: true });
-    blob(g, 17, 7.5, 4, 4.6, '#9aa0a8', { rot: -0.2 });           // ears
-    blob(g, 35, 7.5, 4, 4.6, '#9aa0a8', { rot: 0.2 });
-    blob(g, 26, 16, 12.5, 10.5, '#aab0b8');                        // head
-    blob(g, 26, 14.5, 11, 4.6, '#26221f', { flat: true, lw: 1.2 }); // mask
-    demonEye(g, eyes, 20.5, 14.5, 3);
-    demonEye(g, eyes, 31.5, 14.5, 3);
-    blob(g, 26, 21.5, 5.2, 3.6, '#e6e0d2', { flat: true, noline: true });
+    // ringed tail: fur breaks on the outer edge, textured rings
+    const tailPts = [[40.5, 38.5, 3], [42.5, 28, 3], [44.5, 21.5, 3], [50.5, 19.5, 2.5], [52.5, 27, 2], [51, 30, 2], [52.8, 34.5, 2], [48, 42, 2]];
+    apoly(g, tailPts, GREY, { rim: RIM_COOL, mid: 'rgba(30,34,40,0.14)', shade: 'rgba(30,34,40,0.24)' });
+    g.save(); apath(g, tailPts); g.clip();
+    g.fillStyle = '#3c3f45';
+    g.beginPath(); g.rect(40, 23.5, 14, 4.6); g.fill();
+    g.beginPath(); g.rect(40, 31.5, 14, 4.6); g.fill();
+    g.beginPath(); g.moveTo(42, 39); g.lineTo(54, 36.5); g.lineTo(49, 43.5); g.closePath(); g.fill();
+    furRow(g, 43, 27, 52, 25.5, 3, 2.6, 3, -0.35, ['#4a4e55', '#3c3f45'], null);
+    furRow(g, 42.5, 35, 52, 33, 3, 2.6, 3, -0.35, ['#4a4e55', '#3c3f45'], null);
+    g.fillStyle = 'rgba(220,228,238,0.22)';
+    g.beginPath(); g.ellipse(45.5, 24, 3.4, 5.4, 0.25, 0, TAU); g.fill();
+    g.restore();
+    apath(g, tailPts); g.lineWidth = LW_SIL; g.strokeStyle = OUT; g.stroke();
+    // body: chest wedge, haunch mass, belly fluff
+    apoly(g, [[13, 28, 5], [26, 24.5, 6], [39, 28, 5], [41.5, 37, 4], [35, 45.5, 4], [17, 45.5, 4], [10.5, 37, 4]], GREY, { rim: RIM_COOL, mid: 'rgba(30,34,40,0.13)', shade: 'rgba(30,34,40,0.22)' });
+    apoly(g, [[31, 30, 4], [38.5, 29.5, 4], [41, 37, 4], [36, 44.5, 3], [30, 43, 4]], '#8a9097', { lw: LW_INT, line: 'rgba(40,44,50,0.5)' });
+    blob(g, 24, 39, 7.5, 5.4, '#c9cdd2', { flat: true, noline: true });
+    furRow(g, 18.5, 34.5, 30, 34.5, 4, 3.6, 4, 0, ['#d5d9de', '#c9cdd2'], { hi: 'rgba(255,255,255,0.45)' });
+    // bandana scrap: the accent, ragged edge and a side knot
+    apoly(g, [[18, 25, 1.5], [34, 25, 1.5], [31, 26.6, 1], [29, 30.5, 1], [26.4, 27.8, 1], [23.5, 31.5, 1], [20.5, 27.5, 1]], '#4a76a8', { flat: true, lw: LW_INT });
+    blob(g, 24, 26.2, 4, 1.2, 'rgba(255,255,255,0.22)', { flat: true, noline: true });
+    apoly(g, [[33, 24.8, 1], [37.5, 23.5, 1], [35.5, 28.2, 1]], '#4a76a8', { flat: true, lw: LW_INT });
+    // ears: pointed, dark inner
+    apoly(g, [[13, 3, 1.5], [20.5, 4.5, 2], [19, 11, 2.5], [12, 10, 2.5]], GREY);
+    apoly(g, [[39, 3, 1.5], [31.5, 4.5, 2], [33, 11, 2.5], [40, 10, 2.5]], GREY);
+    apoly(g, [[14.8, 5, 1], [18.6, 6, 1.2], [17.6, 9.6, 1.2]], '#3c3f45', { flat: true, noline: true });
+    apoly(g, [[37.2, 5, 1], [33.4, 6, 1.2], [34.4, 9.6, 1.2]], '#3c3f45', { flat: true, noline: true });
+    // head: cheek ruffs breaking the sides, brow light over the mask
+    clump(g, 12, 18, 4, 4.4, -1.75, '#aab0b8', { line: OUT, lw: 1.4 });
+    clump(g, 12.5, 21.5, 3.6, 4, -2.05, '#9aa0a8', { line: OUT, lw: 1.4 });
+    clump(g, 40, 18, 4, 4.4, 1.75, '#aab0b8', { line: OUT, lw: 1.4 });
+    clump(g, 39.5, 21.5, 3.6, 4, 2.05, '#9aa0a8', { line: OUT, lw: 1.4 });
+    apoly(g, [[14, 7.5, 5], [38, 7.5, 5], [40.5, 15, 4], [34, 25, 4], [26, 27, 4], [18, 25, 4], [11.5, 15, 4]], '#aab0b8', { rim: RIM_COOL, mid: 'rgba(30,34,40,0.12)', shade: 'rgba(30,34,40,0.2)' });
+    // white brows, then the bandit mask
+    blob(g, 19.5, 10.5, 4.6, 2.4, '#e6e0d2', { flat: true, noline: true });
+    blob(g, 32.5, 10.5, 4.6, 2.4, '#e6e0d2', { flat: true, noline: true });
+    apoly(g, [[14.5, 11.5, 2], [37.5, 11.5, 2], [39.5, 15.5, 2], [33, 18.5, 2], [19, 18.5, 2], [12.5, 15.5, 2]], '#26221f', { flat: true, lw: LW_INT });
+    demonEye(g, eyes, 20.5, 14.5, 3, '#6b727c');
+    demonEye(g, eyes, 31.5, 14.5, 3, '#6b727c');
+    // muzzle: bright patch, wet nose, whisker dots
+    blob(g, 26, 21.8, 5, 3.4, '#e6e0d2', { flat: true, noline: true });
     g.beginPath(); g.arc(26, 20.5, 1.5, 0, TAU); g.fillStyle = '#221108'; g.fill();
-    blob(g, 18, 44, 4, 2.6, '#6e747c', { flat: true });
-    blob(g, 34, 44, 4, 2.6, '#6e747c', { flat: true });
+    g.fillStyle = 'rgba(255,255,255,0.7)';
+    g.beginPath(); g.arc(25.5, 20, 0.5, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(90,90,86,0.6)';
+    [[22.5, 22.3], [23.3, 23.4], [29.5, 22.3], [28.7, 23.4]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 0.35, 0, TAU); g.fill();
+    });
+    // clever hands: finger lines and claws
+    apoly(g, [[14.5, 41, 1.5], [22, 41, 1.5], [23, 45.8, 1.5], [13.5, 45.8, 1.5]], '#6e747c', { lw: 1.4 });
+    apoly(g, [[30, 41, 1.5], [37.5, 41, 1.5], [38.5, 45.8, 1.5], [29.5, 45.8, 1.5]], '#6e747c', { lw: 1.4 });
+    g.strokeStyle = 'rgba(30,32,36,0.6)'; g.lineWidth = LW_INT; g.lineCap = 'round';
+    [16.6, 18.8, 33, 35.2].forEach(fx => { g.beginPath(); g.moveTo(fx, 42.6); g.lineTo(fx, 45); g.stroke(); });
+    claw(g, 17, 45.8, 0.1, 2.2, '#d8cfc0'); claw(g, 20, 45.8, 0, 2.2, '#d8cfc0');
+    claw(g, 33.5, 45.8, 0.1, 2.2, '#d8cfc0'); claw(g, 36.5, 45.8, 0, 2.2, '#d8cfc0');
     pendant(g, 26, 30, 2.8);
   });
 
   P.owl = () => mk(48, 54, (g, eyes) => {
-    poly(g, [[9, 12], [15, 4], [18, 13]], '#8a5a34');              // tufts
-    poly(g, [[39, 12], [33, 4], [30, 13]], '#8a5a34');
-    blob(g, 24, 31, 15.5, 17.5, '#8a5a34');                        // body
-    blob(g, 13, 30, 5, 12, '#6e4526', { rot: 0.25, flat: true, noline: true });   // wings
-    blob(g, 35, 30, 5, 12, '#6e4526', { rot: -0.25, flat: true, noline: true });
-    blob(g, 24, 38, 8.5, 8.5, '#c9a06a', { flat: true, noline: true });
-    g.strokeStyle = '#6e4526'; g.lineWidth = 1.1;
-    for (let i = 0; i < 3; i++) {
-      g.beginPath(); g.moveTo(19, 35 + i * 3.4); g.lineTo(24, 38 + i * 3.4); g.lineTo(29, 35 + i * 3.4); g.stroke();
+    // ear tufts with an inner shade plane
+    apoly(g, [[8, 12.5, 1.2], [14.5, 3, 1.2], [19, 13, 2.5]], '#966036');
+    apoly(g, [[40, 12.5, 1.2], [33.5, 3, 1.2], [29, 13, 2.5]], '#966036');
+    apoly(g, [[11, 11.5, 0.8], [14.6, 5.5, 0.8], [16.6, 12, 1.2]], 'rgba(60,36,16,0.35)', { flat: true, noline: true });
+    apoly(g, [[37, 11.5, 0.8], [33.4, 5.5, 0.8], [31.4, 12, 1.2]], 'rgba(60,36,16,0.35)', { flat: true, noline: true });
+    // body: tapered, tail point at the bottom
+    apoly(g, [[10, 16.5, 6], [38, 16.5, 6], [40.5, 31, 7], [34, 46.5, 5], [24, 50, 4], [14, 46.5, 5], [7.5, 31, 7]], '#966036', { rim: RIM_WARM, mid: 'rgba(50,28,10,0.13)', shade: 'rgba(50,28,10,0.22)' });
+    // folded wings: overlapping feather scallops, two value steps
+    for (const s of [-1, 1]) {
+      const wx = 24 + s * 11.5;
+      apoly(g, [[wx - s * 3.5, 21, 3], [wx + s * 3.2, 23, 3], [wx + s * 2.6, 35, 2], [wx - s * 0.4, 31.5, 1.5], [wx + s * 1.4, 42, 2], [wx - s * 3.2, 38, 2]], '#7a4c28', { flat: true, lw: LW_INT, line: 'rgba(40,22,8,0.55)' });
+      furRow(g, wx - s * 1.5, 26, wx + s * 1, 36, 3, 3.2, 4.2, Math.PI + s * 0.25, ['#8a5a34', '#7a4c28'], { hi: 'rgba(230,190,130,0.35)' });
     }
-    blob(g, 17, 19, 7.4, 7.4, '#e8d9b0', { lw: 1.2 });             // eye discs
-    blob(g, 31, 19, 7.4, 7.4, '#e8d9b0', { lw: 1.2 });
-    demonEye(g, eyes, 17, 19, 3.6);
-    demonEye(g, eyes, 31, 19, 3.6);
-    poly(g, [[21.5, 25], [26.5, 25], [24, 30]], '#e0a83c');        // beak
-    g.strokeStyle = '#e0a83c'; g.lineWidth = 1.6;
+    // belly: soft plate with chevron feather rows
+    apoly(g, [[16, 30.5, 5], [32, 30.5, 5], [33.5, 43, 5], [24, 47, 4], [14.5, 43, 5]], '#d0a468', { flat: true, noline: true });
+    blob(g, 24, 33.5, 6.5, 2.4, 'rgba(255,236,196,0.4)', { flat: true, noline: true });
+    g.lineWidth = 1.1; g.lineCap = 'round';
+    for (let i = 0; i < 4; i++) {
+      g.strokeStyle = i % 2 ? 'rgba(110,69,38,0.85)' : 'rgba(90,54,26,0.85)';
+      g.beginPath(); g.moveTo(19, 34.5 + i * 3.2); g.lineTo(24, 37.3 + i * 3.2); g.lineTo(29, 34.5 + i * 3.2); g.stroke();
+      g.strokeStyle = 'rgba(240,214,160,0.35)';
+      g.beginPath(); g.moveTo(19.6, 35.2 + i * 3.2); g.lineTo(24, 37.9 + i * 3.2); g.lineTo(28.4, 35.2 + i * 3.2); g.stroke();
+    }
+    // facial discs: rimmed with radiating feather strokes
+    blob(g, 17, 19, 7.6, 7.6, '#e8d9b0', { lw: 1.2, mid: 'rgba(120,90,50,0.08)', shade: 'rgba(120,90,50,0.14)' });
+    blob(g, 31, 19, 7.6, 7.6, '#e8d9b0', { lw: 1.2, mid: 'rgba(120,90,50,0.08)', shade: 'rgba(120,90,50,0.14)' });
+    g.strokeStyle = 'rgba(150,110,60,0.5)'; g.lineWidth = 0.8;
+    for (const cxd of [17, 31]) {
+      for (let a = 0; a < 10; a++) {
+        const th = -Math.PI / 2 + (a - 4.5) * 0.32;
+        g.beginPath();
+        g.moveTo(cxd + Math.cos(th) * 5.4, 19 + Math.sin(th) * 5.4);
+        g.lineTo(cxd + Math.cos(th) * 7, 19 + Math.sin(th) * 7);
+        g.stroke();
+      }
+    }
+    demonEye(g, eyes, 17, 19, 3.6, '#b39a6d');
+    demonEye(g, eyes, 31, 19, 3.6, '#b39a6d');
+    // beak: gold accent with a ridge highlight
+    apoly(g, [[21, 24.5, 1], [27, 24.5, 1], [24, 30.5, 1]], '#e0a83c', { lw: LW_INT });
+    g.strokeStyle = 'rgba(255,236,170,0.8)'; g.lineWidth = 0.8;
+    g.beginPath(); g.moveTo(23.2, 25.5); g.lineTo(24, 28.6); g.stroke();
+    // talons: gold, with tiny speculars
+    g.strokeStyle = '#e0a83c'; g.lineWidth = 1.8; g.lineCap = 'round';
     [[18, 49], [30, 49]].forEach(t => {
       g.beginPath();
-      g.moveTo(t[0] - 3, t[1] + 4); g.lineTo(t[0], t[1]);
-      g.lineTo(t[0] + 3, t[1] + 4); g.moveTo(t[0], t[1]); g.lineTo(t[0], t[1] + 4.5);
+      g.moveTo(t[0] - 3.4, t[1] + 4.4); g.lineTo(t[0], t[1]);
+      g.lineTo(t[0] + 3.4, t[1] + 4.4); g.moveTo(t[0], t[1]); g.lineTo(t[0], t[1] + 4.8);
       g.stroke();
+      g.fillStyle = 'rgba(255,244,200,0.85)';
+      g.beginPath(); g.arc(t[0] - 0.6, t[1] + 1.4, 0.55, 0, TAU); g.fill();
     });
   });
 
   P.boar = () => mk(66, 44, (g, eyes) => {
-    g.beginPath();                                                  // bristle mane
-    g.moveTo(10, 16);
-    for (let i = 0; i < 7; i++) { g.lineTo(13 + i * 6, 7 + (i % 2) * 3); g.lineTo(16 + i * 6, 15); }
+    // bristle mane: double row of spikes, alternating values
+    g.beginPath();
+    g.moveTo(10, 17);
+    for (let i = 0; i < 7; i++) { g.lineTo(13 + i * 6, 6 + (i % 2) * 3); g.lineTo(16 + i * 6, 15); }
     g.lineTo(56, 18); g.lineTo(10, 20); g.closePath();
-    g.fillStyle = '#42301f'; g.fill(); g.lineWidth = 1.4; g.strokeStyle = OUT; g.stroke();
-    blob(g, 33, 26, 26, 15, '#5c4530');                            // body
-    poly(g, [[14, 13], [20, 6], [23, 14]], '#5c4530');             // ears
-    poly(g, [[52, 13], [46, 6], [43, 14]], '#5c4530');
-    blob(g, 33, 33, 9, 6.4, '#7a5a40');                            // snout
+    g.fillStyle = '#42301f'; g.fill(); g.lineWidth = 1.6; g.strokeStyle = OUT; g.stroke();
+    for (let i = 0; i < 6; i++) {
+      clump(g, 17 + i * 6, 16, 3.4, 6.5, 0.12, i % 2 ? '#573c22' : '#4a3320', null);
+    }
+    // body: heavy shoulder, sloped rear, bristle texture on the back
+    apoly(g, [[8, 20, 6], [24, 13.5, 6], [48, 13.5, 6], [58, 22, 5], [59, 32, 4], [50, 40, 4], [16, 40, 4], [7, 30, 5]], '#6b4c2e', { rim: RIM_WARM, mid: 'rgba(38,24,10,0.14)', shade: 'rgba(38,24,10,0.24)' });
+    g.strokeStyle = 'rgba(30,16,6,0.4)'; g.lineWidth = LW_INT;
+    g.beginPath(); g.moveTo(46, 15); g.quadraticCurveTo(51, 24, 48, 38); g.stroke();
+    furRow(g, 14, 22, 52, 21, 6, 3.6, 4.6, -0.12, ['#5d3f24', '#654728'], null);
+    blob(g, 33, 37, 16, 3, 'rgba(255,166,92,0.12)', { flat: true, noline: true });
+    // ears standing proud of the mane, dark inner planes
+    apoly(g, [[11.5, 13, 1.2], [17.5, 2.5, 1.2], [23.5, 13, 2.5]], '#6b4c2e');
+    apoly(g, [[54.5, 13, 1.2], [48.5, 2.5, 1.2], [42.5, 13, 2.5]], '#6b4c2e');
+    apoly(g, [[14.5, 11.5, 0.8], [17.8, 5.5, 0.8], [21, 12, 1.2]], 'rgba(30,16,6,0.4)', { flat: true, noline: true });
+    apoly(g, [[51.5, 11.5, 0.8], [48.2, 5.5, 0.8], [45, 12, 1.2]], 'rgba(30,16,6,0.4)', { flat: true, noline: true });
+    // snout: blocky, wet shine on top, deep nostrils
+    apoly(g, [[25, 27.5, 3], [41, 27.5, 3], [43, 36.5, 3], [23, 36.5, 3]], '#8a6444', { lw: 1.4 });
+    blob(g, 33, 29.5, 6.5, 1.6, 'rgba(255,220,180,0.35)', { flat: true, noline: true });
     g.fillStyle = '#33241a';
-    g.beginPath(); g.ellipse(30, 33, 1.5, 2.2, 0, 0, TAU); g.fill();
-    g.beginPath(); g.ellipse(36, 33, 1.5, 2.2, 0, 0, TAU); g.fill();
-    g.strokeStyle = '#f0ead8'; g.lineWidth = 3.4;                   // tusks
-    g.beginPath(); g.moveTo(23, 34); g.quadraticCurveTo(19, 30, 20, 24); g.stroke();
-    g.beginPath(); g.moveTo(43, 34); g.quadraticCurveTo(47, 30, 46, 24); g.stroke();
-    demonEye(g, eyes, 24, 20, 2.9);
-    demonEye(g, eyes, 42, 20, 2.9);
-    [[18, 40], [28, 41], [38, 41], [48, 40]].forEach(f => blob(g, f[0], f[1], 3.4, 2.4, '#33241a', { flat: true }));
+    g.beginPath(); g.ellipse(30, 32.8, 1.5, 2.2, 0, 0, TAU); g.fill();
+    g.beginPath(); g.ellipse(36, 32.8, 1.5, 2.2, 0, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.35)';
+    g.beginPath(); g.arc(29.5, 31.8, 0.55, 0, TAU); g.fill();
+    g.beginPath(); g.arc(35.5, 31.8, 0.55, 0, TAU); g.fill();
+    // chin bristles
+    clump(g, 28, 37.5, 2.6, 3.4, Math.PI + 0.35, '#4a3320', null);
+    clump(g, 33, 38.2, 2.6, 3.6, Math.PI, '#573c22', null);
+    clump(g, 38, 37.5, 2.6, 3.4, Math.PI - 0.35, '#4a3320', null);
+    // bone tusks: the accent, long up-curving hooks with speculars
+    apoly(g, [[25, 36, 1.5], [18, 33, 1.2], [16, 25, 0.8], [17.5, 21, 0.8], [21, 29.5, 1.5], [27, 32.5, 1.5]], BONE, { lw: LW_INT });
+    apoly(g, [[41, 36, 1.5], [48, 33, 1.2], [50, 25, 0.8], [48.5, 21, 0.8], [45, 29.5, 1.5], [39, 32.5, 1.5]], BONE, { lw: LW_INT });
+    g.fillStyle = 'rgba(255,255,255,0.8)';
+    g.beginPath(); g.arc(17.4, 25, 0.8, 0, TAU); g.fill();
+    g.beginPath(); g.arc(48.6, 25, 0.8, 0, TAU); g.fill();
+    demonEye(g, eyes, 25, 20, 3.3, '#4a3018');
+    demonEye(g, eyes, 41, 20, 3.3, '#4a3018');
+    // cloven hooves with a split line
+    [[18, 38], [28, 38.5], [38, 38.5], [48, 38]].forEach(f => {
+      apoly(g, [[f[0] - 3.4, f[1], 1.2], [f[0] + 3.4, f[1], 1.2], [f[0] + 2.8, f[1] + 4.6, 1], [f[0] - 2.8, f[1] + 4.6, 1]], '#33241a', { flat: true, lw: 1.2 });
+      g.strokeStyle = 'rgba(10,4,2,0.7)'; g.lineWidth = LW_INT; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(f[0], f[1] + 2); g.lineTo(f[0], f[1] + 4.2); g.stroke();
+      g.fillStyle = 'rgba(255,255,255,0.25)';
+      g.beginPath(); g.arc(f[0] - 1.6, f[1] + 1.4, 0.6, 0, TAU); g.fill();
+    });
   });
 
   P.fox = () => mk(58, 48, (g, eyes) => {
-    blob(g, 47, 33, 10.5, 8, '#d2692e', { rot: 0.5 });             // tail
-    blob(g, 53, 38, 4.6, 4, '#efe6d8', { rot: 0.5, flat: true, noline: true });
-    blob(g, 25, 35, 13, 10, '#d2692e');                            // body
-    blob(g, 25, 39, 7, 5.4, '#efe6d8', { flat: true, noline: true });
-    poly(g, [[13, 2], [20, 13], [10, 12]], '#d2692e');             // ears
-    poly(g, [[14, 5], [18, 11.5], [12.5, 11]], '#3a2417', { noline: true });
-    poly(g, [[39, 2], [32, 13], [42, 12]], '#d2692e');
-    poly(g, [[38, 5], [34, 11.5], [39.5, 11]], '#3a2417', { noline: true });
-    blob(g, 26, 17, 11.5, 9.5, '#e0722f');                          // head
-    blob(g, 26, 23, 5.4, 3.8, '#efe6d8', { flat: true, noline: true });
-    g.beginPath(); g.arc(26, 21.6, 1.5, 0, TAU); g.fillStyle = '#221108'; g.fill();
-    demonEye(g, eyes, 20.8, 15, 3);
-    demonEye(g, eyes, 31.2, 15, 3);
-    blob(g, 17, 44, 4, 2.6, '#a04d1e', { flat: true });
-    blob(g, 33, 44, 4, 2.6, '#a04d1e', { flat: true });
+    // brush tail: fur breaks along the top, white tip with its own notch
+    const tailPts = [[37.5, 29, 3], [43, 24.5, 3], [46, 26, 2], [49.5, 23.5, 3], [56.5, 30.5, 3], [55, 40, 3], [47, 42.5, 3], [40, 40, 3]];
+    apoly(g, tailPts, '#e06f28', { rim: RIM_WARM, mid: 'rgba(120,44,10,0.15)', shade: 'rgba(120,44,10,0.25)' });
+    g.save(); apath(g, tailPts); g.clip();
+    furRow(g, 41, 32, 52, 28.5, 4, 3.6, 5, -0.7, ['#c05a20', '#d2692e'], null);
+    apoly(g, [[48.5, 33.5, 2], [53, 32, 1.5], [56.8, 33.5, 2], [55.4, 40.5, 2], [47.5, 41, 2]], '#efe6d8', { flat: true, noline: true });
+    furRow(g, 49, 35, 55, 34, 3, 3, 3.6, -0.5, ['#fdfaf2', '#efe6d8'], null);
+    g.restore();
+    apath(g, tailPts); g.lineWidth = LW_SIL; g.strokeStyle = OUT; g.stroke();
+    // body: lean, low-slung
+    apoly(g, [[13, 30, 5], [25, 26, 6], [36, 30, 4], [38.5, 38, 4], [32, 44.5, 4], [18, 44.5, 4], [11.5, 38, 4]], '#e06f28', { rim: RIM_WARM, mid: 'rgba(120,44,10,0.13)', shade: 'rgba(120,44,10,0.22)' });
+    // chest bib: cream fluff row under the chin
+    blob(g, 24, 38.5, 6.5, 4.8, '#efe6d8', { flat: true, noline: true });
+    furRow(g, 19, 35.5, 29.5, 35.5, 4, 3.4, 4, 0, ['#fdfaf2', '#efe6d8'], { hi: 'rgba(255,255,255,0.4)' });
+    // ears: tall blades, dark tips, translucent pink inside (the accent)
+    apoly(g, [[12.5, 1.5, 1.2], [20, 13, 2.5], [9.5, 12.5, 2.5]], '#e06f28');
+    apoly(g, [[39.5, 1.5, 1.2], [32, 13, 2.5], [42.5, 12.5, 2.5]], '#e06f28');
+    apoly(g, [[12.2, 1.8, 1], [14.8, 5.8, 1], [10.6, 5.4, 1]], '#3a2417', { flat: true, noline: true });
+    apoly(g, [[39.8, 1.8, 1], [37.2, 5.8, 1], [41.4, 5.4, 1]], '#3a2417', { flat: true, noline: true });
+    apoly(g, [[13.8, 6, 0.8], [17.6, 11.6, 1], [11.8, 11.2, 1]], PINK, { flat: true, noline: true });
+    apoly(g, [[38.2, 6, 0.8], [34.4, 11.6, 1], [40.2, 11.2, 1]], PINK, { flat: true, noline: true });
+    blob(g, 14.4, 9, 0.9, 1.7, 'rgba(255,186,176,0.8)', { flat: true, noline: true, rot: 0.35 });
+    blob(g, 37.6, 9, 0.9, 1.7, 'rgba(255,186,176,0.8)', { flat: true, noline: true, rot: -0.35 });
+    // head: pointed cheek fur built into the silhouette, sly forehead light
+    apoly(g, [[15, 9, 5], [37, 9, 5], [40.5, 16, 4], [42, 20.5, 1.2], [34, 24, 3], [28.5, 26.5, 2.5], [23.5, 26.5, 2.5], [18, 24, 3], [10, 20.5, 1.2], [11.5, 16, 4]], '#e8762f', { rim: RIM_WARM, mid: 'rgba(120,44,10,0.13)', shade: 'rgba(120,44,10,0.2)' });
+    blob(g, 21, 11.5, 3.6, 2, 'rgba(255,224,180,0.3)', { flat: true, noline: true, rot: -0.15 });
+    g.strokeStyle = 'rgba(150,60,16,0.4)'; g.lineWidth = LW_INT; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(13, 19.5); g.lineTo(16.5, 20.6); g.stroke();
+    g.beginPath(); g.moveTo(39, 19.5); g.lineTo(35.5, 20.6); g.stroke();
+    // snout: cream wedge, dark nose with a wet shine, smiling mouth line
+    apoly(g, [[20.5, 20, 2], [31.5, 20, 2], [26, 27.4, 1.5]], '#efe6d8', { flat: true, lw: LW_INT });
+    g.strokeStyle = '#8a5a3c'; g.lineWidth = LW_INT;
+    g.beginPath(); g.moveTo(23.8, 23.8); g.quadraticCurveTo(26, 25.4, 28.2, 23.8); g.stroke();
+    g.beginPath(); g.arc(26, 25.8, 1.6, 0, TAU); g.fillStyle = '#221108'; g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.7)';
+    g.beginPath(); g.arc(25.4, 25.2, 0.55, 0, TAU); g.fill();
+    demonEye(g, eyes, 20.8, 15, 3, '#a04d1e');
+    demonEye(g, eyes, 31.2, 15, 3, '#a04d1e');
+    // dark stockings with claw ticks
+    apoly(g, [[13.5, 40, 1.5], [21, 40, 1.5], [22, 45.4, 1.5], [12.5, 45.4, 1.5]], '#a04d1e', { lw: 1.4 });
+    apoly(g, [[29.5, 40, 1.5], [37, 40, 1.5], [38, 45.4, 1.5], [28.5, 45.4, 1.5]], '#a04d1e', { lw: 1.4 });
+    claw(g, 15.5, 45.4, 0.1, 2.2, '#d8cfc0'); claw(g, 18.5, 45.6, 0, 2.2, '#d8cfc0');
+    claw(g, 31.5, 45.4, 0.1, 2.2, '#d8cfc0'); claw(g, 34.5, 45.6, 0, 2.2, '#d8cfc0');
     pendant(g, 25, 30, 2.8);
   });
 
   P.beaver = () => mk(56, 50, (g, eyes) => {
-    g.save(); g.translate(28, 44);                                  // flat tail
-    g.beginPath(); g.ellipse(0, 0, 12, 6, 0, 0, TAU);
-    g.fillStyle = '#4e3520'; g.fill(); g.lineWidth = 1.6; g.strokeStyle = OUT; g.stroke();
-    g.save(); g.clip(); g.strokeStyle = 'rgba(20,10,5,0.5)'; g.lineWidth = 0.8;
-    for (let i = -10; i <= 10; i += 4) {
-      g.beginPath(); g.moveTo(i, -6); g.lineTo(i + 3, 6); g.stroke();
-      g.beginPath(); g.moveTo(-12, i * 0.5); g.lineTo(12, i * 0.5); g.stroke();
-    }
-    g.restore(); g.restore();
-    blob(g, 28, 28, 15, 13.5, '#7a4e2c');                           // body
-    blob(g, 28, 32, 8.5, 7, '#a4784a', { flat: true, noline: true });
-    blob(g, 19, 6.5, 3.4, 3.8, '#7a4e2c');                          // ears
-    blob(g, 37, 6.5, 3.4, 3.8, '#7a4e2c');
-    blob(g, 28, 14, 11, 9.5, '#8a5a34');                            // head
-    demonEye(g, eyes, 23, 12, 2.9);
-    demonEye(g, eyes, 33, 12, 2.9);
-    blob(g, 28, 18.5, 4.4, 3, '#a4784a', { flat: true, noline: true });
-    g.fillStyle = '#fffdf6'; g.strokeStyle = OUT; g.lineWidth = 0.8;
+    // paddle tail: crosshatch scales and a wet sheen band
+    const tail = [[17.5, 38.5, 3], [38.5, 38.5, 3], [41.8, 43.5, 3], [38, 49, 3], [18, 49, 3], [14.2, 43.5, 3]];
+    apoly(g, tail, '#4e3520', { mid: 'rgba(16,8,4,0.16)', shade: 'rgba(16,8,4,0.28)' });
+    g.save(); apath(g, tail); g.clip();
+    g.strokeStyle = 'rgba(20,10,5,0.5)'; g.lineWidth = 0.8;
+    for (let i = 14; i <= 42; i += 4) { g.beginPath(); g.moveTo(i, 38); g.lineTo(i + 3, 50); g.stroke(); }
+    for (let j = 41; j <= 47; j += 3) { g.beginPath(); g.moveTo(13, j); g.lineTo(43, j); g.stroke(); }
+    g.fillStyle = 'rgba(255,230,190,0.12)';
+    g.beginPath(); g.ellipse(24, 41, 9, 2, -0.08, 0, TAU); g.fill();
+    g.restore();
+    apath(g, tail); g.lineWidth = LW_SIL; g.strokeStyle = OUT; g.stroke();
+    // body: chunky, chest fur row, warm belly
+    apoly(g, [[13, 22, 6], [28, 16.5, 7], [43, 22, 6], [44.4, 34, 5], [37.5, 41.5, 4], [18.5, 41.5, 4], [11.6, 34, 5]], '#86552e', { rim: RIM_WARM, mid: 'rgba(46,26,10,0.14)', shade: 'rgba(46,26,10,0.24)' });
+    blob(g, 28, 32.5, 8.5, 6.6, '#b28050', { flat: true, noline: true });
+    blob(g, 26, 30, 4.5, 2.6, 'rgba(255,222,178,0.4)', { flat: true, noline: true });
+    furRow(g, 20, 25, 36, 25, 5, 3.6, 4.2, 0, ['#9c6636', '#86552e'], { hi: 'rgba(240,200,150,0.35)' });
+    // little round ears, dark inner dot
+    blob(g, 19, 6.5, 3.4, 3.8, '#86552e');
+    blob(g, 37, 6.5, 3.4, 3.8, '#86552e');
+    blob(g, 19.6, 7, 1.4, 1.7, 'rgba(40,20,8,0.45)', { flat: true, noline: true });
+    blob(g, 36.4, 7, 1.4, 1.7, 'rgba(40,20,8,0.45)', { flat: true, noline: true });
+    // head: broad, chubby cheek masses overlapping the sides
+    apoly(g, [[18, 5.5, 6], [38, 5.5, 6], [40.5, 13.5, 5], [35, 22.5, 4], [21, 22.5, 4], [15.5, 13.5, 5]], '#966036', { rim: RIM_WARM, mid: 'rgba(50,28,10,0.13)', shade: 'rgba(50,28,10,0.2)' });
+    blob(g, 19.5, 17.5, 3.6, 4, '#8a5a34', { lw: LW_INT, line: 'rgba(40,22,8,0.5)' });
+    blob(g, 36.5, 17.5, 3.6, 4, '#8a5a34', { lw: LW_INT, line: 'rgba(40,22,8,0.5)' });
+    blob(g, 28, 9, 7.5, 2.8, 'rgba(255,232,192,0.22)', { flat: true, noline: true });
+    demonEye(g, eyes, 23, 12, 2.9, '#5f3a1c');
+    demonEye(g, eyes, 33, 12, 2.9, '#5f3a1c');
+    // muzzle: big dark nose with shine, whisker dots, iron orange incisors
+    blob(g, 28, 18.5, 4.6, 3.2, '#b28050', { flat: true, noline: true });
+    blob(g, 28, 16.8, 2.2, 1.5, '#221108', { flat: true, noline: true });
+    g.fillStyle = 'rgba(255,255,255,0.65)';
+    g.beginPath(); g.arc(27.3, 16.4, 0.5, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(80,50,26,0.6)';
+    [[24.6, 18.6], [25.2, 19.8], [31.4, 18.6], [30.8, 19.8]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 0.35, 0, TAU); g.fill();
+    });
+    g.fillStyle = '#e8934a'; g.strokeStyle = OUT; g.lineWidth = 0.8;
     g.fillRect(25.4, 19.5, 2.4, 4.6); g.strokeRect(25.4, 19.5, 2.4, 4.6);
     g.fillRect(28.2, 19.5, 2.4, 4.6); g.strokeRect(28.2, 19.5, 2.4, 4.6);
+    g.fillStyle = 'rgba(255,240,210,0.8)';
+    g.fillRect(25.7, 19.8, 0.7, 3.6);
+    // worker hands tucked on the belly, claw ticks
+    apoly(g, [[18.5, 35.5, 1.5], [24.5, 35.5, 1.5], [23.5, 40.4, 1.2], [17.5, 40.4, 1.2]], '#5f3a1c', { flat: true, lw: 1.2 });
+    apoly(g, [[31.5, 35.5, 1.5], [37.5, 35.5, 1.5], [38.5, 40.4, 1.2], [32.5, 40.4, 1.2]], '#5f3a1c', { flat: true, lw: 1.2 });
+    claw(g, 19.8, 40.2, 0.1, 2, '#d8cfc0'); claw(g, 22.4, 40.4, 0, 2, '#d8cfc0');
+    claw(g, 33.6, 40.4, 0, 2, '#d8cfc0'); claw(g, 36.2, 40.2, -0.1, 2, '#d8cfc0');
     pendant(g, 28, 25, 2.8);
   });
 
@@ -330,31 +756,75 @@ const SPR = (() => {
   function scoutBase(g, o) {
     const cx = o.cx, wide = o.wide ? 1.2 : 1;
     if (!o.legless) {
-      blob(g, cx - 4.5 * wide, 49, 3, 5, o.skin, { flat: true, lw: 1.2 });
-      blob(g, cx + 4.5 * wide, 49, 3, 5, o.skin, { flat: true, lw: 1.2 });
-      blob(g, cx - 4.5 * wide, 54.5, 4.2, 2.6, '#3a2e20', { flat: true, lw: 1.2 });
-      blob(g, cx + 4.5 * wide, 54.5, 4.2, 2.6, '#3a2e20', { flat: true, lw: 1.2 });
+      // standing legs: straight segments, knee line, wedge boots with soles
+      for (const s of [-1, 1]) {
+        const lx = cx + s * 4.5 * wide;
+        apoly(g, [[lx - 1.8, 43.5, 1], [lx + 1.8, 43.5, 1], [lx + 1.5, 53, 1], [lx - 1.5, 53, 1]], o.skin, { flat: true, lw: 1.2 });
+        g.strokeStyle = 'rgba(120,70,40,0.45)'; g.lineWidth = LW_INT; g.lineCap = 'round';
+        g.beginPath(); g.moveTo(lx - 1.1, 48.4); g.lineTo(lx + 1.1, 48.4); g.stroke();
+        // sock cuff
+        g.strokeStyle = '#e8e0cc'; g.lineWidth = 1.6;
+        g.beginPath(); g.moveTo(lx - 1.4, 51.2); g.lineTo(lx + 1.4, 51.2); g.stroke();
+        const pts = s > 0
+          ? [[lx - 2.4, 52.5, 1.2], [lx + 2.4, 52.5, 1.2], [lx + 4.8, 55, 1], [lx + 4.8, 56.8, 1], [lx - 2.4, 56.8, 1.2]]
+          : [[lx + 2.4, 52.5, 1.2], [lx - 2.4, 52.5, 1.2], [lx - 4.8, 55, 1], [lx - 4.8, 56.8, 1], [lx + 2.4, 56.8, 1.2]];
+        apoly(g, pts, '#3a2e20', { flat: true, lw: 1.2 });
+        g.strokeStyle = '#241a10'; g.lineWidth = 1;
+        g.beginPath(); g.moveTo(lx - 2.2, 55.9); g.lineTo(lx + s * 4.4, 55.9); g.stroke();
+      }
     }
-    blob(g, cx, 42, 9 * wide, 5.4, o.shorts);
-    blob(g, cx, 32, 10 * wide, 9.4, o.shirt);
+    // shorts: belt line and a center split
+    apoly(g, [[cx - 8 * wide, 37.5, 2.5], [cx + 8 * wide, 37.5, 2.5], [cx + 8.6 * wide, 45.5, 2], [cx + 1.4, 45.5, 1.2], [cx, 43, 1], [cx - 1.4, 45.5, 1.2], [cx - 8.6 * wide, 45.5, 2]], o.shorts, { lw: 1.8 });
+    g.strokeStyle = 'rgba(14,10,6,0.4)'; g.lineWidth = LW_INT;
+    g.beginPath(); g.moveTo(cx - 7.2 * wide, 39.2); g.lineTo(cx + 7.2 * wide, 39.2); g.stroke();
+    g.fillStyle = '#e3b341';
+    g.beginPath(); g.arc(cx, 39.2, 1, 0, TAU); g.fill();
+    // torso: shoulder line, taper, hem
+    apoly(g, [[cx - 8.8 * wide, 25, 3.5], [cx + 8.8 * wide, 25, 3.5], [cx + 7.2 * wide, 39, 2.5], [cx - 7.2 * wide, 39, 2.5]], o.shirt, { lw: 1.8, rim: 'rgba(255,240,200,0.35)' });
+    g.strokeStyle = 'rgba(40,26,12,0.35)'; g.lineWidth = LW_INT;
+    g.beginPath(); g.moveTo(cx - 6.9 * wide, 36.4); g.lineTo(cx + 6.9 * wide, 36.4); g.stroke();
+    // pocket flaps with button dots
+    g.strokeStyle = 'rgba(40,26,12,0.45)'; g.lineWidth = LW_INT;
+    for (const s of [-1, 1]) {
+      const px = cx + s * 4.4 * wide;
+      g.strokeRect(px - 2, 31, 4, 3.2);
+      g.beginPath(); g.moveTo(px - 2, 32.2); g.lineTo(px + 2, 32.2); g.stroke();
+      g.fillStyle = 'rgba(24,16,8,0.55)';
+      g.beginPath(); g.arc(px, 33, 0.5, 0, TAU); g.fill();
+    }
     // badge sash dots
     g.fillStyle = '#f4c542';
     for (let i = 0; i < 3; i++) {
       g.beginPath(); g.arc(cx - 4 + i * 4, 29.5 + i * 2.4, 1.3, 0, TAU); g.fill();
+      g.fillStyle = 'rgba(255,255,255,0.55)';
+      g.beginPath(); g.arc(cx - 4.4 + i * 4, 29.1 + i * 2.4, 0.45, 0, TAU); g.fill();
+      g.fillStyle = '#f4c542';
     }
-    poly(g, [[cx - 8, 23.5], [cx + 8, 23.5], [cx, 32]], o.kerchief); // neckerchief
-    g.beginPath(); g.arc(cx, 25.5, 1.8, 0, TAU); g.fillStyle = o.kerchief; g.fill();
-    g.strokeStyle = OUT; g.lineWidth = 1; g.stroke();
-    blob(g, cx, 15, 10, 9.2, o.skin);                                // head
+    // collar flaps peeking at the shoulders
+    apoly(g, [[cx - 8.2, 24.6, 0.8], [cx - 4.6, 24.6, 0.8], [cx - 7, 27.8, 0.8]], 'rgba(255,244,214,0.5)', { flat: true, noline: true });
+    apoly(g, [[cx + 8.2, 24.6, 0.8], [cx + 4.6, 24.6, 0.8], [cx + 7, 27.8, 0.8]], 'rgba(255,244,214,0.5)', { flat: true, noline: true });
+    // kerchief: sharp triangle, fold shadow, square knot
+    apoly(g, [[cx - 7.8, 23.6, 1.5], [cx + 7.8, 23.6, 1.5], [cx, 33.5, 1]], o.kerchief, { lw: 1.8 });
+    g.strokeStyle = 'rgba(20,8,6,0.35)'; g.lineWidth = LW_INT;
+    g.beginPath(); g.moveTo(cx - 4.4, 26.2); g.lineTo(cx, 30.4); g.lineTo(cx + 4.4, 26.2); g.stroke();
+    apoly(g, [[cx - 1.9, 24.8, 1], [cx + 1.9, 24.8, 1], [cx + 1.5, 28.2, 1], [cx - 1.5, 28.2, 1]], o.kerchief, { flat: true, lw: 1.2 });
+    g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 0.8;
+    g.beginPath(); g.moveTo(cx - 1.2, 25.6); g.lineTo(cx + 1.2, 25.6); g.stroke();
+    // head: structured but soft, forehead light, cheek shade
+    apoly(g, [[cx - 9.8, 6.6, 7], [cx + 9.8, 6.6, 7], [cx + 8.5, 22.8, 6], [cx - 8.5, 22.8, 6]], o.skin, { rim: RIM_WARM, hi: 'rgba(255,244,214,0.22)', mid: 'rgba(120,66,30,0.1)', shade: 'rgba(120,66,30,0.16)' });
+    blob(g, cx, 9.5, 6.5, 2.4, 'rgba(255,244,214,0.3)', { flat: true, noline: true });
     cuteEye(g, cx - 3.8, 14.5, 1.7);
     cuteEye(g, cx + 3.8, 14.5, 1.7);
-    g.strokeStyle = '#5c422e'; g.lineWidth = 1;
-    g.beginPath(); g.moveTo(cx - 5.4, 11.4); g.lineTo(cx - 2.4, 10.8); g.stroke();
-    g.beginPath(); g.moveTo(cx + 5.4, 11.4); g.lineTo(cx + 2.4, 10.8); g.stroke();
+    g.strokeStyle = '#5c422e'; g.lineWidth = LW_INT; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(cx - 5.4, 11.2); g.lineTo(cx - 2.4, 10.5); g.stroke();
+    g.beginPath(); g.moveTo(cx + 5.4, 11.2); g.lineTo(cx + 2.4, 10.5); g.stroke();
     g.strokeStyle = '#8a5a3c'; g.lineWidth = 1.1;
     g.beginPath(); g.moveTo(cx - 1.6, 19.4); g.quadraticCurveTo(cx, 20.8, cx + 1.6, 19.4); g.stroke();
     blob(g, cx - 6.4, 18, 1.7, 1.1, 'rgba(232,120,100,0.4)', { flat: true, noline: true });
     blob(g, cx + 6.4, 18, 1.7, 1.1, 'rgba(232,120,100,0.4)', { flat: true, noline: true });
+    // little nose
+    g.strokeStyle = 'rgba(140,90,60,0.55)'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(cx - 0.6, 16.6); g.quadraticCurveTo(cx + 0.6, 17.2, cx + 0.4, 16.2); g.stroke();
   }
 
   const SCOUT_OPTS = {
@@ -365,26 +835,47 @@ const SPR = (() => {
 
   const SCOUT_HATS = {
     max(g) {
-      blob(g, 22, 7.6, 12, 3, '#7a5230', { lw: 1.4 });               // campaign hat
-      blob(g, 22, 3.6, 6.2, 4.2, '#7a5230', { lw: 1.4 });
-      g.strokeStyle = '#54371e'; g.lineWidth = 1.4;
-      g.beginPath(); g.moveTo(16.4, 6.4); g.lineTo(27.6, 6.4); g.stroke();
+      const cx = 22;
+      // campaign hat: crisp wedge brim, peaked crown, montana crease
+      lens(g, cx, 7.4, 13, 2.7, '#7a5230', 1.6);
+      apoly(g, [[cx - 6.2, 5.8, 2], [cx - 2.2, 0.4, 2], [cx + 2.2, 0.4, 2], [cx + 6.2, 5.8, 2]], '#7a5230', { lw: 1.6 });
+      g.strokeStyle = '#54371e'; g.lineWidth = 1.4; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(cx - 5.6, 6.5); g.lineTo(cx + 5.6, 6.5); g.stroke();
+      g.beginPath(); g.moveTo(cx, 1.2); g.lineTo(cx, 5.4); g.stroke();
+      g.strokeStyle = 'rgba(255,224,170,0.35)'; g.lineWidth = 0.9;
+      g.beginPath(); g.moveTo(cx - 10.5, 7.2); g.quadraticCurveTo(cx - 5, 5.8, cx - 1, 5.6); g.stroke();
+      // hair wisps at the temples
+      g.strokeStyle = '#6e4a26'; g.lineWidth = 1.2;
+      g.beginPath(); g.moveTo(13, 9); g.quadraticCurveTo(12.4, 10.6, 13.2, 11.8); g.stroke();
+      g.beginPath(); g.moveTo(31, 9); g.quadraticCurveTo(31.6, 10.6, 30.8, 11.8); g.stroke();
     },
     junie(g) {
-      blob(g, 22, 9, 10.4, 4.6, '#d2692e', { flat: true, lw: 1.3 }); // hair fringe
-      blob(g, 14, 13, 2.2, 4.6, '#d2692e', { flat: true, noline: true });
-      blob(g, 30, 13, 2.2, 4.6, '#d2692e', { flat: true, noline: true });
-      blob(g, 20, 4.4, 9.4, 4, '#3f6b35', { lw: 1.4, rot: -0.12 });  // beret
-      g.beginPath(); g.arc(20, 0.8, 1.3, 0, TAU); g.fillStyle = '#2c4b25'; g.fill();
+      // jagged hair fringe and side falls
+      apoly(g, [[12.4, 6.4, 2], [31.6, 6.4, 2], [30.8, 11.6, 1.2], [28, 10.2, 1.2], [25, 12, 1.2], [22, 10.3, 1.2], [19, 12, 1.2], [16, 10.2, 1.2], [13.2, 11.6, 1.2]], '#d2692e', { flat: true, lw: 1.3 });
+      g.strokeStyle = 'rgba(255,190,130,0.4)'; g.lineWidth = 0.9; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(16, 7.6); g.quadraticCurveTo(18, 8.8, 17, 10.8); g.stroke();
+      g.beginPath(); g.moveTo(23, 7.6); g.quadraticCurveTo(24.6, 8.8, 23.8, 10.8); g.stroke();
+      apoly(g, [[12.6, 8, 1], [15.8, 9.5, 1], [14.6, 18.2, 1.2], [12, 16, 1.2]], '#d2692e', { flat: true, noline: true });
+      apoly(g, [[31.4, 8, 1], [28.2, 9.5, 1], [29.4, 18.2, 1.2], [32, 16, 1.2]], '#d2692e', { flat: true, noline: true });
+      // slanted beret with a stem
+      apoly(g, [[10.6, 5.4, 3], [19.5, 0.2, 3.5], [29, 3.6, 3], [25.6, 6.8, 2], [13.4, 7.6, 2]], '#3f6b35', { lw: 1.6, rim: RIM_GREEN });
+      g.beginPath(); g.arc(19.5, 0.8, 1.3, 0, TAU); g.fillStyle = '#2c4b25'; g.fill();
       g.fillStyle = 'rgba(150,90,50,0.5)';                           // freckles
       [[18, 17.6], [20, 18.4], [24, 18.4], [26, 17.6]].forEach(f => {
         g.beginPath(); g.arc(f[0], f[1], 0.6, 0, TAU); g.fill();
       });
     },
     gus(g) {
-      blob(g, 32.5, 6.6, 5, 2.4, '#8c2d24', { flat: true, lw: 1.3 }); // backwards cap bill
-      blob(g, 25, 5.6, 9.4, 5, '#b03a2e', { lw: 1.4 });
-      g.beginPath(); g.arc(25, 5, 1.4, 0, TAU); g.fillStyle = '#e8e0cc'; g.fill();
+      // backwards cap: structured crown, panel seams, bill out the back
+      apoly(g, [[32.6, 4.6, 1.5], [38.8, 5.4, 2], [37.8, 8.8, 2], [32.2, 8.2, 1.5]], '#8c2d24', { flat: true, lw: 1.3 });
+      apoly(g, [[16, 7.8, 4], [20, 1.2, 4], [30, 1.2, 4], [34, 7.8, 4], [33.4, 10.4, 2], [16.6, 10.4, 2]], '#b03a2e', { lw: 1.6, rim: 'rgba(255,170,140,0.4)' });
+      g.strokeStyle = '#8c2d24'; g.lineWidth = LW_INT;
+      g.beginPath(); g.moveTo(21.5, 1.8); g.lineTo(23, 10.2); g.stroke();
+      g.beginPath(); g.moveTo(28.5, 1.8); g.lineTo(27, 10.2); g.stroke();
+      g.beginPath(); g.arc(25, 4.6, 1.4, 0, TAU); g.fillStyle = '#e8e0cc'; g.fill();
+      // dark tuft poking out front
+      g.strokeStyle = '#3a2e20'; g.lineWidth = 1.3;
+      g.beginPath(); g.moveTo(17.2, 9.6); g.quadraticCurveTo(16, 11, 16.8, 12.4); g.stroke();
     },
   };
 
@@ -399,36 +890,59 @@ const SPR = (() => {
   // ---------------- death scene props ----------------
   P.ghost = () => mk(36, 42, (g) => {
     g.globalAlpha = 0.92;
-    g.beginPath();
-    g.arc(18, 16, 13, Math.PI, 0);
-    g.lineTo(31, 32);
-    g.quadraticCurveTo(28.5, 27, 25.5, 32);
-    g.quadraticCurveTo(22.5, 37, 19.5, 32);
-    g.quadraticCurveTo(16.5, 27, 13.5, 32);
-    g.quadraticCurveTo(10.5, 37, 7.5, 32);
-    g.quadraticCurveTo(6, 29, 5, 32);
-    g.closePath();
-    g.fillStyle = '#eef2f4'; g.fill();
-    g.lineWidth = 1.5; g.strokeStyle = 'rgba(90,100,110,0.8)'; g.stroke();
+    const sheet = () => {
+      g.beginPath();
+      g.arc(18, 16, 13, Math.PI, 0);
+      g.lineTo(31, 32);
+      g.quadraticCurveTo(28.5, 27, 25.5, 32);
+      g.quadraticCurveTo(22.5, 37, 19.5, 32);
+      g.quadraticCurveTo(16.5, 27, 13.5, 32);
+      g.quadraticCurveTo(10.5, 37, 7.5, 32);
+      g.quadraticCurveTo(6, 29, 5, 32);
+      g.closePath();
+    };
+    sheet(); g.fillStyle = '#eef2f4'; g.fill();
+    g.save(); sheet(); g.clip();
+    // soft interior: cool shade low, holy-water glow (the accent), crown light
+    g.fillStyle = 'rgba(110,130,150,0.22)';
+    g.beginPath(); g.ellipse(18, 30, 14, 9, 0, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(126,200,232,0.2)';
+    g.beginPath(); g.ellipse(18, 25, 8.5, 6.5, 0, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.5)';
+    g.beginPath(); g.ellipse(13.5, 8.5, 6.5, 4, -0.3, 0, TAU); g.fill();
+    g.strokeStyle = 'rgba(126,200,232,0.5)'; g.lineWidth = 1.8; g.lineCap = 'round';
+    g.beginPath(); g.ellipse(18, 16, 11.6, 11.6, 0, Math.PI * 1.02, Math.PI * 1.62); g.stroke();
+    // hem shadows above the wave points
+    g.fillStyle = 'rgba(110,130,150,0.16)';
+    [[10.5, 30], [16.5, 30.5], [22.5, 30.5], [28.5, 30]].forEach(p2 => {
+      g.beginPath(); g.ellipse(p2[0], p2[1], 2, 1.1, 0, 0, TAU); g.fill();
+    });
+    g.restore();
+    sheet(); g.lineWidth = 1.5; g.strokeStyle = 'rgba(90,100,110,0.8)'; g.stroke();
     g.fillStyle = '#3a4148';
     g.beginPath(); g.ellipse(13.5, 15, 1.9, 3, 0, 0, TAU); g.fill();
     g.beginPath(); g.ellipse(22.5, 15, 1.9, 3, 0, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.8)';
+    g.beginPath(); g.arc(13, 14, 0.7, 0, TAU); g.fill();
+    g.beginPath(); g.arc(22, 14, 0.7, 0, TAU); g.fill();
     g.beginPath(); g.ellipse(18, 22, 2.4, 3.2, 0, 0, TAU);
     g.fillStyle = '#5a6168'; g.fill();
     g.globalAlpha = 1;
   });
 
   P.hat_max = () => mk(26, 13, (g) => {
-    blob(g, 13, 9, 12, 3, '#7a5230', { lw: 1.3 });
-    blob(g, 13, 4.6, 6.2, 3.8, '#7a5230', { lw: 1.3 });
+    lens(g, 13, 8.6, 12.4, 2.5, '#7a5230', 1.4);
+    apoly(g, [[6.8, 7, 2], [10.8, 1.4, 2], [15.2, 1.4, 2], [19.2, 7, 2]], '#7a5230', { lw: 1.4 });
+    g.strokeStyle = '#54371e'; g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(7.4, 7.6); g.lineTo(18.6, 7.6); g.stroke();
   });
   P.hat_junie = () => mk(24, 11, (g) => {
-    blob(g, 12, 6.5, 9.4, 3.8, '#3f6b35', { lw: 1.3, rot: -0.1 });
-    g.beginPath(); g.arc(12, 1.8, 1.3, 0, TAU); g.fillStyle = '#2c4b25'; g.fill();
+    apoly(g, [[0.8, 7.6, 2], [10.5, 1.8, 3], [22, 5.2, 2], [17.6, 8.8, 2], [3.6, 9.6, 2]], '#3f6b35', { lw: 1.4 });
+    g.beginPath(); g.arc(10.5, 2.4, 1.3, 0, TAU); g.fillStyle = '#2c4b25'; g.fill();
   });
   P.hat_gus = () => mk(24, 13, (g) => {
-    blob(g, 10, 7, 8.6, 4.6, '#b03a2e', { lw: 1.3 });
-    blob(g, 19, 8, 4.6, 2.2, '#8c2d24', { flat: true, lw: 1.2 });
+    apoly(g, [[2, 8.2, 3], [5.5, 2.4, 3], [14.5, 2.4, 3], [18, 8.2, 3], [17.4, 10.6, 2], [2.6, 10.6, 2]], '#b03a2e', { lw: 1.4 });
+    apoly(g, [[17.2, 5.4, 1.5], [22.8, 6.2, 2], [21.8, 9.4, 2], [16.8, 8.8, 1.5]], '#8c2d24', { flat: true, lw: 1.2 });
   });
 
   // ---------------- held weapons (point +x) ----------------
@@ -612,30 +1126,56 @@ const SPR = (() => {
   });
 
   P.brock = () => mk(50, 60, (g) => {
-    blob(g, 25, 40, 14, 13, '#6e6a62', { lw: 1.8 });                       // body
-    blob(g, 25, 44, 8, 6.4, '#8a867c', { flat: true, noline: true });
-    // sash
-    g.strokeStyle = '#3f6b35'; g.lineWidth = 5;
+    // torso: shoulders and a settled, comfortable taper
+    apoly(g, [[11, 30, 6], [25, 26.5, 7], [39, 30, 6], [40.5, 42, 5], [34, 52.5, 4], [16, 52.5, 4], [9.5, 42, 5]], '#6e6a62', { rim: RIM_COOL, mid: 'rgba(28,26,22,0.13)', shade: 'rgba(28,26,22,0.22)' });
+    blob(g, 25, 45.5, 8, 6, '#8a867c', { flat: true, noline: true });
+    furRow(g, 19, 33, 31, 33, 4, 3.6, 4, 0, ['#7c7870', '#6e6a62'], null);
+    // merit sash: the green accent, with stitch ticks
+    g.strokeStyle = '#3f6b35'; g.lineWidth = 5; g.lineCap = 'round';
     g.beginPath(); g.moveTo(15, 32); g.lineTo(33, 48); g.stroke();
+    g.strokeStyle = 'rgba(230,240,220,0.4)'; g.lineWidth = 0.8;
+    for (let i = 0; i < 5; i++) {
+      const t = 0.12 + i * 0.19, sx = 15 + 18 * t, sy = 32 + 16 * t;
+      g.beginPath(); g.moveTo(sx - 1.4, sy + 1.6); g.lineTo(sx - 2.6, sy + 2.8); g.stroke();
+    }
     g.fillStyle = '#f4c542';
-    [[19, 36], [24, 40], [29, 44]].forEach(d => { g.beginPath(); g.arc(d[0], d[1], 1.6, 0, TAU); g.fill(); });
-    blob(g, 16, 15, 4, 4.4, '#6e6a62');                                    // ears
-    blob(g, 34, 15, 4, 4.4, '#6e6a62');
-    blob(g, 25, 22, 12.5, 11, '#8a867c');                                  // head
-    // badger stripes
-    blob(g, 20, 20, 3.2, 8.4, '#2e2a26', { rot: -0.12, flat: true, noline: true });
-    blob(g, 30, 20, 3.2, 8.4, '#2e2a26', { rot: 0.12, flat: true, noline: true });
-    blob(g, 25, 21, 2.6, 9, '#e6ded0', { flat: true, noline: true });
+    [[19, 36], [24, 40], [29, 44]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 1.6, 0, TAU); g.fill();
+      g.fillStyle = 'rgba(255,255,255,0.6)';
+      g.beginPath(); g.arc(d[0] - 0.5, d[1] - 0.5, 0.5, 0, TAU); g.fill();
+      g.fillStyle = '#f4c542';
+    });
+    // ears
+    apoly(g, [[12, 11.5, 1.5], [19.5, 13, 2], [14, 19, 2.5]], '#6e6a62');
+    apoly(g, [[38, 11.5, 1.5], [30.5, 13, 2], [36, 19, 2.5]], '#6e6a62');
+    // head: broad brow settling to the snout
+    apoly(g, [[13, 13, 6], [37, 13, 6], [39.5, 22, 5], [32, 31, 4], [25, 33.5, 3], [18, 31, 4], [10.5, 22, 5]], '#8a867c', { rim: RIM_COOL, mid: 'rgba(28,26,22,0.12)', shade: 'rgba(28,26,22,0.2)' });
+    // badger stripes: soft-tapered bands over the eyes, bright center blaze
+    apoly(g, [[17, 13.6, 2.5], [23, 13.6, 2.5], [22.5, 27, 2], [17.5, 27, 2]], '#2e2a26', { flat: true, noline: true });
+    apoly(g, [[27, 13.6, 2.5], [33, 13.6, 2.5], [32.5, 27, 2], [27.5, 27, 2]], '#2e2a26', { flat: true, noline: true });
+    apoly(g, [[23.6, 13.6, 1.5], [26.4, 13.6, 1.5], [26, 30.5, 1.5], [24, 30.5, 1.5]], '#e6ded0', { flat: true, noline: true });
+    blob(g, 25, 15.5, 6, 1.8, 'rgba(255,255,255,0.2)', { flat: true, noline: true });
     cuteEye(g, 20, 19.5, 1.9);
     cuteEye(g, 30, 19.5, 1.9);
-    blob(g, 25, 28.5, 4.6, 3.2, '#e6ded0', { flat: true, noline: true });  // muzzle
+    // muzzle and nose with a shine
+    blob(g, 25, 28.5, 4.6, 3.2, '#e6ded0', { flat: true, noline: true });
     g.beginPath(); g.arc(25, 27.4, 1.6, 0, TAU); g.fillStyle = '#181008'; g.fill();
-    blob(g, 25, 8.6, 10.4, 2.6, '#7a5230', { lw: 1.3 });                   // campaign hat
-    blob(g, 25, 5, 5.4, 3.4, '#7a5230', { lw: 1.3 });
-    // whistle
+    g.fillStyle = 'rgba(255,255,255,0.6)';
+    g.beginPath(); g.arc(24.4, 26.9, 0.5, 0, TAU); g.fill();
+    // campaign hat: wedge brim, peaked crown, band
+    lens(g, 25, 9.1, 12.5, 2.7, '#7a5230', 1.6);
+    apoly(g, [[19.5, 7.4, 2], [23.2, 1.2, 2], [26.8, 1.2, 2], [30.5, 7.4, 2]], '#7a5230', { lw: 1.6 });
+    g.strokeStyle = '#54371e'; g.lineWidth = 1.4;
+    g.beginPath(); g.moveTo(20, 8); g.lineTo(30, 8); g.stroke();
+    g.beginPath(); g.moveTo(25, 1.8); g.lineTo(25, 6); g.stroke();
+    g.strokeStyle = 'rgba(255,224,170,0.35)'; g.lineWidth = 0.9;
+    g.beginPath(); g.moveTo(15, 9.2); g.quadraticCurveTo(20, 7.8, 24, 7.6); g.stroke();
+    // whistle on a lanyard
     g.strokeStyle = '#c9d2d8'; g.lineWidth = 1.2;
-    g.beginPath(); g.moveTo(25, 32); g.lineTo(25, 37); g.stroke();
+    g.beginPath(); g.moveTo(25, 33.5); g.lineTo(25, 37); g.stroke();
     g.fillStyle = '#c9d2d8'; g.beginPath(); g.arc(25, 38.5, 2, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.7)';
+    g.beginPath(); g.arc(24.4, 37.9, 0.6, 0, TAU); g.fill();
   });
 
   P.stick = () => mk(14, 26, (g) => {
@@ -1098,23 +1638,37 @@ const SPR = (() => {
     const hipY = yBottom - legLen - bounce;
 
     if (o.alpha != null) { ctx.save(); ctx.globalAlpha *= o.alpha; }
-    // legs
+    // segmented legs: thigh to a knee break, shin to the foot, wedge boot
+    const dir = o.flip ? -1 : 1;
     for (const s of [-1, 1]) {
       const swing = moving ? Math.sin(phase + (s > 0 ? 0 : Math.PI)) * 0.62 : 0.04 * s;
-      const fx = x + s * hipDx + Math.sin(swing) * legLen * (o.flip ? -1 : 1);
+      const hx = x + s * hipDx;
+      const fx = hx + Math.sin(swing) * legLen * dir;
       const lift = moving ? Math.max(0, Math.sin(phase + (s > 0 ? 0 : Math.PI) + Math.PI / 2)) * 3 * u : 0;
       const fy = yBottom - lift;
+      const kx = (hx + fx) / 2 + dir * (1.1 + (moving ? Math.abs(Math.cos(swing)) * 0.9 : 0.2)) * u;
+      const ky = (hipY + fy - 2 * u) / 2 + 0.4 * u;
       ctx.strokeStyle = skin;
-      ctx.lineWidth = 3.4 * u;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(x + s * hipDx, hipY);
-      ctx.lineTo(fx, fy - 2 * u);
-      ctx.stroke();
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.lineWidth = 3.6 * u;
+      ctx.beginPath(); ctx.moveTo(hx, hipY); ctx.lineTo(kx, ky); ctx.stroke();
+      ctx.lineWidth = 3 * u;
+      ctx.beginPath(); ctx.moveTo(kx, ky); ctx.lineTo(fx, fy - 2 * u); ctx.stroke();
+      // wedge boot with a toe and a darker sole line
       ctx.fillStyle = '#3a2e20';
       ctx.beginPath();
-      ctx.ellipse(fx + (o.flip ? -1 : 1) * u, fy - 1.4 * u, 3.4 * u, 2 * u, 0, 0, TAU);
-      ctx.fill();
+      ctx.moveTo(fx - dir * 2.4 * u, fy - 3.6 * u);
+      ctx.lineTo(fx + dir * 1.6 * u, fy - 3.6 * u);
+      ctx.lineTo(fx + dir * 4.4 * u, fy - 1.4 * u);
+      ctx.lineTo(fx + dir * 4.4 * u, fy);
+      ctx.lineTo(fx - dir * 2.8 * u, fy);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#241a10';
+      ctx.lineWidth = 0.9 * u;
+      ctx.beginPath();
+      ctx.moveTo(fx - dir * 2.6 * u, fy - 0.7 * u);
+      ctx.lineTo(fx + dir * 4.2 * u, fy - 0.7 * u);
+      ctx.stroke();
     }
     // torso leans into the run
     const lean = (o.lean != null ? o.lean : (moving ? 0.09 : 0)) * (o.flip ? -1 : 1);
