@@ -87,8 +87,9 @@ not mention stays binding.
    with a second wet specular at lower right and a lower lid crescent in
    a darker head tint (painters pass the tint). The eye pair owns at
    least a third of the head width. `cuteEye()` renders 15 percent
-   bigger, plus the lower lid highlight. Scouts look about eleven and
-   about to be brave.
+   bigger, plus the lower lid highlight. SCOUTS ARE TEENAGERS: see the
+   age amendment at the end of this file, which supersedes the "about
+   eleven" reading this line used to carry.
 7. **One accent each**: every creature carries exactly one saturated non
    brown accent. Pink inner ears, bone tusks, and the owl's gold beak and
    talons count. The raccoon carries a `#4a76a8` bandana scrap. The
@@ -120,6 +121,42 @@ not mention stays binding.
 - **Big moments chew time**: level ups, boss entrances, chests, and revives
   all use hitstop plus a screen flash in their signature color (gold for
   progress, red for threat).
+
+## Amendment 2026-07-28: the scouts are teenagers
+
+The story spine settled today (STORY_DESIGN.md, section 0) makes age a load
+bearing mechanic rather than a look. Belief is sight and it fades as you grow
+up: small children see everything and cannot be sent anywhere, ADULTS CANNOT
+SEE THE SIGNED AT ALL, and teenagers are the narrow window where somebody can
+still see and is finally old enough to carry a pack all night. The player
+characters are in that window and it is closing on them.
+
+SO MAX, JUNIE AND GUS ARE TEENAGERS. Every earlier line in this file that reads
+as "small child" is superseded. What actually changes:
+
+- PROPORTION. A child is roughly five heads tall with a large cranium and a
+  short neck. A teenager is closer to seven, with a longer neck, real
+  shoulders, and limbs that have outgrown the torso. Keep the faces big and
+  readable, because that rule outranks realism and always has, but the BODY
+  stops being a child's body.
+- POSTURE. Children stand square and open. Teenagers do not. Weight on one
+  leg, one shoulder lower, a slouch that a scoutmaster would correct. This is
+  most of the read at 40 px and it is free.
+- HOW GEAR SITS. A pack on a child rides high and looks borrowed. A pack on a
+  teenager sits on the hips and looks owned. Sleeves get pushed up. A
+  neckerchief gets worn slightly wrong on purpose rather than by accident,
+  which is a different kind of wrong from the way the Signed wear it.
+- WHAT DOES NOT CHANGE: cuteEye stays for friendlies, the silhouette contract
+  stays, one accent each stays, and they are still recognisably the same three
+  characters. This is an age pass, not a redesign.
+
+THE REASON THIS AMENDMENT EXISTS RATHER THAN A NOTE IN A TASK: the three scouts
+are painted once and then drawn in the camp, the portraits, the field guide,
+the select screen and every frame of every run. Getting the age wrong means
+painting them twice, and their voice recipes (tools/voice/voices.json, which
+pitch them up by three, five and one semitones with formant shift to sound like
+small bodies) are wrong for the same reason and must be re-tuned before any
+voice set is generated.
 
 ## Adding a new critter (checklist)
 

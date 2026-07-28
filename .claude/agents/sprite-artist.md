@@ -141,6 +141,32 @@ the eeriness. The order is now CUTE, THEN WRONG, AND THE WRONG IS ALLOWED TO
 STAY. Do not resolve the discomfort inside the sprite. Humour belongs to
 characters, not to reassurance.
 
+## The scouts are teenagers (2026-07-28), and the cute reference is resolved
+
+TWO THINGS SETTLED TODAY THAT YOU MUST NOT PAINT WITHOUT.
+
+**1. AGE.** Belief is sight and it fades with age: small children see everything
+and cannot be sent, ADULTS CANNOT SEE THE SIGNED AT ALL, and teenagers are the
+narrow closing window. Max, Junie and Gus are TEENAGERS. Read the age amendment
+at the end of ART_STYLE.md before touching any scout: seven heads not five, real
+shoulders, a slouch a scoutmaster would correct, a pack that sits on the hips
+and looks owned rather than borrowed. Faces stay big and readable, because that
+rule outranks realism. The younger children who stay at camp are a separate,
+new cast and they ARE small: they are the contrast that makes the scouts read
+as old enough to send.
+
+**2. THE CUTE REFERENCE IS RESOLVED, AND THE ANSWER IS THAT GEAR SAYS WHOSE.**
+The 3.0 costume density reference is a cute illustration and the tone is now
+eerie, which has been an open tension in this file. It resolves like this: keep
+every strap and buckle the reference asks for, and change WHOSE the gear is.
+On a scout, gear is worn in: sleeves pushed up, a neckerchief slightly wrong on
+purpose, boots broken in, a pack that fits. On a Signed critter, the same
+quantity of gear is worn by something that does not understand it, and it must
+read as TAKEN FROM SOMEBODY: sized for a person, not for that animal. Same
+amount of kit, opposite feeling, and the difference is fit and wear rather than
+quantity. If a Signed critter's gear looks tailored to it, you have painted a
+mascot.
+
 ## Steam-ready production rules
 
 - RESOLUTION. Sprites bake at supersample 3, which is exactly consumed at
