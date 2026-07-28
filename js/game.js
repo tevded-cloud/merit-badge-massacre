@@ -346,7 +346,7 @@ class Game {
         });
       }
     }
-    if ((window.SETTINGS ? SETTINGS.dmgNums : true) && (!o.small || dmg >= 9 || crit || Math.random() < 0.25)) {
+    if ((typeof SETTINGS !== 'undefined' ? SETTINGS.dmgNums : true) && (!o.small || dmg >= 9 || crit || Math.random() < 0.25)) {
       this.spawnNum(e.x + rand(-6, 6), e.y - e.r - 6, Math.round(dmg) + '', crit ? '#ffd94a' : (o.color || '#f0e8d8'), crit);
     }
     if (e.hp <= 0) this.killEnemy(e);
@@ -519,7 +519,7 @@ class Game {
 
   // ---------------- fx ----------------
   shakeAdd(m) {
-    if (window.SETTINGS && !SETTINGS.shake) return;
+    if (typeof SETTINGS !== 'undefined' && !SETTINGS.shake) return;
     this.shake = Math.min(14, this.shake + m);
   }
   spawnNum(x, y, txt, color, big) {
@@ -1174,7 +1174,7 @@ Game.prototype.gainCoins = function (n) {
 
 // debug hooks (harmless in production, invaluable in test)
 window.MBM = {
-  get game() { return window.App ? App.game : null; },
+  get game() { return typeof App !== 'undefined' && App ? App.game : null; },
   skip(t) { if (App.game) App.game.time = t; },
   god() { if (App.game) App.game.player.god = !App.game.player.god; return App.game.player.god; },
   levelup() { if (App.game) App.game.gainXP(App.game.xpNext + 1); },

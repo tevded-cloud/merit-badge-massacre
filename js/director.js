@@ -1581,7 +1581,7 @@
         if (e.burnTick <= 0) {
           e.burnTick += 0.5;
           e.hp -= e.burnDps * 0.5;
-          if ((window.SETTINGS ? SETTINGS.dmgNums : true) && Math.random() < 0.5) {
+          if ((typeof SETTINGS !== 'undefined' ? SETTINGS.dmgNums : true) && Math.random() < 0.5) {
             this.spawnNum(e.x + rand(-5, 5), e.y - e.r - 4, Math.round(e.burnDps * 0.5) + '', '#ff9a3c');
           }
           if (e.hp <= 0) { this.killEnemy(e); continue; }
