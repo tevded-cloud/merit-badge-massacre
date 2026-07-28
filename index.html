@@ -52,6 +52,16 @@
   .pip.rd { border-radius:50%; }
   .pip.di { border-radius:1px; transform:rotate(45deg); }
   .bgroup .pip.on { background:var(--cat); }
+  /* The active skill sits in the SKILLS group, next to the dodge. The sweep is
+     a conic gradient rewritten every frame from ui.js, so the dark wedge
+     retreats as the cooldown fills; ready is full colour plus a soft glow. */
+  .slot.skillslot { position:relative; }
+  .slot.skillslot canvas { opacity:0.45; }
+  .slot.skillslot.ready { border-color:#7ec8e8; box-shadow:0 0 10px rgba(126,200,232,0.45); }
+  .slot.skillslot.ready canvas { opacity:1; }
+  .sksweep { position:absolute; inset:0; border-radius:6px; pointer-events:none; }
+  .skkey { position:relative; z-index:1; font-size:8px; font-weight:bold; letter-spacing:1px;
+    line-height:1; margin-top:1px; color:var(--cat); opacity:0.85; text-shadow:0 1px 3px #000; }
   #toast { position:absolute; top:96px; left:50%; transform:translateX(-50%); font-size:20px; font-weight:bold; letter-spacing:2px; color:#ff5b45; text-shadow:0 0 16px rgba(220,60,40,0.8), 0 2px 4px #000; opacity:0; transition:opacity 0.25s; text-align:center; }
   #shophint { position:absolute; bottom:96px; left:50%; transform:translateX(-50%); font-size:13px; font-weight:bold; letter-spacing:3px; color:#f4c542;
     background:rgba(12,14,18,0.88); border:1px solid rgba(244,197,66,0.45); border-radius:8px; padding:7px 16px; text-shadow:0 2px 4px #000; }
@@ -154,7 +164,10 @@
   .jrow .jw { color:#4e5560; font-style:italic; letter-spacing:1px; }
   .jrow.filled .jw { color:#e8e0cc; font-style:normal; }
 
-  /* The Feat Board: one card per dare, sorted by how close you are. */
+  /* Merit badges: one card per dare, sorted by how close you are. Every class
+     and id below keeps its feat- name on purpose. The player-facing words are
+     the only thing that changed: four other files and every save already
+     written reference these exact names. */
   .featgrid { display:grid; grid-template-columns:repeat(3, 232px); gap:14px; justify-content:center; }
   .featcard { position:relative; overflow:hidden; text-align:left; padding:12px 13px 13px;
     background:linear-gradient(180deg,#151a22,#0e1218); border:2px solid #262d38; border-radius:12px;
@@ -313,6 +326,7 @@
     .glabel { font-size:8px; letter-spacing:1px; }
     .slot { width:28px; height:34px; }
     .slot canvas { width:24px; height:24px; }
+    .skkey { font-size:7px; letter-spacing:0; }
     #toast { top:84px; left:auto; right:10px; transform:none; text-align:right;
       max-width:52vw; font-size:15px; letter-spacing:1px; }
     #shophint { bottom:120px; font-size:11px; letter-spacing:2px; }
@@ -416,10 +430,10 @@
 
   <div id="feats" class="screen solid hidden">
     <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:22px 28px;max-height:88vh;overflow-y:auto;">
-      <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;">THE FEAT BOARD</div>
+      <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;">MERIT BADGES</div>
       <div id="featsum">0 of 0 claimed</div>
       <div class="featgrid" id="featsgrid"></div>
-      <div class="hint" style="margin:14px 0 4px;">Feats are permanent, and they open things up for good. Esc back to camp.</div>
+      <div class="hint" style="margin:14px 0 4px;">Merit badges are permanent, and they open things up for good. Esc back to camp.</div>
       <div class="btnrow"><button class="btn" id="btnfeatsback">BACK TO CAMP</button></div>
     </div>
   </div>
@@ -450,7 +464,7 @@
     </div>
   </div>
 
-  <div id="camphint" class="hidden">WASD walk &nbsp;|&nbsp; E interact &nbsp;|&nbsp; J field guide &nbsp;|&nbsp; B feat board &nbsp;|&nbsp; Esc leave camp</div>
+  <div id="camphint" class="hidden">WASD walk &nbsp;|&nbsp; E interact &nbsp;|&nbsp; J field guide &nbsp;|&nbsp; B merit badges &nbsp;|&nbsp; Esc leave camp</div>
 
   <div id="options" class="screen solid hidden">
     <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:26px 34px;min-width:420px;">

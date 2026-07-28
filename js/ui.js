@@ -6,7 +6,7 @@
 // spawns off the wall clock exactly as it used to.
 const MBM_FIELD = false;
 
-const INPUT = { keys: new Set(), mx: window.innerWidth / 2, my: window.innerHeight / 2, fire: false, mdown: false, dodge: false };
+const INPUT = { keys: new Set(), mx: window.innerWidth / 2, my: window.innerHeight / 2, fire: false, mdown: false, dodge: false, skill: false };
 
 const SETTINGS = { musicVol: 0.8, sfxVol: 0.8, voiceVol: 0.9, shake: true, dmgNums: true, subtitles: true };
 try {
@@ -26,6 +26,37 @@ const CAT = {
   skill: { label: 'SKILLS', color: '#7ec8e8', pip: 'di' },
   supply: { label: 'SUPPLY', color: '#9aa08c', pip: 'rd' },
 };
+
+// ---------------- the run's active skill ----------------
+// The one place this file asks game.js about the skill on the button. Every
+// read is feature tested, because the runtime lands in game.js on its own
+// schedule: a page where it has not landed yet must still show a HUD, a pause
+// panel and a touch layer with no active skill in them at all.
+function skillOf(g) {
+  if (!g || typeof g.skillInfo !== 'function') return null;
+  let info = null;
+  try { info = g.skillInfo(); } catch (e) { info = null; }
+  return (info && info.id) ? info : null;
+}
+
+// 1 when it can fire this instant, 0 when it cannot. A missing runtime reads
+// as ready, the way touch.js's dodge button treats a missing dodgeReady.
+function skillReadyOf(g) {
+  if (!g || typeof g.skillReady !== 'function') return 1;
+  let v = 1;
+  try { v = g.skillReady(); } catch (e) { v = 1; }
+  return v > 0 ? 1 : 0;
+}
+
+// How full the cooldown sweep is, 0 to 1. 1 means ready, and 1 when there is
+// no skill and when the number that came back was not a number.
+function skillFracOf(g) {
+  if (!g || typeof g.skillCdFrac !== 'function') return 1;
+  let v = 1;
+  try { v = g.skillCdFrac(); } catch (e) { v = 1; }
+  if (typeof v !== 'number' || !(v >= 0)) return 1;
+  return v > 1 ? 1 : v;
+}
 
 const App = {
   state: 'title',
@@ -148,7 +179,8 @@ function enterCamp() {
   Run.reset();
   AudioSys.stopMusic();
   // Walking back into camp is the moment the pools are trued up: anything a
-  // feat opened while you were out is in the level up rotation from here on.
+  // merit badge opened while you were out is in the level up rotation from
+  // here on.
   refreshFeats();
   if (!App.camp) App.camp = new Camp();
   setState('camp');
@@ -156,17 +188,19 @@ function enterCamp() {
 
 // The one place the rest of the UI asks feats.js to reconcile DATA with the
 // save. Feature tested, because a page with feats.js missing must still play.
+// Merit badge is the player's word for it; every identifier here stays feat-
+// shaped, because that is what the save and four other files call it.
 function syncFeatPools() {
   if (typeof Feats === 'undefined' || !Feats) return;
   try { Feats.syncPools(META); } catch (e) {}
 }
 
 // Claim anything that has come true, then true up the pools. Called walking
-// into camp and opening the board, because plenty of conditions finish without
-// a run in between: buying ranks moves spent, knocking moves birdhouses. A
-// card sitting at a hundred percent with no ribbon on it would be a bug the
-// player can see. The run end ceremony in showOver does its own call so it can
-// announce what landed.
+// into camp and opening the merit badge board, because plenty of conditions
+// finish without a run in between: buying ranks moves spent, knocking moves
+// birdhouses. A card sitting at a hundred percent with no ribbon on it would
+// be a bug the player can see. The run end ceremony in showOver does its own
+// call so it can announce what landed.
 function refreshFeats() {
   if (typeof Feats === 'undefined' || !Feats) return [];
   let earned = [];
@@ -484,11 +518,19 @@ function journalTroop() {
   return wrap;
 }
 
-// ---------------- the feat board ----------------
+// ---------------- merit badges ----------------
 // One card per dare. The board is sorted by nearness, so the top row is always
 // the three things you are closest to, and the cards you have claimed sit
-// under them wearing a ribbon. The three hidden ones stay dark at the bottom
-// and will not say what they are until the night they go gold.
+// under them wearing a ribbon and their own emblem. The three hidden ones stay
+// dark at the bottom and will not say what they are until the night they go
+// gold.
+//
+// The player calls these merit badges, which is what the game is named after.
+// The screen is MERIT BADGES; THE BADGE BOARD is the shop, up in openShop, and
+// the two must never blur. Underneath, nothing was renamed: openFeats,
+// buildFeats, refreshFeats, featFlash, the SCREENS entry 'feats' and every
+// featsomething element id and class stay exactly as they were, because the
+// save file and four other files already speak that language.
 //
 // featFlash carries the ids earned by the run that just ended, so the first
 // time you open the board afterwards those cards pulse and then stop.
@@ -497,7 +539,7 @@ const TAU_UI = Math.PI * 2;
 
 // A padlock, drawn the way every other icon in this UI is drawn. Rewards that
 // are not a weapon or a patch get this instead of a silhouette: open once the
-// feat is claimed, shut while it is not.
+// merit badge is claimed, shut while it is not.
 function drawLockGlyph(g, x, y, size, open) {
   const u = size / 28;
   g.save();
@@ -531,8 +573,8 @@ function openFeats() {
   setState('feats');
 }
 
-// Anything that earns a feat outside the run flow (the camp birdhouse) tells
-// the board about it here, so it flashes the next time the board is opened.
+// Anything that earns a merit badge outside the run flow (the camp birdhouse)
+// tells the board about it here, so it flashes the next time the board opens.
 function flagFeatFlash(ids) {
   if (!ids || !ids.length) return;
   for (const id of ids) if (featFlash.indexOf(id) === -1) featFlash.push(id);
@@ -543,17 +585,34 @@ function featRewardIcon(row) {
   ic.width = 80; ic.height = 80;
   const g = ic.getContext('2d');
   g.scale(2, 2);
-  const rw = row.reward || {};
-  const def = (typeof Feats !== 'undefined' && Feats) ? Feats.rewardDef(rw) : null;
-  const paints = (rw.kind === 'weapon' || rw.kind === 'patch') && def && def.icon;
-  if (paints) {
-    // Unearned rewards are painted faint: you can see the shape of the thing
-    // you are working toward without it looking like you already have it.
-    g.globalAlpha = row.done ? 1 : 0.4;
-    SPR.icon(g, def.icon, 20, 20, 34);
-    g.globalAlpha = 1;
-  } else {
-    drawLockGlyph(g, 20, 20, 30, row.done);
+
+  // An earned badge wears its own emblem, the same one the sash gets. Two
+  // feature tests, because both halves arrive from other files: feats.js may
+  // not know emblemFor, and sprites.js may not have painted this emblem yet.
+  // SPR.get throws for a painter nobody wrote, which is the existence check,
+  // and that throw is not allowed to escape a card.
+  const name = (typeof Feats !== 'undefined' && Feats && Feats.emblemFor) ? Feats.emblemFor(row.id) : null;
+  let painted = false;
+  if (row.done && name) {
+    try { SPR.get(name); SPR.draw(g, name, 20, 20, 36); painted = true; } catch (e) { painted = false; }
+  }
+
+  // Unearned is exactly what it always was, and so is an earned badge whose
+  // emblem is missing: the faint reward silhouette, or a padlock. The shut
+  // padlock is what keeps the three hidden ones secret until they go gold.
+  if (!painted) {
+    const rw = row.reward || {};
+    const def = (typeof Feats !== 'undefined' && Feats) ? Feats.rewardDef(rw) : null;
+    const paints = (rw.kind === 'weapon' || rw.kind === 'patch') && def && def.icon;
+    if (paints) {
+      // Unearned rewards are painted faint: you can see the shape of the thing
+      // you are working toward without it looking like you already have it.
+      g.globalAlpha = row.done ? 1 : 0.4;
+      SPR.icon(g, def.icon, 20, 20, 34);
+      g.globalAlpha = 1;
+    } else {
+      drawLockGlyph(g, 20, 20, 30, row.done);
+    }
   }
   return ic;
 }
@@ -781,8 +840,8 @@ function showOver(won) {
   META.credit(g, won);
   if (typeof Roster !== 'undefined' && Roster && typeof Roster.checkUnlocks === 'function') Roster.checkUnlocks();
 
-  // The claim ceremony. Feats are checked once, here, after the night's
-  // numbers are banked, so a feat about lifetime badges can land on the run
+  // The claim ceremony. Merit badges are checked once, here, after the night's
+  // numbers are banked, so a badge about lifetime badges can land on the run
   // that earned them. Anything new is announced and flagged for the board.
   let earned = [];
   if (typeof Feats !== 'undefined' && Feats) {
@@ -795,7 +854,7 @@ function showOver(won) {
     if (earned.length) {
       const names = earned.map(id => {
         const d = Feats.byId(id);
-        return 'EARNED: ' + String((d && d.name) || id).toUpperCase();
+        return 'MERIT BADGE EARNED: ' + String((d && d.name) || id).toUpperCase();
       });
       fe.textContent = '';
       names.forEach((t, i) => {
@@ -1027,6 +1086,21 @@ function buildPauseCols(g) {
     'skill', 'dodge', (d && d.name) || 'Dodge', g.dodgeReady ? g.dodgeReady() : charges, charges,
     d ? ('CD ' + d.cd.toFixed(2) + 's  IFRAME ' + d.iframe.toFixed(2) + 's') : ''
   )];
+  // The active skill, when the run has one, reads the same way the dodge does:
+  // one pip, lit when it can fire, and its cooldown on the stat line. The
+  // number comes from the table when the table carries one, and from the live
+  // sweep when it does not, so the line is never blank and never invented.
+  const sk = skillOf(g);
+  if (sk) {
+    const sdef = (typeof DATA !== 'undefined' && DATA && DATA.skills) ? DATA.skills[sk.id] : null;
+    const cd = (sdef && typeof sdef.cd === 'number' && sdef.cd > 0) ? sdef.cd : null;
+    const ready = skillReadyOf(g);
+    const pct = Math.round(skillFracOf(g) * 100) + '%';
+    const stat = cd != null
+      ? ('CD ' + cd.toFixed(2) + 's  ' + (ready ? 'READY' : pct))
+      : (ready ? 'READY' : pct + ' CHARGED');
+    skills.push(pauseEntry('skill', sk.icon, sk.name, ready, 1, stat));
+  }
 
   wrap.appendChild(pauseColumn('gear', gear));
   wrap.appendChild(pauseColumn('patch', patches));
@@ -1124,12 +1198,18 @@ function updateHUD() {
     bb.classList.add('hidden');
   }
 
-  const sig = g.weapons.map(w => w.id + w.lvl).join(',') + '|' + Object.keys(g.passives).map(id => id + g.passives[id]).join(',');
+  // The skill id is part of the signature: the SKILLS group grows a second
+  // slot when the run has a skill, so a rebuild has to happen the moment that
+  // changes, or the group would be a run behind for the rest of the night.
+  const sk = skillOf(g);
+  const sig = g.weapons.map(w => w.id + w.lvl).join(',') + '|' +
+    Object.keys(g.passives).map(id => id + g.passives[id]).join(',') + '|' + (sk ? sk.id : '');
   if (sig !== buildSig) {
     buildSig = sig;
     buildGroups(g);
   }
   updateSkillPips(g);
+  updateActiveSkill(g);
 }
 
 function makeSlot(cat, icon, lvl, max) {
@@ -1185,7 +1265,35 @@ function buildGroups(g) {
     const slot = makeSlot('skill', 'dodge', 0, charges);
     slot.lastChild.id = 'skillpips';
     slots.appendChild(slot);
+    const sk = skillOf(g);
+    if (sk) slots.appendChild(makeSkillSlot(sk));
   }));
+}
+
+// The active skill's slot: the dodge's neighbour in the SKILLS group, built
+// only for a run that actually has a skill. Everything that moves on it is
+// written by updateActiveSkill, from the per frame path.
+function makeSkillSlot(info) {
+  const slot = document.createElement('div');
+  slot.className = 'slot skillslot';
+  slot.id = 'activeskill';
+  const c = document.createElement('canvas');
+  c.width = 56; c.height = 56;
+  try { SPR.icon(c.getContext('2d'), info.icon, 28, 28, 44); } catch (e) {}
+  slot.appendChild(c);
+  const sweep = document.createElement('div');
+  sweep.className = 'sksweep';
+  sweep.id = 'skillsweep';
+  slot.appendChild(sweep);
+  // On a phone the button under the right thumb is the affordance, so a
+  // keyboard hint there would be taking up room to tell a lie.
+  if (!(typeof Touch !== 'undefined' && Touch && Touch.active)) {
+    const key = document.createElement('div');
+    key.className = 'skkey';
+    key.textContent = 'Q';
+    slot.appendChild(key);
+  }
+  return slot;
 }
 
 // The dodge pips are the only HUD state that moves every frame, so they are
@@ -1197,6 +1305,26 @@ function updateSkillPips(g) {
   for (let i = 0; i < pips.childElementCount; i++) {
     pips.children[i].classList.toggle('on', i < ready);
   }
+}
+
+// The cooldown sweep is a conic gradient rewritten as it moves: the dark wedge
+// covers what is still recharging and retreats clockwise as the skill fills,
+// so ready is a clean, full colour icon under a soft glow. Written from here
+// rather than from buildGroups, which only runs when the build changes, and
+// guarded for the slot being absent, because a run with no skill never builds
+// one. The gradient string is only rebuilt on a whole degree of change.
+function updateActiveSkill(g) {
+  const slot = $('activeskill');
+  if (!slot) return;
+  slot.classList.toggle('ready', skillReadyOf(g) > 0);
+  const sweep = $('skillsweep');
+  if (!sweep) return;
+  const deg = Math.round(skillFracOf(g) * 360);
+  if (sweep._deg === deg) return;
+  sweep._deg = deg;
+  sweep.style.background = deg >= 360 ? 'none' :
+    'conic-gradient(from 0deg, rgba(0,0,0,0) 0deg, rgba(0,0,0,0) ' + deg + 'deg, ' +
+    'rgba(6,8,11,0.78) ' + deg + 'deg, rgba(6,8,11,0.78) 360deg)';
 }
 
 function updateDodgePips(g) {
@@ -1243,6 +1371,169 @@ function drainToasts(dt) {
     el.style.opacity = toastTimer / 0.4;
   }
 }
+
+// ---------------- the skill button, on touch ----------------
+// js/touch.js owns the two sticks and the dodge button, and is frozen this
+// wave, so the skill's button is placed, painted and captured from here
+// without touching a line of it. Touch.layout() is its read only door.
+//
+// The geometry continues dodgeAnchor's reasoning one step further out. That
+// function puts the dodge button up and inboard of the aim stick along a 3-4-5
+// diagonal, so it can never sit under the aiming thumb. This button takes the
+// same step again, from the dodge button, at a distance of
+// buttonR + grab + SK_R + grab: far enough that the two drawn rings never
+// touch, and far enough that neither button's capture circle reaches into the
+// other, so a thumb going for one can never fire the other. A short screen
+// flattens the climb, and the gap is then bought back sideways rather than
+// given up, exactly the way dodgeAnchor buys it back.
+const SK_R = 32;      // drawn ring radius
+const SK_EDGE = 16;   // mirrors touch.js EDGE: nothing draws closer to a rim
+let skillFlash = 0;
+
+function clampUI(v, lo, hi) {
+  if (hi < lo) return (lo + hi) / 2;
+  return v < lo ? lo : (v > hi ? hi : v);
+}
+
+// Slide x along the row y sits on until it is `want` from `from`, heading in
+// `dir` (-1 left, +1 right). Returns x untouched when there is already room,
+// or when the screen is too tight for the clamp to give it.
+function pushClear(x, y, from, want, dir, minX, maxX) {
+  const dy = from.y - y;
+  if (Math.hypot(from.x - x, dy) >= want) return x;
+  const across = Math.sqrt(Math.max(0, want * want - dy * dy));
+  return clampUI(from.x + dir * across, minX, maxX);
+}
+
+function skillAnchor() {
+  if (typeof Touch === 'undefined' || !Touch || typeof Touch.layout !== 'function') return null;
+  const L = Touch.layout();
+  const w = window.innerWidth, h = window.innerHeight;
+  const minX = SK_R + SK_EDGE, maxX = w - SK_R - SK_EDGE;
+  const minY = SK_R + SK_EDGE, maxY = h - SK_R - SK_EDGE;
+  const b = L.dodge;
+  // Inboard is away from whichever edge the dodge button is leaning on.
+  const dir = b.x > w / 2 ? -1 : 1;
+  // Both capture circles end up strictly apart rather than exactly tangent:
+  // the two grabs put them edge to edge, the four buys a little daylight.
+  const want = L.buttonR + L.grab + SK_R + L.grab + 4;
+  const stickWant = L.radius + SK_R + 6;
+  // 0.6 and 0.8 are a whole 3-4-5 triangle, so the offset is exactly `want`
+  // long and the gap the button keeps is the gap it promises.
+  let x = clampUI(b.x + dir * want * 0.6, minX, maxX);
+  const y = clampUI(b.y - want * 0.8, minY, maxY);
+  x = pushClear(x, y, b, want, dir, minX, maxX);
+  // Then both stick rest anchors. The aim stick is bought away from inboard,
+  // the move stick sits on the far side and pushes back the other way, and
+  // neither push is allowed to walk into the dodge button: that clearance is
+  // the one thing that is never given up, so a push that would break it is
+  // dropped rather than taken.
+  const sticks = [{ at: L.aim, dir: dir }, { at: L.move, dir: -dir }];
+  for (const s of sticks) {
+    const cand = pushClear(x, y, s.at, stickWant, s.dir, minX, maxX);
+    if (Math.hypot(b.x - cand, b.y - y) >= want) x = cand;
+  }
+  return { x, y };
+}
+
+// Read only, in the same spirit as Touch.layout(): where the button landed and
+// every clearance it is actually keeping, so the geometry can be checked with
+// no screen and no thumbs.
+function skillButtonLayout() {
+  if (typeof Touch === 'undefined' || !Touch || typeof Touch.layout !== 'function') return null;
+  const at = skillAnchor();
+  if (!at) return null;
+  const L = Touch.layout();
+  const d = p => Math.hypot(at.x - p.x, at.y - p.y);
+  return {
+    x: at.x, y: at.y, r: SK_R, grab: SK_R + L.grab,
+    toDodge: d(L.dodge), toAim: d(L.aim), toMove: d(L.move),
+    // Air between the drawn rings, and between the two capture circles.
+    ringGapDodge: d(L.dodge) - (SK_R + L.buttonR),
+    ringGapAim: d(L.aim) - (SK_R + L.radius),
+    ringGapMove: d(L.move) - (SK_R + L.radius),
+    grabGapDodge: d(L.dodge) - (SK_R + L.grab) - (L.buttonR + L.grab),
+  };
+}
+window.skillButtonLayout = skillButtonLayout;
+
+// touch.js paints its ring exactly this way: a dark disc under a two pixel
+// stroke, both scaled off the one alpha.
+function skillRing(ctx, x, y, r, alpha, color) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, TAU_UI);
+  ctx.fillStyle = 'rgba(10,12,16,' + (alpha * 0.5).toFixed(3) + ')';
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = color.replace('ALPHA', alpha.toFixed(3));
+  ctx.stroke();
+}
+
+// DODGE is one word, so the skill gets one word too: the first, cut to the
+// width the ring can hold.
+function skillLabel(info) {
+  const raw = String((info && info.name) || 'SKILL').trim();
+  const first = raw.split(/\s+/)[0] || 'SKILL';
+  return first.toUpperCase().slice(0, 8);
+}
+
+// The one gate both the painting and the capture ask: sticks on, a run with a
+// skill in it, and the game actually being played.
+function touchSkillLive() {
+  if (typeof Touch === 'undefined' || !Touch || !Touch.active) return null;
+  if (App.state !== 'play') return null;
+  const info = skillOf(App.game);
+  if (!info) return null;
+  const at = skillAnchor();
+  return at ? { info, at } : null;
+}
+
+function drawSkillButton(ctx, dt) {
+  // The flash decays whether or not the button is on screen this frame.
+  if (skillFlash > 0) skillFlash = Math.max(0, skillFlash - (dt || 0));
+  if (!ctx) return;
+  const live = touchSkillLive();
+  if (!live) return;
+  const g = App.game;
+  const ready = skillReadyOf(g);
+  const frac = skillFracOf(g);
+  const color = ready > 0 ? 'rgba(126,200,232,ALPHA)' : 'rgba(140,150,165,ALPHA)';
+  const alpha = 0.35 + (skillFlash > 0 ? 0.25 : 0);
+  ctx.save();
+  skillRing(ctx, live.at.x, live.at.y, SK_R, alpha, color);
+  if (ready <= 0 && frac < 1) {
+    ctx.beginPath();
+    ctx.arc(live.at.x, live.at.y, SK_R - 6, -Math.PI / 2, -Math.PI / 2 + frac * TAU_UI);
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'rgba(126,200,232,0.5)';
+    ctx.stroke();
+  }
+  ctx.font = 'bold 12px Verdana, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(232,224,204,' + (ready > 0 ? 0.85 : 0.35) + ')';
+  ctx.fillText(skillLabel(live.info), live.at.x, live.at.y);
+  ctx.restore();
+}
+
+// Capture phase, on window, so this runs before the pointerdown listener
+// touch.js installed on the canvas: a thumb inside the button is claimed here
+// and the event is stopped dead, so touch.js never sees it and can never
+// mistake it for the start of a stick. Nothing below runs for a mouse or a
+// pen, or on a device where the sticks are off, so keyboard and mouse play is
+// untouched by all of it.
+window.addEventListener('pointerdown', (e) => {
+  if (e.pointerType !== 'touch') return;
+  const live = touchSkillLive();
+  if (!live) return;
+  const grab = SK_R + (Touch.layout().grab || 0);
+  if (Math.hypot(e.clientX - live.at.x, e.clientY - live.at.y) > grab) return;
+  e.preventDefault();
+  e.stopPropagation();
+  gesture();
+  INPUT.skill = true;
+  skillFlash = 0.18;
+}, { capture: true, passive: false });
 
 // ---------------- the find card ----------------
 // Picking something up off the trail is never an interruption. The card slides
@@ -1462,6 +1753,9 @@ window.addEventListener('keydown', (e) => {
     case 'play':
       if (e.code === 'Escape' || e.code === 'KeyP') showPause();
       if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') INPUT.dodge = true;
+      // Q is the active skill. It is an edge, like dodge: readInput consumes
+      // it and clears it, so holding the key does not hold the skill down.
+      if (e.code === 'KeyQ') INPUT.skill = true;
       if (e.code === 'KeyE' && shopHere(App.game)) { AudioSys.play('click'); openRunShop(); }
       break;
     case 'levelup':
@@ -1584,6 +1878,9 @@ function frame(now) {
   }
 
   Touch.render(ctx, window.innerWidth, window.innerHeight);
+  // The skill button belongs to the same canvas pass as the sticks, drawn
+  // right after them so it sits on top of nothing and under nothing.
+  drawSkillButton(ctx, dt);
 }
 
 // The Cookie Money icon is the same 20 pixels every frame: draw it once.

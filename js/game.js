@@ -24,6 +24,10 @@ function hash2(x, y) {
 
 const CELL = 72;
 
+// Reveille's speed burst. Applied where the player is integrated, never to
+// this.speed, which dodge.js reads and recalc() owns.
+const HASTE_MUL = 1.3;
+
 class Game {
   constructor(charId) {
     const c = DATA.characters[charId];
@@ -34,7 +38,9 @@ class Game {
       x: 0, y: 0, r: 11, hp: c.hp + hearty, maxhp: c.hp + hearty,
       face: 1, moving: false, lastDir: { x: 1, y: 0 },
       iframe: 0, god: false,
-      in: { moveX: 0, moveY: 0, aimX: 0, aimY: 0, fire: false, dodge: false },
+      // active skill state: Ember Drag's armed window, Reveille's speed burst
+      emberArm: 0, hasteT: 0,
+      in: { moveX: 0, moveY: 0, aimX: 0, aimY: 0, fire: false, dodge: false, skill: false },
     };
     this.players = [this.player];
 
@@ -63,6 +69,14 @@ class Game {
     this.weapons = [];
     this.passives = {};
     this.addWeapon(c.weapon);
+
+    // One active skill per night, on a button, granted here: the highest
+    // priority one the player has actually earned. A run with no merit badge
+    // for any of them gets null, and every skill hook below reads that as
+    // "there is no button" rather than as a reason to throw.
+    this.skill = this.grantSkill();
+    this.emberTrail = [];
+    this._wasDashing = false;
 
     this.enemies = [];
     this.shots = [];
@@ -619,7 +633,11 @@ class Game {
     const aimY = this.cam.y + (INPUT.my - H / 2) / ZOOM;
     const dodge = INPUT.dodge === true;
     if (dodge) INPUT.dodge = false;
-    p.in = { moveX, moveY, aimX, aimY, fire: INPUT.fire, dodge };
+    // The active skill is an edge exactly like the dodge: a key, a pad button
+    // or a thumb sets it, this is the one place it is spent.
+    const skill = INPUT.skill === true;
+    if (skill) INPUT.skill = false;
+    p.in = { moveX, moveY, aimX, aimY, fire: INPUT.fire, dodge, skill };
   }
 
   // ---------------- update ----------------
@@ -697,15 +715,19 @@ class Game {
     }
 
     this.updateDodge(dt);      // dodge.js, integrates its own movement
+    this.updateSkill(dt);      // the one active skill, below
 
-    // movement (a dash owns the player's position while it runs)
+    // movement (a dash owns the player's position while it runs). Reveille's
+    // haste is a temporary multiplier on the way out, never on this.speed
+    // itself: dodge.js reads that and recalc() owns it.
+    const spd = this.speed * (p.hasteT > 0 ? HASTE_MUL : 1);
     const ax = p.in.moveX, ay = p.in.moveY;
     p.moving = (ax !== 0 || ay !== 0);
     if (p.moving && !(p.dashT > 0)) {
-      p.x += ax * this.speed * dt;
-      p.y += ay * this.speed * dt;
+      p.x += ax * spd * dt;
+      p.y += ay * spd * dt;
       p.lastDir.x = ax; p.lastDir.y = ay;
-      this.walkPhase = (this.walkPhase || 0) + dt * (this.speed / 13);
+      this.walkPhase = (this.walkPhase || 0) + dt * (spd / 13);
     }
     if (this.room) {
       const q = Collide.resolveCircle(p.x, p.y, p.r, this.room.solids);
@@ -917,6 +939,46 @@ class Game {
   }
 
   // ---------------- projectiles ----------------
+
+  // The breakable solid standing in a blocked cell, damaged once, if there is
+  // one. A cell can be blocked by bare room geometry or by a boulder, and
+  // both of those still stop a shot dead with nothing to show for it, so this
+  // returns the prop it hit or null. Damage goes through dealDamage, which
+  // routes props to damageProp, so a projectile hit is worth exactly what a
+  // melee hit is worth, dmgMul and all.
+  damageSolidAt(s, dmg, o) {
+    if (!this.props.length) return null;
+    // The block grid stamps WHOLE cells, so a shot can die in a cell a prop
+    // stamped while sitting well outside that prop's own hit circle: a stump
+    // footprint 28 units wide blocks a 24 unit cell that reaches 20 units
+    // further out. Search wide enough to cover the cell, then confirm the
+    // point against the footprint that actually did the stamping. Testing the
+    // hit circle instead is what left one of BRAMBLEBUCK's four mounds
+    // unbreakable from one approach angle but not the others.
+    const cell = (this.room && this.room.grid && this.room.grid.cell) || 24;
+    const sr = s.r || 4;
+    const near = this.queryEnemies(s.x, s.y, sr + cell, true);
+    let best = null, bd = Infinity;
+    for (const e of near) {
+      if (!e.prop || e.dead) continue;
+      const def = e.def;
+      if (!def || !def.solid || !def.breakable) continue;
+      const box = e.solidBox;
+      if (box) {
+        // A stamped cell reaches at most one cell beyond the box it came from.
+        if (s.x < box.x0 - cell || s.x > box.x1 + cell) continue;
+        if (s.y < box.y0 - cell || s.y > box.y1 + cell) continue;
+      } else if (dist2(e.x, e.y, s.x, s.y) > (e.r + sr) * (e.r + sr)) {
+        continue;
+      }
+      const d = dist2(e.x, e.y, s.x, s.y);
+      if (d < bd) { bd = d; best = e; }
+    }
+    if (!best) return null;
+    this.dealDamage(best, dmg, Object.assign({ fx: s.x, fy: s.y }, o || {}));
+    return best;
+  }
+
   updateShots(dt) {
     const p = this.player;
     for (let i = this.shots.length - 1; i >= 0; i--) {
@@ -956,6 +1018,13 @@ class Game {
       s.life -= dt;
       if (s.life <= 0) { this.shots.splice(i, 1); continue; }
       if (this.room && Collide.blockedAt(this.room, s.x, s.y)) {
+        // A shot resolves what it hit before it dies. Most blocked cells in a
+        // room are blocked BY something: a stump, a logpile, a warren mound.
+        // Killing the shot on the cell first meant no projectile could ever
+        // damage a solid prop, which left a slingshot or roaster build unable
+        // to break BRAMBLEBUCK's mounds (an unwinnable act one) or to open the
+        // cache under the logpile in a1_l_cacheline.
+        this.damageSolidAt(s, s.dmg, { knock: 70 });
         this.spawnPuff(s.x, s.y, 2);
         this.shots.splice(i, 1);
         continue;
@@ -1037,7 +1106,18 @@ class Game {
         const d = Math.hypot(e.x - rg.x, e.y - rg.y);
         if (d <= rg.r + e.r && d >= prev - e.r - 6) {
           rg.hit.add(e);
-          this.dealDamage(e, rg.dmg, { knock: rg.knock, fx: rg.x, fy: rg.y });
+          // A ring that carries damage is a weapon (the Camp Bugle) and goes
+          // through dealDamage exactly as it always has. A ring with no damage
+          // is a shout (Reveille): it must not spawn a "0" over anybody, must
+          // not play a hit sound, and must leave props standing, so it shoves
+          // by hand and lets the stun below do the rest.
+          if (rg.dmg > 0) {
+            this.dealDamage(e, rg.dmg, { knock: rg.knock, fx: rg.x, fy: rg.y });
+          } else if (!e.prop && rg.knock && !e.boss) {
+            const kd = Math.max(12, d);
+            e.kx = (e.kx || 0) + (e.x - rg.x) / kd * rg.knock;
+            e.ky = (e.ky || 0) + (e.y - rg.y) / kd * rg.knock;
+          }
           if (rg.stun > 0 && !e.boss) e.stunT = Math.max(e.stunT || 0, rg.stun);
         }
       }
@@ -1172,6 +1252,280 @@ Game.prototype.gainCoins = function (n) {
   this.coins += n;
 };
 
+// ---------------------------------------------------------------- skills ---
+// The active skill: one per run, on a button, earned with a merit badge.
+// DATA.skills carries the name, the icon and the description; the numbers live
+// here because data.js is the balance pass's file, not this one's. An id being
+// present in DATA.skills IS the unlock gate: feats.js physically lifts a locked
+// def out of that table and parks it in its vault until the badge lands.
+(function () {
+
+  // Priority order. The first one the player has earned is the one the night
+  // grants: a run never carries two.
+  const SKILL_ORDER = ['emberdrag', 'reveille', 'fieldstrip'];
+
+  // Seconds. Deliberately NOT multiplied by this.cdMul: the cooldown ring on
+  // the HUD should be honest about the number, and tuning is not this file's.
+  const SKILL_CD = { emberdrag: 10, reveille: 14, fieldstrip: 18 };
+
+  const ARM_WINDOW = 3;        // Ember Drag: seconds to start a dash in
+  const NODE_LIFE = 2.4;       // seconds a patch of the lane keeps burning
+  const NODE_R = 22;
+  const NODE_GAP = 14;         // minimum spacing, so the lane is even
+  const NODE_TICK = 0.2;       // seconds between a node's bites
+  const NODE_BURN_DPS = 9;
+  const NODE_BURN_DUR = 2.0;
+  const NODE_DMG = 4;
+  const TRAIL_MAX = 120;       // defensive cap, a dash drops well under ten
+  const EMBER_RATE = 25;       // embers a second for the whole lane, any length
+  const PART_CAP = 420;        // the budget guard used everywhere in this file
+
+  const STRIP_MAX = 30;        // Field Strip: coins spent at most, 1 hp each
+  const REVEILLE_HASTE = 2.2;  // seconds of the speed burst
+  const REVEILLE_STUN = 1.2;
+
+  // ------------------------------------------------------------ unlocking ---
+
+  // The def, wherever it currently lives. Normally DATA.skills; the vault is
+  // read as a fallback so a page that has not run syncPools yet still works.
+  function defOf(id) {
+    if (typeof DATA !== 'undefined' && DATA && DATA.skills && DATA.skills[id]) return DATA.skills[id];
+    if (typeof Feats !== 'undefined' && Feats && typeof Feats.rewardDef === 'function') {
+      try { return Feats.rewardDef({ kind: 'skill', id }) || null; } catch (e) { return null; }
+    }
+    return null;
+  }
+
+  // Earned? Present and unlocked in DATA.skills is the real gate. The feats
+  // ledger is asked as well, and both are feature tested, so a page with
+  // feats.js missing (or a save that has never heard of any of this) plays.
+  function unlocked(id) {
+    if (typeof DATA !== 'undefined' && DATA && DATA.skills && DATA.skills[id] && !DATA.skills[id].locked) return true;
+    if (typeof Feats !== 'undefined' && Feats && typeof Feats.isUnlocked === 'function') {
+      try {
+        const m = (typeof META !== 'undefined') ? META : null;
+        if (Feats.isUnlocked('skill', id, m)) return true;
+      } catch (e) { /* a save shaped like nothing we know is simply not earned */ }
+    }
+    return false;
+  }
+
+  function build(id) {
+    const def = defOf(id);
+    if (!def) return null;
+    return { id, def, cd: SKILL_CD[id] || 12, t: 0 };
+  }
+
+  // Statics, so the debug door can report without a live run.
+  Game.skillIds = function () { return SKILL_ORDER.slice(); };
+  Game.skillUnlocked = function (id) { return unlocked(id); };
+  Game.skillPick = function () {
+    for (const id of SKILL_ORDER) if (unlocked(id) && defOf(id)) return id;
+    return null;
+  };
+
+  Game.prototype.grantSkill = function () {
+    const id = Game.skillPick();
+    return id ? build(id) : null;
+  };
+
+  // Debug only: force the live run's skill. Builds the same shape the
+  // constructor builds and touches nothing on the save.
+  Game.prototype.setSkill = function (id) {
+    if (id == null) { this.skill = null; return null; }
+    const s = build(id);
+    if (!s) return null;
+    this.skill = s;
+    return s;
+  };
+
+  // ----------------------------------------------------------- HUD hooks ---
+  // Deliberately shaped like dodgeReady and dodgeCdFrac in dodge.js.
+
+  Game.prototype.skillInfo = function () {
+    const s = this.skill;
+    if (!s) return null;
+    const def = s.def || {};
+    return { id: s.id, name: def.name || s.id, icon: def.icon || 'knives' };
+  };
+
+  Game.prototype.skillReady = function () {
+    const s = this.skill;
+    return (s && s.t <= 0) ? 1 : 0;
+  };
+
+  Game.prototype.skillCdFrac = function () {
+    const s = this.skill;
+    if (!s) return 1;
+    if (s.t <= 0) return 1;
+    const cd = s.cd || SKILL_CD[s.id] || 12;
+    return 1 - s.t / cd;
+  };
+
+  // ---------------------------------------------------------------- tick ---
+
+  Game.prototype.updateSkill = function (dt) {
+    const p = this.player;
+    const dashing = p.dashT > 0;
+
+    // Ember Drag hooks the dash from out here, because dodge.js owns the dash
+    // and is not this unit's file. updateDodge already ran this frame, so a
+    // dash that started this frame is visible right now as p.dashT > 0.
+    if (dashing && !this._wasDashing) {
+      if (p.emberArm > 0) {
+        p.emberArm = 0;
+        this._emberDash = true;
+        this.dropEmberNode(p.x, p.y, true);
+      }
+    }
+    if (!dashing) this._emberDash = false;
+    this._wasDashing = dashing;
+    if (this._emberDash && dashing) this.dropEmberNode(p.x, p.y, false);
+
+    this.updateEmberTrail(dt);
+
+    // timers. The armed window is ticked after the edge check, so a dash that
+    // starts on the very frame it lapses still lights.
+    if (p.emberArm > 0) p.emberArm = Math.max(0, p.emberArm - dt);
+    if (p.hasteT > 0) {
+      p.hasteT = Math.max(0, p.hasteT - dt);
+      this._hasteSpark = (this._hasteSpark || 0) - dt;
+      const movingNow = p.in && (p.in.moveX !== 0 || p.in.moveY !== 0);
+      if (movingNow && this._hasteSpark <= 0 && this.parts.length < PART_CAP) {
+        this._hasteSpark = 0.05;
+        this.parts.push({
+          kind: 'spark', x: p.x + rand(-5, 5), y: p.y + rand(-2, 8),
+          vx: rand(-16, 16), vy: -rand(8, 34),
+          t: 0, life: rand(0.18, 0.36), size: rand(1.1, 2), color: '#f4c542',
+        });
+      }
+    }
+
+    const s = this.skill;
+    if (s && s.t > 0) s.t = Math.max(0, s.t - dt);
+
+    if (p.in && p.in.skill) this.fireSkill();
+  };
+
+  // --------------------------------------------------------- the trigger ---
+
+  Game.prototype.fireSkill = function () {
+    const s = this.skill;
+    if (!s) return false;
+    if (this.phase !== 'play') return false;
+    if (s.t > 0) return false;
+
+    let fired = false;
+    if (s.id === 'emberdrag') fired = this.fireEmberDrag();
+    else if (s.id === 'fieldstrip') fired = this.fireFieldStrip();
+    else if (s.id === 'reveille') fired = this.fireReveille();
+
+    if (!fired) return false;
+    s.t = s.cd;                 // the cooldown starts the moment it fires
+    return true;
+  };
+
+  // Ember Drag: firing does not make fire, it arms the next dash. Arming is
+  // the cost, so a window that lapses unused still spent the cooldown.
+  Game.prototype.fireEmberDrag = function () {
+    const p = this.player;
+    p.emberArm = ARM_WINDOW;
+    this.spawnPuff(p.x, p.y, 6);
+    AudioSys.play('flame');
+    return true;
+  };
+
+  // Field Strip: unspent Cookie Money straight into hit points. Refuses, and
+  // charges nothing, when there is no money or no wound to spend it on.
+  Game.prototype.fireFieldStrip = function () {
+    const p = this.player;
+    const n = Math.min(STRIP_MAX, Math.floor(this.coins), Math.ceil(p.maxhp - p.hp));
+    if (!(n > 0)) return false;
+    this.coins -= n;
+    p.hp = Math.min(p.maxhp, p.hp + n);
+    this.spawnNum(p.x, p.y - 26, '+' + n, '#7ec87e', true);
+    this.toast('FIELD STRIP  ' + n + ' COOKIE MONEY', '#7ec87e');
+    AudioSys.play('heal');
+    this.spawnBurst(p.x, p.y, '#7ec87e', 16);
+    this.parts.push({ kind: 'ring', x: p.x, y: p.y - 8, t: 0, life: 0.45, size: 70 });
+    return true;
+  };
+
+  // Reveille: one blast, everything that is not a boss stops, and the bugler
+  // gets a couple of seconds to be somewhere else.
+  Game.prototype.fireReveille = function () {
+    const p = this.player;
+    this.rings.push({
+      x: p.x, y: p.y, r: 14, max: 340, speed: 560,
+      dmg: 0, knock: 90, stun: REVEILLE_STUN, hit: new Set(),
+    });
+    p.hasteT = REVEILLE_HASTE;
+    AudioSys.play('bugle');
+    this.shakeAdd(4);
+    this.spawnBurst(p.x, p.y, '#f4c542', 14);
+    this.parts.push({ kind: 'ring', x: p.x, y: p.y - 8, t: 0, life: 0.5, size: 90 });
+    this.toast('REVEILLE', '#f4c542');
+    return true;
+  };
+
+  // ---------------------------------------------------------- the burning ---
+
+  // One patch of burning ground. Spacing is measured against the last node so
+  // the lane is even however fast the dash is going.
+  Game.prototype.dropEmberNode = function (x, y, force) {
+    const trail = this.emberTrail || (this.emberTrail = []);
+    if (!force && trail.length) {
+      const last = trail[trail.length - 1];
+      if (dist2(last.x, last.y, x, y) < NODE_GAP * NODE_GAP) return;
+    }
+    if (trail.length >= TRAIL_MAX) trail.shift();
+    // The room a patch was lit in. Every room is built around the origin, so
+    // without this a lane lit on the way to a door would freeze through the
+    // transition (nothing ticks outside the play phase) and light up again at
+    // the same coordinates in the next room. Burning ground belongs to the
+    // floor it was burned into.
+    trail.push({ x, y, t: 0, life: NODE_LIFE, r: NODE_R, tick: 0, room: this.room || null });
+    if (this.parts.length < PART_CAP) {
+      this.parts.push({ kind: 'ring', x, y, t: 0, life: 0.35, size: NODE_R * 1.1 });
+    }
+  };
+
+  Game.prototype.updateEmberTrail = function (dt) {
+    const trail = this.emberTrail;
+    if (!trail || !trail.length) return;
+    // The whole lane emits at about the same rate whatever its length, so a
+    // long drag is a long fire rather than a brighter one.
+    const emit = Math.min(1, (EMBER_RATE / trail.length) * dt);
+    for (let i = trail.length - 1; i >= 0; i--) {
+      const nd = trail[i];
+      nd.t += dt;
+      if (nd.t >= nd.life || nd.room !== (this.room || null)) { trail.splice(i, 1); continue; }
+
+      nd.tick -= dt;
+      if (nd.tick <= 0) {
+        nd.tick += NODE_TICK;
+        const hits = this.queryEnemies(nd.x, nd.y, nd.r, true);
+        for (const e of hits) {
+          // applyBurn is written for critters; dealDamage routes props to
+          // damageProp on its own, so the second call is safe for both.
+          if (!e.prop) this.applyBurn(e, NODE_BURN_DPS, NODE_BURN_DUR);
+          this.dealDamage(e, NODE_DMG, { small: true, quiet: true, noCrit: true, color: '#ffb347' });
+        }
+      }
+
+      if (this.parts.length < PART_CAP && Math.random() < emit) {
+        const a = rand(0, TAU), rr = Math.sqrt(Math.random()) * nd.r;
+        this.parts.push({
+          kind: 'ember', x: nd.x + Math.cos(a) * rr, y: nd.y + Math.sin(a) * rr,
+          vx: rand(-12, 12), vy: -rand(14, 40),
+          t: 0, life: rand(0.35, 0.7), size: rand(1.3, 2.6),
+        });
+      }
+    }
+  };
+
+})();
+
 // debug hooks (harmless in production, invaluable in test)
 window.MBM = {
   get game() { return typeof App !== 'undefined' && App ? App.game : null; },
@@ -1205,6 +1559,34 @@ window.MBM = {
     }
   },
   coins(n) { if (App.game) App.game.gainCoins(n); },
+  skill(id) {
+    // Debug: hand the live run an active skill without earning its merit
+    // badge first. Live game object only, nothing is written to the save.
+    const g = this.game;
+    if (!g) { console.log('skill needs a live run'); return null; }
+    if (id == null) {
+      console.log('skill(id) takes one of: ' + Game.skillIds().join(', ') +
+        '. current: ' + (g.skill ? g.skill.id : 'none'));
+      return g.skill ? g.skill.id : null;
+    }
+    const s = g.setSkill(id);
+    if (!s) { console.log('no skill called ' + id + ', try: ' + Game.skillIds().join(', ')); return null; }
+    console.log('skill set to ' + s.id + ' (' + (s.def.name || s.id) + '), cooldown ' + s.cd + 's, ready now');
+    return s.id;
+  },
+  skills() {
+    // Debug: what the badge board has actually opened, and what a fresh run
+    // would therefore grant. Reads only.
+    const ids = Game.skillIds();
+    for (const id of ids) {
+      console.log(id + ': ' + (Game.skillUnlocked(id) ? 'unlocked' : 'locked'));
+    }
+    const pick = Game.skillPick();
+    console.log('a fresh run would grant: ' + (pick || 'nothing'));
+    const g = this.game;
+    if (g) console.log('this run is carrying: ' + (g.skill ? g.skill.id : 'nothing'));
+    return pick;
+  },
   find() {
     // Debug: hand over the next thing this act owes you, card and all.
     if (!App.game) { console.log('find needs a live run'); return null; }

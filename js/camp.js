@@ -50,6 +50,27 @@ const CAMP_BANNERS = [
 ];
 const CAMP_TENTCOLS = ['#c0392b', '#4a76a8', '#5c7248', '#f4c542'];
 
+// The merit badge sash hanging in the cabin. One description of the cloth,
+// read by the painter, by every slot and by the line you get for looking at
+// it, so a stitched ring can never end up off the cloth it is stitched into.
+// x is 4 units right of the obvious spot because the cabin's left wall slopes
+// in from -230 at the ceiling to -190 at the floor, and the band's bottom left
+// corner would otherwise cross that corner line.
+const CAMP_SASH = {
+  cx: -160,          // centreline of the band at the top
+  foldTop: -157,     // the roll of cloth that goes over the peg
+  top: -150,         // where the front of the band starts, under the fold
+  bot: -68,          // the middle of the cut end
+  hwTop: 29, hwBot: 27,
+  rows: [-139, -124, -109, -94, -79],
+  col: 15.5,         // column pitch either side of the centreline
+  emb: 13,           // emblem draw size
+  ring: 7.8,         // outer radius of the stitched ring
+  slots: 15,         // fifteen loops, fourteen badges, one left for the needle
+  cloth: '#4d6b30', clothLit: '#688a44', clothDark: '#35491f', back: '#33471e',
+  thread: '#31441d', hem: '#c9a86a',
+};
+
 function campMeta() {
   const c = (typeof META !== 'undefined' && META && META.camp && typeof META.camp === 'object') ? META.camp : null;
   return {
@@ -58,10 +79,13 @@ function campMeta() {
   };
 }
 
-// Feats change what stands in the camp: earned cosmetics turn up as furniture
-// and the totem grows a face per carving. Both are baked, so the bake has to
-// know when they move. This signature is compared against the baked one every
-// frame, exactly the way the growth tier already is.
+// Merit badges change what stands in the camp: earned cosmetics turn up as
+// furniture and the totem grows a face per carving. Both are baked, so the
+// bake has to know when they move. This signature is compared against the
+// baked one every frame, exactly the way the growth tier already is. The
+// identifiers here still say feat on purpose: only the player facing words
+// changed, and four other files plus every save already written depend on
+// these exact names.
 function campFeatSig() {
   let s = '0:0';
   try {
@@ -546,6 +570,8 @@ class Camp {
     this.bakedTier = -1;
     this.bakedFeatSig = null;
     this._interior = null;
+    this._sashCache = null;
+    this._sashSig = '';
     this._bake();
     this.buildIdlers();
     this.buildCritter();
@@ -719,6 +745,7 @@ class Camp {
         { id: 'pinboard', x: -20, y: -52, r: 32, label: 'Read the pinboard' },
         { id: 'bunk', x: -108, y: -6, r: 30, label: 'Sit a minute' },
         { id: 'window', x: 108, y: -50, r: 26, label: 'Look out the window' },
+        { id: 'sash', x: -168, y: -50, r: 34, label: 'Look at the sash' },
       ];
     }
     const tier = this.tier();
@@ -728,10 +755,12 @@ class Camp {
       { id: 'qm', x: 35, y: -340, r: 38, label: 'Talk to the Quartermaster' },
       { id: 'sign', x: 600, y: -30, r: 50, label: 'Take the trail as ' + DATA.characters[META.selected].name },
     ];
-    s.push({ id: 'featboard', x: -118, y: -300, r: 36, label: 'Read the Feat Board' });
+    // the id and the interact type stay 'featboard' and 'feats': four other
+    // files read both. Only the words on the prompt changed.
+    s.push({ id: 'featboard', x: -118, y: -300, r: 36, label: 'Read the merit badges' });
     s.push({ id: 'birdhouse', x: -540, y: -350, r: 30, label: 'Knock on the birdhouse' });
     if (campTotemOpen()) s.push({ id: 'totem', x: 330, y: -70, r: 42, label: 'Carve the totem' });
-    else s.push({ id: 'totemhint', x: 330, y: -70, r: 42, label: 'Look at the log' });
+    else s.push({ id: 'totemhint', x: 330, y: -70, r: 42, label: 'Look at the tarp' });
     if (tier >= 1) s.push({ id: 'cabindoor', x: 520, y: -292, r: 30, label: 'Step inside the cabin' });
     else s.push({ id: 'cabinhint', x: 480, y: -146, r: 40, label: 'Read the sign' });
     if (tier < 2) s.push({ id: 'lakehint', x: 0, y: 222, r: 40, label: 'Read the sign' });
@@ -1191,8 +1220,9 @@ class Camp {
     }
   }
 
-  // The one feat counter the camp owns. Knocking is free, does nothing, and
-  // is the only thing in Camp Hearthwood with a running total attached to it.
+  // The one merit badge counter the camp owns (the save key is still
+  // counters.birdhouses, unchanged). Knocking is free, does nothing, and is
+  // the only thing in Camp Hearthwood with a running total attached to it.
   knockBirdhouse() {
     const lines = [
       'You knock. Nothing. It is a birdhouse.',
@@ -1219,7 +1249,7 @@ class Camp {
       try { if (typeof flagFeatFlash === 'function') flagFeatFlash(earned); } catch (e) {}
       const def = (typeof Feats !== 'undefined' && Feats) ? Feats.byId(earned[0]) : null;
       const name = (def && def.name) || earned[0];
-      this.msg = { text: lines[6] + '  EARNED: ' + String(name).toUpperCase() + '.', t: 7 };
+      this.msg = { text: lines[6] + '  MERIT BADGE EARNED: ' + String(name).toUpperCase() + '.', t: 7 };
       try { AudioSys.play('levelup'); } catch (e) {}
       return null;
     }
@@ -1251,6 +1281,22 @@ class Camp {
         this.msg = { text: 'Fireflies stitch the dark outside the glass. The treeline watches back.', t: 5 };
         return null;
       }
+      if (id === 'sash') {
+        const list = this.sashList();
+        const total = list.length;
+        let n = 0, last = '';
+        for (const it of list) if (it.done) { n++; if (it.name) last = it.name; }
+        if (!n) {
+          this.msg = { text: total + ' rings of thread, all of them empty. Somebody made the room first.', t: 5 };
+        } else if (n >= total) {
+          this.msg = { text: 'All ' + total + ' sewn on. Not one empty ring left on it.', t: 5 };
+        } else if (!last) {
+          this.msg = { text: n + ' of ' + total + ' sewn on. The rest is thread.', t: 5 };
+        } else {
+          this.msg = { text: n + ' of ' + total + ' sewn on, the last of them "' + String(last).toUpperCase() + '". The rest is thread.', t: 6 };
+        }
+        return null;
+      }
       if (id === 'pinboard') {
         const keys = Object.keys((META && META.journal) || {});
         if (!keys.length) {
@@ -1270,11 +1316,19 @@ class Camp {
     if (id === 'featboard') return { type: 'feats' };
     if (id === 'totem') return { type: 'totem' };
     if (id === 'totemhint') {
-      this.msg = { text: 'A cedar log, upright, bark still on. Brock: "Carve it when you have seen a sunrise. Not before. Carving it before is how you get a worse sunrise."', t: 6 };
+      this.msg = { text: 'Something lumpy under a weathered tarp, roped down at the corners. The canvas is stiff with old rain. Brock, from the fire: "Leave it. It comes off when you have seen a sunrise, and not one hour before."', t: 6 };
       return null;
     }
     if (id === 'birdhouse') return this.knockBirdhouse();
-    if (id === 'fire') return { type: 'talk', line: brockLine(), speaker: 'SCOUTMASTER BROCK' };
+    if (id === 'fire') {
+      // The tarp coming off the pole is worth exactly one line, once ever, and
+      // the Totem owns both the line and the flag that spends it. An older
+      // feats.js has no revealLine at all, which reads as nothing to say.
+      let ln = null;
+      try { if (typeof Totem !== 'undefined' && Totem && Totem.revealLine) ln = Totem.revealLine(META); } catch (e) { ln = null; }
+      if (ln) return { type: 'talk', line: ln, speaker: 'SCOUTMASTER BROCK' };
+      return { type: 'talk', line: brockLine(), speaker: 'SCOUTMASTER BROCK' };
+    }
     if (id === 'qm') return { type: 'talk', line: quartermasterLine(), speaker: 'THE QUARTERMASTER' };
     if (id === 'critter') return { type: 'talk', line: critterLine(), speaker: 'A SMALL SQUIRREL' };
     if (id === 'cabindoor') { this.enterCabin(); return null; }
@@ -1901,9 +1955,11 @@ class Camp {
       SPR.drawBottom(ctx, 'basket', 186, -330, 26);
     });
 
-    // the feat rack, standing in front of the stall: a crossbar with a sash on
-    // it and one tin badge per feat claimed, so the camp says out loud how far
-    // along the board you are before you ever open it.
+    // the merit badge rack, standing in front of the stall: a crossbar with a
+    // sash on it and one tin badge per merit badge claimed, so the camp says
+    // out loud how far along the board you are before you ever open it. The
+    // method is still called renderFeatRack: the name is referenced elsewhere
+    // in this file and renaming it buys nothing.
     push(-300, (ctx) => {
       shadow(ctx, -118, -300, 14);
       this.renderFeatRack(ctx, -118, -300);
@@ -2145,10 +2201,11 @@ class Camp {
     this.furn = F;
   }
 
-  // --------------------------------------------- feat rack and the totem ---
+  // -------------------------------------- merit badge rack and the totem ---
   // A crossbar with a hand sewn sash over it and one tin badge per claimed
-  // feat, up to the whole board. Reading the camp should tell you where you
-  // are before you open a single screen.
+  // merit badge, up to the whole board. Reading the camp should tell you where
+  // you are before you open a single screen. Feats.count() and Feats.total are
+  // the same calls they always were: only the player's word for them changed.
   renderFeatRack(ctx, x, yB) {
     let claimed = 0, total = 0;
     try {
@@ -2185,10 +2242,10 @@ class Camp {
     }
   }
 
-  // A cedar log at the trailhead. Before the first dawn it still has its bark
-  // on and reads as firewood nobody has got round to. After it, every carving
-  // you switch on is another face stacked up the pole, so the camp shows how
-  // much worse you have promised tonight will be from across the clearing.
+  // A cedar log at the trailhead. Before the first dawn it is under a tarp and
+  // reads as a question nobody will answer. After it, every carving you switch
+  // on is another face stacked up the pole, so the camp shows how much worse
+  // you have promised tonight will be from across the clearing.
   renderTotem(ctx, x, yB) {
     const open = campTotemOpen();
     const carved = open ? campCarvings() : [];
@@ -2208,15 +2265,9 @@ class Camp {
     ctx.fillRect(x + hw - 6, top + 3, 4, h - 6);
 
     if (!open) {
-      // bark still on: rough vertical strokes, nothing carved into it at all
-      ctx.strokeStyle = 'rgba(24,16,8,0.5)'; ctx.lineWidth = 1.3;
-      for (let i = 0; i < 7; i++) {
-        const bx = x - 9 + i * 3.1;
-        ctx.beginPath(); ctx.moveTo(bx, top + 4); ctx.lineTo(bx + 1.6, yB - 4); ctx.stroke();
-      }
-      ctx.fillStyle = '#4a3a1f';
-      ctx.beginPath(); ctx.ellipse(x, top + 2, hw, 4, 0, 0, TAU); ctx.fill();
-      ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1.4; ctx.stroke();
+      // the pole above is what is under the canvas, and the canvas goes over
+      // it, so the lump has the shape of the actual thing.
+      this.renderTarp(ctx, x, yB, hw);
       return;
     }
 
@@ -2262,6 +2313,283 @@ class Camp {
     ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1.4; ctx.stroke();
     ctx.fillStyle = 'rgba(255,244,214,0.18)';
     ctx.beginPath(); ctx.ellipse(x - 2, top + 1, hw * 0.5, 2, 0, 0, TAU); ctx.fill();
+  }
+
+  // Something lumpy under a weathered tarp. The canvas sags between the two
+  // rope lines, tents where the pole pushes up under it and splays where it
+  // piles on the dirt, so the shape of the thing reads through the cloth
+  // without the cloth ever saying what it is. One bottom corner has worked
+  // loose and lifts in the breeze: renderTotem is called from the furniture
+  // draw list every frame, not from a bake, so this.t is live here and the
+  // corner really moves rather than being caught in a pose.
+  renderTarp(ctx, x, yB, poleHw) {
+    const t = this.t || 0;
+    // Three waves whose periods do not divide into each other, pushed through
+    // a smoothstep, so the corner mostly lies still and now and then a gust
+    // gets under it. Nothing about the cycle announces itself.
+    let g = 0.5 + 0.34 * Math.sin(t * 0.61) + 0.26 * Math.sin(t * 0.283 + 1.7) + 0.1 * Math.sin(t * 1.13 + 0.4);
+    g = clamp(g, 0, 1);
+    const lift = g * g * (3 - 2 * g);
+
+    const CV = { mid: '#9a917a', dark: '#6a6555' };
+    // [height above the base, half width left, half width right]. The two
+    // waists are where the ropes cinch it in, the bulges are the sag between.
+    const prof = [
+      [0, 21.5, 22.0], [8, 22.6, 22.9], [20, 18.4, 19.2], [32, 20.6, 20.0],
+      [44, 15.4, 16.2], [52, 11.4, 12.0], [58, 6.0, 6.6], [62, 1.8, 2.4],
+    ];
+    const cxAt = (dy) => x - 1.6 * (dy / 62);
+    const pL = (i) => [cxAt(prof[i][0]) - prof[i][1], yB - prof[i][0]];
+    const pR = (i) => [cxAt(prof[i][0]) + prof[i][2], yB - prof[i][0]];
+    const smooth = (c, pts, move) => {
+      if (move) c.moveTo(pts[0][0], pts[0][1]); else c.lineTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length - 1; i++) {
+        c.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2);
+      }
+      c.lineTo(pts[pts.length - 1][0], pts[pts.length - 1][1]);
+    };
+    const outline = (c) => {
+      const L = [], R = [];
+      for (let i = 0; i < prof.length; i++) { L.push(pL(i)); R.push(pR(i)); }
+      R.reverse();
+      c.beginPath();
+      smooth(c, L, true);
+      // gathered over the top of it and tied off, a touch off centre
+      c.quadraticCurveTo(cxAt(62) - 3, yB - 65.5, cxAt(62) + 2.2, yB - 63.5);
+      smooth(c, R, false);
+      // the hem, torn and not level
+      c.quadraticCurveTo(x + 12, yB + 3.4, x + 2, yB + 1.6);
+      c.quadraticCurveTo(x - 9, yB + 3.6, L[0][0], L[0][1]);
+      c.closePath();
+    };
+
+    // a tight contact shadow where the skirt meets the dirt
+    ctx.fillStyle = 'rgba(18,14,6,0.38)';
+    ctx.beginPath(); ctx.ellipse(x + 2, yB + 2, 23, 5, 0, 0, TAU); ctx.fill();
+
+    outline(ctx);
+    ctx.fillStyle = CV.mid; ctx.fill();
+    ctx.save(); ctx.clip();
+
+    // the west sun catches the left flank, the right flank turns away
+    ctx.fillStyle = 'rgba(255,232,180,0.16)';
+    ctx.beginPath();
+    ctx.moveTo(x - 22, yB); ctx.quadraticCurveTo(x - 20, yB - 34, x - 6, yB - 60);
+    ctx.lineTo(x - 1, yB - 58); ctx.quadraticCurveTo(x - 12, yB - 32, x - 13, yB);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(22,18,8,0.24)';
+    ctx.beginPath();
+    ctx.moveTo(x + 24, yB); ctx.quadraticCurveTo(x + 22, yB - 32, x + 6, yB - 60);
+    ctx.lineTo(x + 1, yB - 58); ctx.quadraticCurveTo(x + 14, yB - 30, x + 14, yB);
+    ctx.closePath(); ctx.fill();
+    // core shadow along the bottom, warm ground bounce under it
+    ctx.fillStyle = 'rgba(20,16,8,0.26)';
+    ctx.fillRect(x - 26, yB - 13, 52, 10);
+    ctx.fillStyle = 'rgba(255,190,110,0.13)';
+    ctx.fillRect(x - 26, yB - 3.5, 52, 6);
+
+    // the pole, read through the canvas: two seams where the cloth leaves it
+    // and one lit ridge where the cloth is pulled taut across the front
+    ctx.fillStyle = 'rgba(26,20,10,0.20)';
+    for (const s of [-1, 1]) {
+      const e = x + s * poleHw;
+      ctx.beginPath();
+      ctx.moveTo(e + s * 1.5, yB - 4);
+      ctx.quadraticCurveTo(e + s * 0.5, yB - 30, e - s * 4, yB - 52);
+      ctx.lineTo(e - s * 7, yB - 51);
+      ctx.quadraticCurveTo(e - s * 3.5, yB - 30, e - s * 2.5, yB - 4);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255,240,200,0.11)';
+    ctx.beginPath();
+    ctx.moveTo(x - 7, yB - 8); ctx.quadraticCurveTo(x - 6, yB - 34, x - 2.5, yB - 56);
+    ctx.lineTo(x + 2, yB - 56); ctx.quadraticCurveTo(x - 1, yB - 34, x - 1, yB - 8);
+    ctx.closePath(); ctx.fill();
+
+    // the cloth creases along each rope line and bulges above and below it
+    for (const k of [2, 4]) {
+      const dy = prof[k][0];
+      ctx.fillStyle = 'rgba(24,19,9,0.24)';
+      ctx.beginPath(); ctx.ellipse(cxAt(dy), yB - dy, prof[k][1] + 2, 4.6, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(255,238,196,0.09)';
+      ctx.beginPath(); ctx.ellipse(cxAt(dy), yB - dy - 8, prof[k][1] - 1, 3.4, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cxAt(dy), yB - dy + 8, prof[k][1] - 1, 3.2, 0, 0, TAU); ctx.fill();
+    }
+
+    // rain, run down it and dried in place more times than anybody counted
+    for (const st of [[-10, 2.8, 0.20], [-3, 1.8, 0.13], [4, 3.4, 0.22], [11, 2.0, 0.15]]) {
+      ctx.fillStyle = 'rgba(52,46,32,' + st[2] + ')';
+      ctx.beginPath();
+      ctx.moveTo(x + st[0], yB - 43);
+      ctx.quadraticCurveTo(x + st[0] + 1.6, yB - 24, x + st[0] - 0.4, yB - 2);
+      ctx.lineTo(x + st[0] + st[1] - 0.4, yB - 2);
+      ctx.quadraticCurveTo(x + st[0] + st[1] + 1.6, yB - 24, x + st[0] + st[1], yB - 43);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(x + st[0] + st[1] / 2, yB - 42.5, st[1] * 1.5, 2.6, 0, 0, TAU); ctx.fill();
+    }
+    // mildew blooms
+    ctx.fillStyle = 'rgba(58,52,36,0.16)';
+    for (const b of [[-14, -30, 4], [9, -16, 3.2], [-5, -49, 2.6], [16, -37, 2.2], [-18, -10, 3]]) {
+      ctx.beginPath(); ctx.ellipse(x + b[0], yB + b[1], b[2], b[2] * 0.7, 0.4, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+
+    outline(ctx);
+    ctx.strokeStyle = CPAL.out; ctx.lineWidth = 2.2; ctx.stroke();
+
+    // gathered at the top and tied off with a short cord
+    ctx.strokeStyle = 'rgba(26,20,10,0.45)'; ctx.lineWidth = 1;
+    for (const gx of [-3.5, 0, 3.5]) {
+      ctx.beginPath();
+      ctx.moveTo(cxAt(60) + gx * 0.3, yB - 61);
+      ctx.quadraticCurveTo(x + gx, yB - 54, x + gx * 1.7, yB - 47);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = '#8a6f42'; ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.moveTo(cxAt(59) - 4.2, yB - 58.6); ctx.lineTo(cxAt(59) + 4.4, yB - 58); ctx.stroke();
+    ctx.strokeStyle = 'rgba(214,186,132,0.55)'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(cxAt(59) - 3.4, yB - 59.3); ctx.lineTo(cxAt(59) + 3.8, yB - 58.7); ctx.stroke();
+
+    // rope lashed round it at two heights, through grommets, knotted off with
+    // the tails left long the way somebody in a hurry leaves them
+    const rope = (k, knotSide, tailA, tailB) => {
+      const dy = prof[k][0];
+      const yy = yB - dy;
+      const lx = cxAt(dy) - prof[k][1] - 0.5, rx = cxAt(dy) + prof[k][2] + 0.5;
+      const my = yy + 4.2;
+      const path = (c) => { c.beginPath(); c.moveTo(lx, yy); c.quadraticCurveTo(cxAt(dy), my, rx, yy); };
+      path(ctx); ctx.strokeStyle = '#3f2c16'; ctx.lineWidth = 4.4; ctx.stroke();
+      path(ctx); ctx.strokeStyle = '#8a6f42'; ctx.lineWidth = 3.0; ctx.stroke();
+      ctx.save(); ctx.translate(0, -0.9);
+      path(ctx); ctx.strokeStyle = 'rgba(214,186,132,0.45)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.restore();
+      ctx.strokeStyle = 'rgba(60,42,18,0.55)'; ctx.lineWidth = 0.9;
+      for (let i = 1; i < 12; i++) {
+        const u = i / 12, v = 1 - u;
+        const tx = v * v * lx + 2 * v * u * cxAt(dy) + u * u * rx;
+        const ty = v * v * yy + 2 * v * u * my + u * u * yy;
+        ctx.beginPath(); ctx.moveTo(tx - 0.9, ty + 1.5); ctx.lineTo(tx + 0.9, ty - 1.5); ctx.stroke();
+      }
+      for (const gxp of [lx, rx]) {
+        ctx.fillStyle = '#3a3d44';
+        ctx.beginPath(); ctx.arc(gxp, yy, 2.6, 0, TAU); ctx.fill();
+        ctx.strokeStyle = CPAL.out; ctx.lineWidth = 0.9; ctx.stroke();
+        ctx.fillStyle = '#1a1409';
+        ctx.beginPath(); ctx.arc(gxp, yy, 1.2, 0, TAU); ctx.fill();
+        ctx.fillStyle = 'rgba(233,228,218,0.5)';
+        ctx.beginPath(); ctx.arc(gxp - 0.9, yy - 1, 0.7, 0, TAU); ctx.fill();
+      }
+      const kx = knotSide > 0 ? rx - 3.5 : lx + 3.5, ky = yy + 1.6;
+      ctx.fillStyle = '#8a6f42'; ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(kx, ky, 3.4, 2.6, -0.3, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(kx + 1.6, ky - 1.2, 2.4, 1.9, 0.5, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(214,186,132,0.45)';
+      ctx.beginPath(); ctx.ellipse(kx - 0.9, ky - 1.5, 1.5, 0.9, -0.3, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#7c6238'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(kx - 1, ky + 2); ctx.quadraticCurveTo(kx - 3, ky + tailA * 0.6, kx - 1.6, ky + tailA); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(kx + 1.6, ky + 2); ctx.quadraticCurveTo(kx + 3.6, ky + tailB * 0.6, kx + 2.2, ky + tailB); ctx.stroke();
+      ctx.strokeStyle = 'rgba(180,156,110,0.7)'; ctx.lineWidth = 0.7;
+      ctx.beginPath(); ctx.moveTo(kx - 1.6, ky + tailA); ctx.lineTo(kx - 2.9, ky + tailA + 2.4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(kx - 1.6, ky + tailA); ctx.lineTo(kx - 0.6, ky + tailA + 2.8); ctx.stroke();
+    };
+    rope(4, -1, 7, 11);
+    rope(2, 1, 9, 6);
+
+    // the hem has given up along its whole length
+    ctx.strokeStyle = CV.dark; ctx.lineWidth = 0.9;
+    for (let i = 0; i < 17; i++) {
+      const u = i / 16;
+      const hx = x - 21 + u * 43;
+      const hy = yB + 1.3 + Math.sin(u * Math.PI) * 1.9;
+      ctx.beginPath();
+      ctx.moveTo(hx, hy);
+      ctx.lineTo(hx + ((i % 3) - 1) * 0.8, hy + 1.6 + ((i * 37) % 11) * 0.32);
+      ctx.stroke();
+    }
+    ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(x + 6, yB + 3.1); ctx.quadraticCurveTo(x + 8, yB + 7, x + 5.4, yB + 9.4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 12, yB + 3); ctx.quadraticCurveTo(x - 15, yB + 6, x - 13, yB + 8.4); ctx.stroke();
+
+    // ---- the corner that has worked loose --------------------------------
+    // The fold line runs from up the left edge down to the hem. At lift zero
+    // the flap is exactly the shape of the hole it covers, so the gap under it
+    // opens from nothing rather than popping into existence.
+    const H0x = x - 19.2, H0y = yB - 16;
+    const H1x = x - 4, H1y = yB + 1;
+    const tipAt = (k) => [x - 20 - 3.8 * k, yB - 0.6 - 11.5 * k];
+    const c2At = (k) => [x - 14.5 + 1.5 * k, yB + 3.4 + 2.5 * k];
+    const flapPath = (c, k) => {
+      const tip = tipAt(k), c2 = c2At(k);
+      c.beginPath();
+      c.moveTo(H0x, H0y);
+      c.quadraticCurveTo(x - 23.5 - 3.4 * k, yB - 7 - 4.5 * k, tip[0], tip[1]);
+      c.quadraticCurveTo(c2[0], c2[1], H1x, H1y);
+      c.closePath();
+    };
+
+    if (lift > 0.03) {
+      // what the corner has stopped covering: dark, then the edge of something
+      // pale and planed flat, and one groove that is not an answer
+      ctx.save();
+      outline(ctx); ctx.clip();
+      flapPath(ctx, 0);
+      ctx.fillStyle = '#241c10'; ctx.fill();
+      ctx.save();
+      flapPath(ctx, 0); ctx.clip();
+      ctx.fillStyle = '#c9a86a';
+      ctx.beginPath();
+      ctx.moveTo(x - poleHw, yB + 5); ctx.lineTo(x - poleHw + 1.2, yB - 21);
+      ctx.lineTo(x + 10, yB - 21); ctx.lineTo(x + 10, yB + 5);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,244,214,0.30)';
+      ctx.fillRect(x - poleHw + 1, yB - 21, 2.4, 26);
+      ctx.strokeStyle = 'rgba(58,38,16,0.75)'; ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(x - poleHw + 5, yB - 3); ctx.lineTo(x - poleHw + 5, yB - 11);
+      ctx.quadraticCurveTo(x - poleHw + 5.4, yB - 14, x - poleHw + 9, yB - 14.6);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,238,196,0.35)'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(x - poleHw + 6.3, yB - 3.4); ctx.lineTo(x - poleHw + 6.3, yB - 11); ctx.stroke();
+      // the flap's own shadow, laid along the fold
+      ctx.fillStyle = 'rgba(14,10,4,0.45)';
+      ctx.beginPath();
+      ctx.moveTo(H0x, H0y); ctx.lineTo(H1x, H1y);
+      ctx.lineTo(H1x - 4, H1y - 1.6); ctx.lineTo(H0x - 4.5, H0y + 2.6);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+      ctx.restore();
+    }
+
+    ctx.save();
+    flapPath(ctx, lift);
+    ctx.fillStyle = CV.mid; ctx.fill();
+    // the underside of the canvas, paler where the weather never got at it
+    ctx.fillStyle = 'rgba(206,196,168,' + (0.06 + 0.7 * lift) + ')';
+    ctx.fill();
+    ctx.clip();
+    ctx.fillStyle = 'rgba(24,19,9,0.26)';
+    ctx.beginPath();
+    ctx.moveTo(H0x, H0y); ctx.lineTo(H1x, H1y);
+    ctx.lineTo(H1x - 3.5, H1y - 2.5); ctx.lineTo(H0x - 3.5, H0y + 2);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,240,204,0.16)';
+    ctx.beginPath(); ctx.ellipse(x - 17 - 2 * lift, yB - 6 - 6 * lift, 5, 7, 0.5, 0, TAU); ctx.fill();
+    ctx.restore();
+    flapPath(ctx, lift);
+    ctx.strokeStyle = CPAL.out; ctx.lineWidth = 2; ctx.stroke();
+    // the loose edge is frayed too, and it swings with the corner
+    ctx.strokeStyle = CV.dark; ctx.lineWidth = 0.8;
+    for (let i = 0; i < 5; i++) {
+      const u = 0.18 + i * 0.17, v = 1 - u;
+      const tip = tipAt(lift), c2 = c2At(lift);
+      const fx = v * v * tip[0] + 2 * v * u * c2[0] + u * u * H1x;
+      const fy = v * v * tip[1] + 2 * v * u * c2[1] + u * u * H1y;
+      ctx.beginPath();
+      ctx.moveTo(fx, fy);
+      ctx.lineTo(fx - 0.6 + i * 0.3, fy + 1.8 + (i % 2) * 1.1);
+      ctx.stroke();
+    }
   }
 
   // ------------------------------------------------- fallback furniture ----
@@ -2976,6 +3304,316 @@ class Camp {
     this._interior = L;
   }
 
+  // ---------------------------------------------------------- the sash -----
+  // The merit badge collection as an object in the world instead of a screen:
+  // a scout sash over a peg on the clear left of the back wall, one stitched
+  // ring per merit badge, the emblem sewn inside the rings that are earned and
+  // nothing at all inside the rings that are not. The gaps are the point, so
+  // the ring is drawn either way and only its contents change.
+  //
+  // Drawn per frame rather than baked into the interior, deliberately. The
+  // interior bake is only rebuilt when it is missing, so a badge earned this
+  // session would not turn up on the wall until the next launch. The bake is
+  // also 1.5 canvas pixels per world unit and the cabin draws it at 1.8, which
+  // softens exactly the thread sized detail this thing is made of. Measured
+  // cost per frame is 114 fills and strokes (the stitch ticks of a ring all go
+  // into one path, so sixteen ticks cost one stroke) in a room that otherwise
+  // costs one drawImage and a lamp.
+
+  // One entry per merit badge, in table order, cached until the earned count
+  // moves. Tolerates a feats.js that predates sashList, and a feats.js that is
+  // not there at all: an empty sash is still the right object for the wall.
+  sashList() {
+    let sig = 'x';
+    try {
+      if (typeof Feats !== 'undefined' && Feats && typeof Feats.count === 'function') sig = String(Feats.count());
+    } catch (e) { sig = 'x'; }
+    if (this._sashCache && this._sashSig === sig) return this._sashCache;
+
+    let list = null;
+    try {
+      if (typeof Feats !== 'undefined' && Feats && typeof Feats.sashList === 'function') {
+        list = Feats.sashList(typeof META !== 'undefined' ? META : null);
+      }
+    } catch (e) { list = null; }
+    if (!Array.isArray(list) || !list.length) {
+      list = [];
+      try {
+        const tbl = (typeof Feats !== 'undefined' && Feats && Array.isArray(Feats.table)) ? Feats.table : [];
+        for (const f of tbl) {
+          let done = false;
+          try { done = (typeof Feats.done === 'function') ? !!Feats.done(f.id, META) : false; } catch (e2) { done = false; }
+          list.push({ id: f.id, name: f.name || f.id, emblem: f.emblem || null, done });
+        }
+      } catch (e) { list = []; }
+    }
+    if (!list.length) {
+      for (let i = 0; i < 14; i++) list.push({ id: '', name: '', emblem: null, done: false });
+    }
+    this._sashSig = sig;
+    this._sashCache = list;
+    return list;
+  }
+
+  // How far down the band a given height is, and where the cloth is there.
+  sashT(y) {
+    return clamp((y - CAMP_SASH.top) / (CAMP_SASH.bot - CAMP_SASH.top), 0, 1);
+  }
+  sashCx(y) {
+    return CAMP_SASH.cx + Math.sin(this.sashT(y) * 1.9) * 2.2;
+  }
+  sashEdge(y, s) {
+    const t = this.sashT(y);
+    const hw = CAMP_SASH.hwTop + (CAMP_SASH.hwBot - CAMP_SASH.hwTop) * t;
+    const wob = s < 0 ? Math.sin(t * 3.1 + 0.4) * 1.4 : Math.sin(t * 2.7 + 2.1) * 1.4;
+    return this.sashCx(y) + s * hw + wob;
+  }
+  // Slots ride the centreline, so a patch can never end up over the hem.
+  sashSlot(i) {
+    const y = CAMP_SASH.rows[(i / 3) | 0];
+    return { x: this.sashCx(y) + ((i % 3) - 1) * CAMP_SASH.col, y };
+  }
+
+  // The same stitch on every slot, earned or not. On an earned one it crosses
+  // the edge of the patch, which is what makes it read as sewn on rather than
+  // printed on. Every tick of one ring goes into one path: sixteen ticks times
+  // fifteen slots is not something to spend stroke calls on.
+  sashStitchRing(ctx, x, y, done) {
+    const G = CAMP_SASH;
+    const r0 = done ? G.ring - 2.4 : G.ring - 1.9;
+    const r1 = G.ring;
+    ctx.strokeStyle = 'rgba(49,68,29,0.5)'; ctx.lineWidth = 0.7;
+    ctx.beginPath(); ctx.arc(x, y, (r0 + r1) / 2, 0, TAU); ctx.stroke();
+    const pts = [];
+    for (let k = 0; k < 16; k++) {
+      const a = k / 16 * TAU + (k % 2 ? 0.06 : -0.05);
+      const ca = Math.cos(a), sa = Math.sin(a), wob = (k % 3) * 0.18;
+      pts.push([x + ca * (r0 - wob), y + sa * (r0 - wob), x + ca * (r1 + wob), y + sa * (r1 + wob)]);
+    }
+    // a lit edge on every stitch, so dark thread still reads over a dark patch
+    ctx.strokeStyle = 'rgba(255,244,214,0.16)'; ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    for (const p of pts) { ctx.moveTo(p[0] - 0.4, p[1] - 0.5); ctx.lineTo(p[2] - 0.4, p[3] - 0.5); }
+    ctx.stroke();
+    ctx.strokeStyle = G.thread; ctx.lineWidth = 1.05;
+    ctx.beginPath();
+    for (const p of pts) { ctx.moveTo(p[0], p[1]); ctx.lineTo(p[2], p[3]); }
+    ctx.stroke();
+  }
+
+  // The painter for this merit badge if the art unit has landed it, and a
+  // plain stamped tin badge if it has not: SPR.get throws on a name nobody has
+  // written yet, which is the answer campHasSpr caches.
+  sashEmblem(ctx, name, x, y, s) {
+    if (name && campHasSpr(name)) { SPR.draw(ctx, name, x, y, s); return; }
+    ctx.fillStyle = '#c9a86a';
+    ctx.beginPath(); ctx.arc(x, y, s * 0.46, 0, TAU); ctx.fill();
+    ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#8a6138';
+    ctx.beginPath(); ctx.arc(x, y, s * 0.33, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#f4c542';
+    ctx.beginPath();
+    for (let k = 0; k < 10; k++) {
+      const a = -Math.PI / 2 + k * Math.PI / 5;
+      const r = (k % 2) ? s * 0.11 : s * 0.25;
+      const px = x + Math.cos(a) * r, py = y + Math.sin(a) * r;
+      if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,244,214,0.28)';
+    ctx.beginPath(); ctx.ellipse(x - s * 0.16, y - s * 0.2, s * 0.16, s * 0.1, -0.5, 0, TAU); ctx.fill();
+  }
+
+  renderSash(ctx) {
+    const G = CAMP_SASH;
+    const list = this.sashList();
+    const n = Math.min(list.length, G.slots);
+    const botL = G.bot + 2, botR = G.bot - 2;
+
+    // The band: sampled down one long edge and back up the other, ending in a
+    // cut that was made with the wrong scissors.
+    const band = (c, dx, dy) => {
+      c.beginPath();
+      c.moveTo(this.sashEdge(G.top, -1) + dx, G.top + dy);
+      for (let k = 1; k <= 14; k++) {
+        const y = G.top + (botL - G.top) * (k / 14);
+        c.lineTo(this.sashEdge(y, -1) + dx, y + dy);
+      }
+      c.lineTo(this.sashCx(botL) - 8 + dx, botL - 1.4 + dy);
+      c.lineTo(this.sashCx(botL) - 3 + dx, botL - 3.6 + dy);
+      c.lineTo(this.sashCx(botR) + 4 + dx, botR + 1.2 + dy);
+      c.lineTo(this.sashEdge(botR, 1) + dx, botR + dy);
+      for (let k = 13; k >= 0; k--) {
+        const y = G.top + (botR - G.top) * (k / 14);
+        c.lineTo(this.sashEdge(y, 1) + dx, y + dy);
+      }
+      c.closePath();
+    };
+
+    // the wall takes the shadow twice, so its edge is soft
+    ctx.fillStyle = 'rgba(16,10,4,0.15)'; band(ctx, 7, 6); ctx.fill();
+    ctx.fillStyle = 'rgba(16,10,4,0.22)'; band(ctx, 4, 3); ctx.fill();
+
+    // the short end of it, hanging behind the peg on the right, back side out
+    ctx.fillStyle = G.back;
+    ctx.beginPath();
+    ctx.moveTo(G.cx + 15, -151);
+    ctx.lineTo(G.cx + 35, -149.5);
+    ctx.lineTo(G.cx + 32.5, -117);
+    ctx.lineTo(G.cx + 25, -121);
+    ctx.lineTo(G.cx + 18, -116);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1.6; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,244,214,0.09)';
+    ctx.fillRect(G.cx + 27.5, -147, 4, 26);
+
+    // the peg, driven into a log course. Most of its length is under the cloth
+    // and the end of it comes back out past the gather on the right, which is
+    // the only reason you can tell the sash is hanging on anything.
+    ctx.fillStyle = 'rgba(16,10,4,0.35)';
+    ctx.beginPath(); ctx.ellipse(G.cx + 14, -151.2, 18, 3, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#8a6138';
+    ctx.beginPath(); ctx.roundRect(G.cx - 6, -156.4, 40, 5.2, 2.4); ctx.fill();
+    ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.fillStyle = '#a67c46';
+    ctx.beginPath(); ctx.ellipse(G.cx + 33.5, -153.8, 2.2, 3.1, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,244,214,0.35)';
+    ctx.beginPath(); ctx.ellipse(G.cx + 32.7, -154.8, 1, 1.4, 0, 0, TAU); ctx.fill();
+
+    // the cloth gathers over the peg and spreads again as it falls, so the
+    // roll is narrow at the top and wider than the band by the time it lets go
+    ctx.fillStyle = G.clothLit;
+    ctx.beginPath();
+    ctx.moveTo(G.cx - 31, G.top + 1);
+    ctx.quadraticCurveTo(G.cx - 26, G.foldTop + 2, G.cx - 16, G.foldTop);
+    ctx.lineTo(G.cx + 16, G.foldTop + 1);
+    ctx.quadraticCurveTo(G.cx + 27, G.foldTop + 2.5, G.cx + 31.5, G.top + 1);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1.8; ctx.stroke();
+    ctx.strokeStyle = 'rgba(24,16,8,0.35)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const gx of [-9, -3, 4, 10]) {
+      ctx.moveTo(G.cx + gx, G.foldTop + 1.5);
+      ctx.lineTo(G.cx + gx * 1.7, G.top + 0.5);
+    }
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,244,214,0.16)';
+    ctx.fillRect(G.cx - 14, G.foldTop + 1.4, 28, 2.2);
+
+    // the front of the band
+    band(ctx, 0, 0);
+    ctx.fillStyle = G.cloth; ctx.fill();
+    ctx.save(); ctx.clip();
+    // drape: two folds falling the length of it, one lit ridge between them
+    const fold = (off, w, col) => {
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(this.sashCx(G.top) + off, G.top);
+      ctx.quadraticCurveTo(this.sashCx(-110) + off - 2.5, -112, this.sashCx(botL) + off + 1, botL + 2);
+      ctx.lineTo(this.sashCx(botL) + off + w + 1, botL + 2);
+      ctx.quadraticCurveTo(this.sashCx(-110) + off + w - 2.5, -112, this.sashCx(G.top) + off + w, G.top);
+      ctx.closePath(); ctx.fill();
+    };
+    fold(-22, 5, 'rgba(18,24,8,0.22)');
+    fold(6, 4, 'rgba(18,24,8,0.16)');
+    fold(-13, 7, 'rgba(255,244,214,0.09)');
+    // the roll at the peg lays a soft shadow down the front, the way anything
+    // that overlaps anything else in this game does
+    // stepped, not a hard edged rectangle, so it falls off instead of ruling a
+    // line across the top row of slots
+    ctx.fillStyle = 'rgba(18,12,4,0.26)'; ctx.fillRect(G.cx - 34, G.top, 68, 2.4);
+    ctx.fillStyle = 'rgba(18,12,4,0.16)'; ctx.fillRect(G.cx - 34, G.top + 2.4, 68, 1.8);
+    ctx.fillStyle = 'rgba(18,12,4,0.08)'; ctx.fillRect(G.cx - 34, G.top + 4.2, 68, 1.6);
+    // weave
+    ctx.strokeStyle = 'rgba(255,244,214,0.05)'; ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    for (let y = G.top + 4; y < botR; y += 4) {
+      ctx.moveTo(this.sashEdge(y, -1), y); ctx.lineTo(this.sashEdge(y, 1), y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    band(ctx, 0, 0);
+    ctx.strokeStyle = CPAL.out; ctx.lineWidth = 2; ctx.stroke();
+    // warm rim down the upper left, the one hue shifted edge on the object
+    ctx.strokeStyle = 'rgba(255,214,150,0.20)'; ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    for (let k = 0; k <= 8; k++) {
+      const y = G.top + (botL - G.top) * (k / 8) * 0.55;
+      const px = this.sashEdge(y, -1) + 1.2;
+      if (k === 0) ctx.moveTo(px, y); else ctx.lineTo(px, y);
+    }
+    ctx.stroke();
+
+    // hem stitch down both long edges, in tan thread, one pass
+    ctx.strokeStyle = G.hem; ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    for (const s of [-1, 1]) {
+      const end = (s < 0 ? botL : botR) - 4;
+      for (let y = G.top + 4; y < end; y += 4.4) {
+        ctx.moveTo(this.sashEdge(y, s) - s * 3.6, y);
+        ctx.lineTo(this.sashEdge(y + 2.6, s) - s * 3.6, y + 2.6);
+      }
+    }
+    ctx.stroke();
+
+    // the cut end has started to give
+    ctx.strokeStyle = G.clothDark; ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    for (let i = 0; i < 13; i++) {
+      const u = i / 12;
+      const hx = this.sashEdge(botL, -1) + 2 + u * (this.sashEdge(botR, 1) - this.sashEdge(botL, -1) - 4);
+      const hy = botL - 1 - u * 4;
+      ctx.moveTo(hx, hy);
+      ctx.lineTo(hx + ((i % 3) - 1) * 0.7, hy + 1.6 + ((i * 29) % 9) * 0.34);
+    }
+    ctx.stroke();
+
+    // the slots. Earned: a patch shadow, the emblem, then thread over its edge.
+    // Empty: the mark of where one would go, and the same thread around it.
+    for (let i = 0; i < n; i++) {
+      const sl = this.sashSlot(i);
+      const it = list[i] || {};
+      if (it.done) {
+        ctx.fillStyle = 'rgba(16,12,4,0.38)';
+        ctx.beginPath(); ctx.ellipse(sl.x + 1.1, sl.y + 1.6, G.emb * 0.5, G.emb * 0.5, 0, 0, TAU); ctx.fill();
+        this.sashEmblem(ctx, it.emblem, sl.x, sl.y, G.emb);
+      } else {
+        ctx.fillStyle = 'rgba(18,24,8,0.11)';
+        ctx.beginPath(); ctx.arc(sl.x, sl.y, G.ring - 1.6, 0, TAU); ctx.fill();
+      }
+      this.sashStitchRing(ctx, sl.x, sl.y, !!it.done);
+    }
+
+    // the loop nobody has needed yet keeps the needle, still threaded
+    if (n < G.slots) {
+      const sl = this.sashSlot(n);
+      const a = -0.75, dx = Math.cos(a), dy = Math.sin(a);
+      ctx.fillStyle = 'rgba(18,24,8,0.55)';
+      ctx.beginPath(); ctx.ellipse(sl.x - dx * 1.7, sl.y - dy * 1.7, 0.9, 0.7, a, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(sl.x + dx * 1.7, sl.y + dy * 1.7, 0.9, 0.7, a, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#c9ccd4'; ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.moveTo(sl.x + dx * 2, sl.y + dy * 2); ctx.lineTo(sl.x + dx * 6.6, sl.y + dy * 6.6);
+      ctx.moveTo(sl.x - dx * 2, sl.y - dy * 2); ctx.lineTo(sl.x - dx * 5.6, sl.y - dy * 5.6);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 0.45;
+      ctx.beginPath();
+      ctx.moveTo(sl.x + dx * 2.6 - 0.4, sl.y + dy * 2.6 - 0.4);
+      ctx.lineTo(sl.x + dx * 6.2 - 0.4, sl.y + dy * 6.2 - 0.4);
+      ctx.stroke();
+      ctx.strokeStyle = '#c9ccd4'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.ellipse(sl.x - dx * 5, sl.y - dy * 5, 1.5, 0.8, a, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = 'rgba(216,207,192,0.85)'; ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(sl.x - dx * 5, sl.y - dy * 5);
+      ctx.quadraticCurveTo(sl.x - 7, sl.y - 2, sl.x - 3.5, sl.y + 5.5);
+      ctx.quadraticCurveTo(sl.x - 1, sl.y + 10, sl.x + 3, sl.y + 9);
+      ctx.stroke();
+    }
+  }
+
   renderCabin(ctx, W, H) {
     if (!this._interior) this._bakeInterior();
     ctx.fillStyle = '#120b06';
@@ -2989,6 +3627,10 @@ class Camp {
 
     const L = this._interior;
     ctx.drawImage(L.c, L.x, L.y, L.w, L.h);
+
+    // the sash on the back wall, live, so a badge earned tonight is already on
+    // it and the empty rings are counted the same way the board counts them
+    this.renderSash(ctx);
 
     // the window is a hole into the dusk: fireflies drift across it
     ctx.save();

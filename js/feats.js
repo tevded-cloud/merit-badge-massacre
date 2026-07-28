@@ -1,11 +1,20 @@
-// Merit Badge Massacre: the Feat Board and the Totem.
+// Merit Badge Massacre: the Merit Badge Board and the Totem.
 //
 // Two systems live here because they are the same idea from opposite ends.
-// A FEAT is a dare the camp remembers: do a specific, slightly stupid thing
-// across your whole history and the woods hand something back. A CARVING is a
-// dare you make in advance: promise the night will be worse, and the night
-// pays more. Neither one is a chore counter. Every feat below is a joke, a
-// dare or a discovery, and the ones that are none of those were cut.
+// A MERIT BADGE is a dare the camp remembers: do a specific, slightly stupid
+// thing across your whole history and the woods hand something back. A
+// CARVING is a dare you make in advance: promise the night will be worse,
+// and the night pays more. Neither one is a chore counter. Every badge below
+// is a joke, a dare or a discovery, and the ones that are none of those were
+// cut.
+//
+// "Merit badge" is the name the player sees, on the board, the sash and the
+// cards. Underneath, nothing changed its name on purpose: FEATS, Feats,
+// featMeta, featFlags, FEAT_REWARDS, FEAT_LOCKED, FEAT_TABLES, FEAT_VAULT
+// and flags.feats all keep the exact identifiers they always had, because
+// four other files and every save already written depend on those exact
+// names and that exact shape. A save from last week has never heard of the
+// new name, and it does not need to: it still loads.
 //
 // Everything reads META defensively. A save written before any of this existed
 // has none of these keys, and every read here treats that as zero rather than
@@ -77,6 +86,10 @@ function featCodex(m, kind) {
 // Authored with have/need. cond() and progress() are generated from those
 // below, so every entry carries the full { cond, progress } contract without
 // each one writing the same two closures by hand.
+//
+// emblem names the painter in js/sprites.js that draws this badge. The id
+// half of that name is deliberately the feat's own id, so the table and the
+// painter can never drift apart.
 
 const FEATS = [
   {
@@ -86,6 +99,7 @@ const FEATS = [
     hint: 'Nobody is home. Nobody has ever been home. Knock anyway.',
     have: m => featCounter(m, 'birdhouses'), need: 7,
     reward: { kind: 'cosmetic', id: 'birdhouse_row', label: 'A whole row of birdhouses' },
+    emblem: 'mb_birdhouse',
   },
   {
     id: 'pyro',
@@ -94,6 +108,7 @@ const FEATS = [
     hint: 'Junie framed hers. Junie has not stopped talking about it since.',
     have: m => featCounter(m, 'burned'), need: 250,
     reward: { kind: 'weapon', id: 'firecracker', label: 'Firecrackers' },
+    emblem: 'mb_pyro',
   },
   {
     id: 'wholeforest',
@@ -102,6 +117,7 @@ const FEATS = [
     hint: 'There is a version of this badge that is just a scorch mark.',
     have: m => featCounter(m, 'burned'), need: 1000,
     reward: { kind: 'skill', id: 'emberdrag', label: 'Skill: Ember Drag' },
+    emblem: 'mb_wholeforest',
   },
   {
     id: 'longnight',
@@ -110,6 +126,7 @@ const FEATS = [
     hint: 'It adds up across nights, which is the worrying part.',
     have: m => featCounter(m, 'lowHpTime'), need: 180, unit: 's',
     reward: { kind: 'patch', id: 'rabbitfoot', label: 'Rabbit Foot patch' },
+    emblem: 'mb_longnight',
   },
   {
     id: 'blinksfav',
@@ -118,6 +135,7 @@ const FEATS = [
     hint: 'He has never seen one. He is a firefly.',
     have: m => (featFlag(m, 'blinkFriend') ? 1 : 0) + (featNum(m, 'dawns') >= 1 ? 1 : 0), need: 2,
     reward: { kind: 'cosmetic', id: 'blinkjar', label: 'Blink gets a jar, lid off' },
+    emblem: 'mb_blinksfav',
   },
   {
     id: 'fieldscholar',
@@ -126,6 +144,7 @@ const FEATS = [
     hint: 'Thirty years up here and Brock managed none of them.',
     have: m => featJournalCount(m), need: 12,
     reward: { kind: 'patch', id: 'whistle', label: 'Scoutmaster Whistle patch' },
+    emblem: 'mb_fieldscholar',
   },
   {
     id: 'naturalist',
@@ -134,6 +153,7 @@ const FEATS = [
     hint: 'Looking is free. Getting away afterwards is the expensive part.',
     have: m => featCodex(m, 'seen'), need: 3,
     reward: { kind: 'weapon', id: 'boomerang', label: 'Compass Boomerang' },
+    emblem: 'mb_naturalist',
   },
   {
     id: 'trophywall',
@@ -142,6 +162,7 @@ const FEATS = [
     hint: 'The post by the fire has room for exactly three.',
     have: m => featCodex(m, 'killed'), need: 3,
     reward: { kind: 'cosmetic', id: 'trophyrow', label: 'Two more posts by the fire' },
+    emblem: 'mb_trophywall',
   },
   {
     id: 'deepwoods',
@@ -150,6 +171,7 @@ const FEATS = [
     hint: 'Further than Brock goes. He will find a way to mention that.',
     have: m => (featFlag(m, 'act2') ? 1 : 0) + (featFlag(m, 'act3') ? 1 : 0), need: 2,
     reward: { kind: 'weapon', id: 'bugle', label: 'Camp Bugle' },
+    emblem: 'mb_deepwoods',
   },
   {
     id: 'gravefull',
@@ -158,6 +180,7 @@ const FEATS = [
     hint: 'The grove seats twenty four. After that we start a second grove.',
     have: m => featNum(m, 'deaths'), need: 24,
     reward: { kind: 'cosmetic', id: 'sashline', label: 'A washing line of old sashes' },
+    emblem: 'mb_gravefull',
   },
   {
     id: 'corkboard',
@@ -166,6 +189,7 @@ const FEATS = [
     hint: 'It says nothing. It has never once said thank you.',
     have: m => featNum(m, 'spent'), need: 1000,
     reward: { kind: 'cosmetic', id: 'bunting', label: 'Bunting over the fire circle' },
+    emblem: 'mb_corkboard',
   },
 
   // ------------------------------------------------------------- hidden ----
@@ -179,6 +203,7 @@ const FEATS = [
     hint: 'Somebody has to find out what happens when the board takes everything.',
     have: m => (featNum(m, 'lifetime') >= 500 ? 1 : 0) + (featNum(m, 'badges') === 0 ? 1 : 0), need: 2,
     reward: { kind: 'skill', id: 'fieldstrip', label: 'Skill: Field Strip' },
+    emblem: 'mb_deepdebt',
   },
   {
     id: 'dawnpatrol',
@@ -188,6 +213,7 @@ const FEATS = [
     hint: 'One is a story. Three is a habit.',
     have: m => featNum(m, 'dawns'), need: 3,
     reward: { kind: 'skill', id: 'reveille', label: 'Skill: Reveille' },
+    emblem: 'mb_dawnpatrol',
   },
   {
     id: 'twelfthname',
@@ -197,6 +223,7 @@ const FEATS = [
     hint: 'Brock says not tonight. Brock says that every night.',
     have: m => (featJournal(m).t12_nameplate ? 1 : 0) + (featFlag(m, 'act3boss') ? 1 : 0), need: 2,
     reward: { kind: 'cosmetic', id: 'nameplate', label: 'The nameplate, nailed up at the trailhead' },
+    emblem: 'mb_twelfthname',
   },
 ];
 
@@ -255,6 +282,14 @@ const Feats = {
       for (const f of FEATS) this._map[f.id] = f;
     }
     return this._map[id] || null;
+  },
+
+  // The painter name in js/sprites.js for this feat, or null if the table
+  // does not know the id. Says nothing about whether it is earned: that is
+  // for the caller to decide before it draws anything.
+  emblemFor(id) {
+    const f = this.byId(id);
+    return f ? f.emblem : null;
   },
 
   // The earned set, always an object, created on the save if it is missing.
@@ -389,6 +424,26 @@ const Feats = {
     });
     return out;
   },
+
+  // One entry per merit badge, in FEATS table order (not progressList's
+  // sorted order), for the sash: { id, name, emblem, done }. name is always
+  // the real name, even for a hidden entry, because the sash only ever draws
+  // an emblem for a badge that is actually earned, and its message line
+  // wants the real name to go with it.
+  sashList(m) {
+    const meta = featMeta(m);
+    const led = this.ledger(meta);
+    const out = [];
+    for (const f of FEATS) {
+      out.push({
+        id: f.id,
+        name: f.name,
+        emblem: f.emblem,
+        done: !!led[f.id],
+      });
+    }
+    return out;
+  },
 };
 
 // ============================================================== the totem ====
@@ -399,6 +454,11 @@ const Feats = {
 // Only the ids are stored. The systems that read them (room body counts,
 // corruption, coin payouts, enemy damage, act length, cache rooms) land in a
 // later wave. The badge multiplier is live now, in META.credit.
+//
+// Before the camp has seen a dawn, the pole is not a totem at all: it is a
+// lumpy shape under a weathered tarp, roped down, and nothing about it says
+// what it is. revealLine is the one time anybody acknowledges the tarp
+// coming off, spoken once, ever, the night after the first dawn.
 
 const NIGHT_CARVINGS = [
   {
@@ -444,6 +504,25 @@ const Totem = {
   // The totem is uncarved wood until the camp has seen a dawn. Same tier gate
   // shape the cabin and the lakeshore use.
   open(m) { return featNum(m, 'dawns') >= 1; },
+
+  // Brock's one line about the tarp coming off the pole. Fires once, ever:
+  // null unless the pole is open and flags.tarpAck is still falsy, and the
+  // one call that returns the line sets tarpAck true and saves immediately,
+  // so it cannot fire twice, not even across sessions. An old save simply
+  // has no tarpAck at all, which reads as falsy and is correct: it gets the
+  // line once, on its next visit, same as anyone else.
+  revealLine(m) {
+    const meta = featMeta(m);
+    if (!this.open(meta)) return null;
+    const flags = featFlags(meta);
+    if (flags.tarpAck) return null;
+    flags.tarpAck = true;
+    if (meta && typeof meta.save === 'function') meta.save();
+    return {
+      t: '"Tarp came off the log." He does not look at the trailhead. "Thirty years it sat under canvas because the man before me put it under canvas, and I never once asked why. You went and saw a sunrise, and the pole heard about it before I did."',
+      e: 'deadpan',
+    };
+  },
 
   // META.flags.night, normalized. An old save has no flags.night at all.
   night(m) {

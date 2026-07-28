@@ -1749,6 +1749,678 @@ const SPR = (() => {
   P.badge2 = () => badge('#c9d2d8', '#5c6a74');
   P.badge3 = () => badge('#f4c542', '#8a6a10');
 
+  // ---------------- merit badge emblems ----------------
+  // One emblem per entry in the FEATS table in js/feats.js, named after the
+  // feat id (P.mb_<id>). These are the merit badges the game is named after:
+  // they show on a UI card at about 34 px and stitched onto the cabin sash at
+  // about 14, so each one is a single big centred symbol, never a scene.
+  //
+  // They are a set, sewn by one hand. Every one is a 40 by 40 bake box with
+  // the patch centred and about 36 across, bound by the same merrowed edge
+  // (the ring of short slanted satin stitches that finishes a real embroidered
+  // patch) in the same rope colors, over the same felt weave. Only the field
+  // color and the symbol change. Three of the fourteen are shield shaped so
+  // the grid on the sash carries more than one silhouette.
+  const MB_C = 20;                 // patch centre inside the 40 box
+  const MB_R = 18;                 // patch radius: 36 across
+  const MB_BAND = 2.9;             // width of the merrowed stitch ring
+  const MB_F = MB_R - MB_BAND;     // felt field radius
+  const MB_ROPE = '#cf9c56', MB_ROPE_D = '#9c6a33';
+  const MB_ROPE_L = 'rgba(255,238,202,0.55)';
+
+  // Lays the merrowed stitches along a closed polygon: short slanted bars in
+  // two rope values, every third carrying a thread sheen. Same rhythm on all
+  // fourteen, which is what makes them read as one collection.
+  function mbStitchRing(g, pts, band) {
+    const segs = [];
+    let total = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      segs.push([a, b, L, total]);
+      total += L;
+    }
+    const count = Math.max(12, Math.round(total / 2.45));
+    const ca = Math.cos(0.4), sa = Math.sin(0.4);
+    for (let i = 0; i < count; i++) {
+      const d = (i + 0.5) * total / count;
+      let s = segs[segs.length - 1];
+      for (let j = 0; j < segs.length; j++) {
+        if (d >= segs[j][3] && d < segs[j][3] + segs[j][2]) { s = segs[j]; break; }
+      }
+      const t = (d - s[3]) / s[2];
+      const px = s[0][0] + (s[1][0] - s[0][0]) * t;
+      const py = s[0][1] + (s[1][1] - s[0][1]) * t;
+      let nx = px - MB_C, ny = py - MB_C;
+      const nl = Math.hypot(nx, ny) || 1;
+      nx /= nl; ny /= nl;
+      const dx = nx * ca - ny * sa, dy = nx * sa + ny * ca;
+      g.lineCap = 'round';
+      g.lineWidth = 1.9;
+      g.strokeStyle = (i % 2) ? MB_ROPE_D : MB_ROPE;
+      g.beginPath();
+      g.moveTo(px - dx * band * 1.35, py - dy * band * 1.35);
+      g.lineTo(px + dx * band * 0.6, py + dy * band * 0.6);
+      g.stroke();
+      if (i % 3 === 0) {
+        g.strokeStyle = MB_ROPE_L; g.lineWidth = 0.55;
+        g.beginPath();
+        g.moveTo(px - dx * band * 1.05, py - dy * band * 1.05);
+        g.lineTo(px + dx * band * 0.25, py + dy * band * 0.25);
+        g.stroke();
+      }
+    }
+  }
+
+  // The felt weave: two offset sets of faint diagonal threads. Invisible at
+  // sash size, and the reason the field is not dead flat at 3x. Caller clips.
+  function mbFelt(g) {
+    g.lineWidth = 0.7;
+    g.strokeStyle = 'rgba(255,240,214,0.055)';
+    for (let x = -24; x < 26; x += 2.2) {
+      g.beginPath(); g.moveTo(MB_C + x, MB_C - 20); g.lineTo(MB_C + x + 13, MB_C + 20); g.stroke();
+    }
+    g.strokeStyle = 'rgba(16,8,3,0.05)';
+    for (let x = -24; x < 26; x += 2.2) {
+      g.beginPath(); g.moveTo(MB_C + x + 1.1, MB_C - 20); g.lineTo(MB_C + x + 14.1, MB_C + 20); g.stroke();
+    }
+  }
+
+  // Shading for the rope ring itself: the patch is a thick object, so the
+  // binding takes the same light the felt does. Caller clips to the ring.
+  function mbRopeShade(g) {
+    g.beginPath(); g.ellipse(MB_C, MB_C + MB_R * 0.78, MB_R * 1.06, MB_R * 0.66, 0, 0, TAU);
+    g.fillStyle = 'rgba(46,20,4,0.24)'; g.fill();
+    g.beginPath(); g.ellipse(MB_C - MB_R * 0.36, MB_C - MB_R * 0.52, MB_R * 0.62, MB_R * 0.44, 0, 0, TAU);
+    g.fillStyle = 'rgba(255,242,208,0.2)'; g.fill();
+  }
+
+  // Round patch: rope ring, then the felt field with the five level pass.
+  function mbRound(g, field, o) {
+    o = o || {};
+    const ring = [];
+    for (let i = 0; i < 64; i++) {
+      const a = i / 64 * TAU;
+      ring.push([MB_C + Math.cos(a) * MB_R, MB_C + Math.sin(a) * MB_R]);
+    }
+    g.beginPath(); g.arc(MB_C, MB_C, MB_R, 0, TAU);
+    g.fillStyle = MB_ROPE; g.fill();
+    g.save(); g.clip();
+    mbStitchRing(g, ring, MB_BAND);
+    mbRopeShade(g);
+    g.restore();
+    g.beginPath(); g.arc(MB_C, MB_C, MB_R, 0, TAU);
+    g.lineWidth = LW_SIL; g.strokeStyle = OUT; g.stroke();
+    blob(g, MB_C, MB_C, MB_F, MB_F, field, {
+      lw: LW_INT, rim: o.rim, rimW: 1.5,
+      mid: o.mid, shade: o.shade, bounce: o.bounce, hi: o.hi,
+    });
+    g.save(); g.beginPath(); g.arc(MB_C, MB_C, MB_F - 0.6, 0, TAU); g.clip();
+    mbFelt(g); g.restore();
+  }
+
+  function mbClipRound(g) {
+    g.beginPath(); g.arc(MB_C, MB_C, MB_F - 0.5, 0, TAU); g.clip();
+  }
+
+  // Shield outline, scaled about the patch centre so the ring and the field
+  // are the same shape at two sizes.
+  function mbShieldPts(k) {
+    const raw = [
+      [5.4, 4.6, 3.6], [34.6, 4.6, 3.6], [34.6, 17.2, 2.2],
+      [31.2, 27.4, 6], [20, 35.8, 3], [8.8, 27.4, 6], [5.4, 17.2, 2.2],
+    ];
+    return raw.map(p => [MB_C + (p[0] - MB_C) * k, 20.2 + (p[1] - 20.2) * k, p[2] * k]);
+  }
+
+  function mbShield(g, field, o) {
+    o = o || {};
+    const outer = mbShieldPts(1), inner = mbShieldPts(0.83);
+    const dense = [];
+    for (let i = 0; i < outer.length; i++) {
+      const a = outer[i], b = outer[(i + 1) % outer.length];
+      for (let s = 0; s < 6; s++) {
+        dense.push([a[0] + (b[0] - a[0]) * s / 6, a[1] + (b[1] - a[1]) * s / 6]);
+      }
+    }
+    apath(g, outer); g.fillStyle = MB_ROPE; g.fill();
+    g.save(); apath(g, outer); g.clip();
+    mbStitchRing(g, dense, MB_BAND);
+    mbRopeShade(g);
+    g.restore();
+    apath(g, outer); g.lineWidth = LW_SIL; g.strokeStyle = OUT; g.stroke();
+    apoly(g, inner, field, {
+      lw: LW_INT, rim: o.rim, rimW: 1.5,
+      mid: o.mid, shade: o.shade, bounce: o.bounce, hi: o.hi,
+    });
+    g.save(); apath(g, inner); g.clip(); mbFelt(g); g.restore();
+  }
+
+  function mbClipShield(g) { apath(g, mbShieldPts(0.8)); g.clip(); }
+
+  // 1. Birdhouse on its post, gold cap on the ridge.
+  P.mb_birdhouse = () => mk(40, 40, (g) => {
+    mbRound(g, '#5c7248', { rim: RIM_GREEN, mid: 'rgba(16,26,8,0.12)', shade: 'rgba(16,26,8,0.2)' });
+    g.save(); mbClipRound(g);
+    apoly(g, [[18.3, 24, 1], [21.7, 24, 1], [21.7, 33.4, 1], [18.3, 33.4, 1]], '#7a5230', { lw: LW_INT, line: 'rgba(24,12,4,0.75)' });
+    g.strokeStyle = 'rgba(40,22,8,0.5)'; g.lineWidth = 0.7;
+    g.beginPath(); g.moveTo(19.5, 26); g.lineTo(19.5, 32.4); g.stroke();
+    apoly(g, [[11.4, 16.5, 2], [28.6, 16.5, 2], [28.6, 27.2, 2], [11.4, 27.2, 2]], '#b9834a', { rim: RIM_WARM });
+    blob(g, 20, 27.5, 8.4, 1.5, 'rgba(30,16,4,0.35)', { flat: true, noline: true });
+    g.strokeStyle = 'rgba(70,38,14,0.5)'; g.lineWidth = LW_INT;
+    g.beginPath(); g.moveTo(12.2, 22.2); g.lineTo(27.8, 22.2); g.moveTo(12.2, 25.4); g.lineTo(27.8, 25.4); g.stroke();
+    apoly(g, [[20, 7.4, 1.5], [31.2, 17.2, 1.8], [8.8, 17.2, 1.8]], '#8a5a30', { rim: RIM_WARM, mid: 'rgba(50,26,8,0.14)', shade: 'rgba(50,26,8,0.22)' });
+    g.strokeStyle = 'rgba(48,26,10,0.55)'; g.lineWidth = LW_INT;
+    g.beginPath(); g.moveTo(14.6, 14.4); g.lineTo(25.4, 14.4); g.stroke();
+    apoly(g, [[20, 6.6, 1], [24.6, 10.8, 1], [15.4, 10.8, 1]], '#f4c542', { lw: LW_INT });
+    g.fillStyle = 'rgba(255,252,226,0.8)';
+    g.beginPath(); g.ellipse(18.4, 9.2, 1.3, 0.6, -0.5, 0, TAU); g.fill();
+    blob(g, 20, 20.6, 3.9, 3.9, '#1d1208', { flat: true, lw: LW_INT });
+    g.save(); g.beginPath(); g.arc(20, 20.6, 3.9, 0, TAU); g.clip();
+    g.fillStyle = 'rgba(255,206,140,0.16)';
+    g.beginPath(); g.ellipse(20, 24.2, 3.2, 1.7, 0, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(8,4,1,0.55)';
+    g.beginPath(); g.ellipse(20, 17.6, 4.2, 2.2, 0, 0, TAU); g.fill();
+    g.restore();
+    apoly(g, [[16.4, 24.4, 0.9], [23.6, 24.4, 0.9], [23.6, 26.2, 0.9], [16.4, 26.2, 0.9]], '#6e4526', { lw: LW_INT });
+    g.strokeStyle = 'rgba(255,222,170,0.35)'; g.lineWidth = 0.6;
+    g.beginPath(); g.moveTo(17.4, 25); g.lineTo(22.6, 25); g.stroke();
+    g.restore();
+  });
+
+  // 2. One three tongued flame with a hot core.
+  P.mb_pyro = () => mk(40, 40, (g) => {
+    mbRound(g, '#5a2418', { rim: RIM_WARM, mid: 'rgba(40,8,2,0.14)', shade: 'rgba(40,8,2,0.22)' });
+    g.save(); mbClipRound(g);
+    const flame = (k) => {
+      const q = (x, y) => [20 + (x - 20) * k, 25 + (y - 25) * k];
+      const a = q(20, 33.0), b = q(9.4, 30.4), c = q(8.6, 22.0), d = q(13.8, 14.8);
+      const e = q(13.4, 19.4), f = q(15.6, 21.0), h = q(16.6, 12.4), i = q(20, 6.2);
+      const j = q(23.4, 12.0), l = q(24.8, 19.4), m = q(26.4, 16.4), n = q(27.2, 12.6);
+      const o = q(31.6, 21.4), p = q(29.6, 27.4), r = q(26.4, 32.2);
+      g.beginPath();
+      g.moveTo(a[0], a[1]);
+      g.bezierCurveTo(b[0], b[1], c[0], c[1], d[0], d[1]);
+      g.quadraticCurveTo(e[0], e[1], f[0], f[1]);
+      g.quadraticCurveTo(h[0], h[1], i[0], i[1]);
+      g.quadraticCurveTo(j[0], j[1], l[0], l[1]);
+      g.quadraticCurveTo(m[0], m[1], n[0], n[1]);
+      g.quadraticCurveTo(o[0], o[1], p[0], p[1]);
+      g.quadraticCurveTo(r[0], r[1], a[0], a[1]);
+      g.closePath();
+    };
+    flame(1); g.fillStyle = '#c83c0a'; g.fill();
+    g.save(); flame(1); g.clip();
+    shadePass(g, 20, 20, 11, 13, {
+      mid: 'rgba(96,12,0,0.14)', shade: 'rgba(96,12,0,0.2)',
+      bounce: 'rgba(255,180,90,0.18)', hi: 'rgba(255,236,180,0.18)',
+    });
+    g.restore();
+    flame(1); g.lineWidth = LW_SIL; g.strokeStyle = OUT; g.stroke();
+    flame(0.68); g.fillStyle = '#ff8c28'; g.fill();
+    flame(0.68); g.lineWidth = LW_INT; g.strokeStyle = 'rgba(150,44,4,0.5)'; g.stroke();
+    flame(0.38); g.fillStyle = '#ffdc8c'; g.fill();
+    blob(g, 19.4, 25.8, 1.7, 2.6, 'rgba(255,253,232,0.8)', { flat: true, noline: true });
+    g.fillStyle = 'rgba(255,220,140,0.85)';
+    g.beginPath(); g.arc(14.4, 12.6, 1.0, 0, TAU); g.fill();
+    g.beginPath(); g.arc(26.2, 9.6, 0.75, 0, TAU); g.fill();
+    g.restore();
+  });
+
+  // 3. Storm lantern: the second fire badge, kept apart from the flame by its
+  // bail handle and its glass barrel.
+  P.mb_wholeforest = () => mk(40, 40, (g) => {
+    mbRound(g, '#33322e', { rim: RIM_COOL, mid: 'rgba(6,8,10,0.16)', shade: 'rgba(6,8,10,0.26)' });
+    g.save(); mbClipRound(g);
+    const bail = () => {
+      g.beginPath(); g.moveTo(13.6, 13.4); g.quadraticCurveTo(20, 4.6, 26.4, 13.4);
+    };
+    g.lineCap = 'round';
+    bail(); g.strokeStyle = OUT; g.lineWidth = 3.0; g.stroke();
+    bail(); g.strokeStyle = '#98a4b2'; g.lineWidth = 1.5; g.stroke();
+    g.strokeStyle = 'rgba(226,240,250,0.6)'; g.lineWidth = 0.55;
+    g.beginPath(); g.moveTo(15.2, 11.2); g.quadraticCurveTo(19.2, 6.6, 22.2, 7.8); g.stroke();
+    apoly(g, [[13.0, 12.2, 1.4], [27.0, 12.2, 1.4], [25.0, 16.6, 1.2], [15.0, 16.6, 1.2]], '#8d99a7', { rim: RIM_COOL, mid: 'rgba(10,16,22,0.14)', shade: 'rgba(10,16,22,0.22)' });
+    g.strokeStyle = 'rgba(20,26,32,0.75)'; g.lineWidth = LW_INT;
+    g.beginPath(); g.moveTo(16.6, 14.4); g.lineTo(18.6, 14.4); g.moveTo(21.4, 14.4); g.lineTo(23.4, 14.4); g.stroke();
+    const glass = [[14.8, 16.4, 1.5], [25.2, 16.4, 1.5], [26.4, 21.5, 3], [25.0, 27.6, 2], [15.0, 27.6, 2], [13.6, 21.5, 3]];
+    apoly(g, glass, '#5f7f8c', { mid: 'rgba(8,20,26,0.12)', shade: 'rgba(8,20,26,0.2)' });
+    g.save(); apath(g, glass); g.clip();
+    blob(g, 20, 23.2, 6.6, 6.2, 'rgba(255,140,40,0.45)', { flat: true, noline: true });
+    blob(g, 20, 23.4, 3.4, 4.3, '#ff8c28', { flat: true, noline: true });
+    blob(g, 20, 23.8, 1.7, 2.7, '#ffdc8c', { flat: true, noline: true });
+    g.restore();
+    g.strokeStyle = 'rgba(24,16,8,0.8)'; g.lineWidth = LW_INT;
+    g.beginPath(); g.moveTo(16.6, 16.6); g.lineTo(16.2, 27.4); g.moveTo(23.4, 16.6); g.lineTo(23.8, 27.4); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.6)';
+    g.beginPath(); g.ellipse(17.0, 20.2, 1.2, 3.0, 0.22, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.32)';
+    g.beginPath(); g.ellipse(19.0, 19.6, 0.7, 2.0, 0.22, 0, TAU); g.fill();
+    apoly(g, [[13.4, 27.2, 1.2], [26.6, 27.2, 1.2], [27.4, 31.6, 1.6], [12.6, 31.6, 1.6]], '#7c8794', { rim: RIM_COOL, mid: 'rgba(10,16,22,0.14)', shade: 'rgba(10,16,22,0.22)' });
+    blob(g, 20, 32.2, 8.0, 1.3, 'rgba(0,0,0,0.3)', { flat: true, noline: true });
+    g.restore();
+  });
+
+  // 4. SHIELD. Crescent moon over a low horizon bar.
+  P.mb_longnight = () => mk(40, 40, (g) => {
+    mbShield(g, '#3a4a63', { rim: RIM_COOL, mid: 'rgba(6,10,20,0.14)', shade: 'rgba(6,10,20,0.22)' });
+    g.save(); mbClipShield(g);
+    apoly(g, [[2, 27.0, 2], [12, 25.4, 2], [24, 26.2, 2], [38, 25.2, 2], [38, 40, 2], [2, 40, 2]], '#1c2739', { lw: LW_INT, line: 'rgba(8,12,20,0.9)', mid: 'rgba(4,8,16,0.12)', shade: 'rgba(4,8,16,0.2)' });
+    g.strokeStyle = 'rgba(196,212,238,0.4)'; g.lineWidth = 0.8; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(4, 26.7); g.lineTo(12, 25.4); g.lineTo(24, 26.2); g.lineTo(36, 25.3); g.stroke();
+    const moon = () => {
+      g.beginPath();
+      g.moveTo(25.0, 10.6);
+      g.bezierCurveTo(15.4, 9.0, 9.8, 13.4, 9.8, 18.4);
+      g.bezierCurveTo(9.8, 23.6, 15.6, 27.8, 25.0, 26.2);
+      g.bezierCurveTo(17.6, 24.4, 15.2, 21.8, 15.2, 18.4);
+      g.bezierCurveTo(15.2, 15.0, 17.6, 12.4, 25.0, 10.6);
+      g.closePath();
+    };
+    moon(); g.fillStyle = '#e9e4da'; g.fill();
+    g.save(); moon(); g.clip();
+    shadePass(g, 15.4, 18.4, 6.6, 9.0, {
+      mid: 'rgba(80,72,60,0.12)', shade: 'rgba(80,72,60,0.2)',
+      bounce: 'rgba(255,196,120,0.1)', hi: 'rgba(255,252,244,0.24)',
+    });
+    g.fillStyle = 'rgba(150,142,128,0.4)';
+    g.beginPath(); g.ellipse(12.6, 16.2, 1.6, 1.3, 0, 0, TAU); g.fill();
+    g.beginPath(); g.ellipse(13.4, 21.8, 1.1, 0.9, 0, 0, TAU); g.fill();
+    g.beginPath(); g.ellipse(11.6, 19.4, 0.8, 0.7, 0, 0, TAU); g.fill();
+    g.strokeStyle = 'rgba(126,200,232,0.85)'; g.lineWidth = 1.7;
+    g.beginPath(); g.moveTo(25.0, 10.6); g.bezierCurveTo(15.4, 9.0, 9.8, 13.4, 9.8, 18.4); g.stroke();
+    g.restore();
+    moon(); g.lineWidth = LW_SIL; g.strokeStyle = OUT; g.stroke();
+    g.restore();
+  });
+
+  // 5. Jar with one firefly in it, lid off behind.
+  P.mb_blinksfav = () => mk(40, 40, (g) => {
+    mbRound(g, '#26314a', { rim: RIM_COOL, mid: 'rgba(4,8,18,0.14)', shade: 'rgba(4,8,18,0.24)' });
+    g.save(); mbClipRound(g);
+    g.save(); g.translate(26.6, 15.0); g.rotate(0.5);
+    apoly(g, [[-4.4, -2.0, 1.2], [4.4, -2.0, 1.2], [4.4, 2.0, 1.2], [-4.4, 2.0, 1.2]], '#b0b6bd', { lw: LW_INT, mid: 'rgba(20,24,30,0.14)', shade: 'rgba(20,24,30,0.22)' });
+    g.fillStyle = 'rgba(24,16,8,0.85)';
+    g.beginPath(); g.arc(-1.5, -0.2, 0.85, 0, TAU); g.fill();
+    g.beginPath(); g.arc(1.7, 0.3, 0.85, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.5)';
+    g.beginPath(); g.ellipse(-2.4, -1.2, 1.7, 0.45, 0, 0, TAU); g.fill();
+    g.restore();
+    const jar = [[12.6, 15.6, 2], [27.4, 15.6, 2], [28.4, 21, 4], [27.0, 29.2, 3], [13.0, 29.2, 3], [11.6, 21, 4]];
+    apoly(g, [[15.4, 11.6, 1], [24.6, 11.6, 1], [24.6, 16.2, 1], [15.4, 16.2, 1]], '#6d93a6', { lw: LW_INT, mid: 'rgba(8,22,30,0.12)', shade: 'rgba(8,22,30,0.2)' });
+    blob(g, 20, 11.6, 5.0, 1.5, '#8fb2c2', { flat: true, lw: LW_INT });
+    apoly(g, jar, '#6d93a6', { mid: 'rgba(8,22,30,0.12)', shade: 'rgba(8,22,30,0.2)', hi: 'rgba(230,250,255,0.2)' });
+    g.save(); apath(g, jar); g.clip();
+    g.fillStyle = 'rgba(200,224,74,0.14)';
+    g.beginPath(); g.arc(21.2, 22.4, 7.4, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(214,234,110,0.22)';
+    g.beginPath(); g.arc(21.2, 22.4, 4.6, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(238,250,170,0.3)';
+    g.beginPath(); g.arc(21.2, 22.4, 2.6, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.4)';
+    g.beginPath(); g.ellipse(17.6, 20.4, 1.6, 1.0, -0.7, 0, TAU); g.fill();
+    g.beginPath(); g.ellipse(23.8, 26.6, 1.1, 0.7, -0.7, 0, TAU); g.fill();
+    g.restore();
+    blob(g, 21.2, 22.6, 2.3, 1.5, '#c8e04a', { flat: true, lw: 0.8, rot: -0.2 });
+    blob(g, 19.2, 21.8, 1.1, 1.0, '#2b2a18', { flat: true, lw: 0.6 });
+    g.fillStyle = 'rgba(255,255,236,0.9)';
+    g.beginPath(); g.ellipse(22.4, 23.2, 1.1, 0.8, -0.2, 0, TAU); g.fill();
+    g.strokeStyle = 'rgba(236,250,190,0.55)'; g.lineWidth = 0.6;
+    g.beginPath(); g.moveTo(20.6, 21.4); g.quadraticCurveTo(21.6, 19.2, 23.4, 19.8); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.55)';
+    g.beginPath(); g.ellipse(15.4, 20.4, 1.3, 3.6, 0.16, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.3)';
+    g.beginPath(); g.ellipse(17.4, 19.6, 0.7, 2.4, 0.16, 0, TAU); g.fill();
+    g.restore();
+  });
+
+  // 6. Cocoa mug, handle right, two curls of steam.
+  P.mb_fieldscholar = () => mk(40, 40, (g) => {
+    mbRound(g, '#c9a86a', { rim: RIM_WARM, mid: 'rgba(70,44,10,0.12)', shade: 'rgba(70,44,10,0.2)' });
+    g.save(); mbClipRound(g);
+    g.lineCap = 'round';
+    const steam = (x0, y0, c1x, c1y, c2x, c2y, x1, y1) => {
+      g.beginPath(); g.moveTo(x0, y0); g.bezierCurveTo(c1x, c1y, c2x, c2y, x1, y1);
+    };
+    g.strokeStyle = 'rgba(60,38,10,0.28)'; g.lineWidth = 2.6;
+    steam(16.6, 12.8, 14.0, 9.8, 18.6, 8.4, 16.8, 6.6); g.stroke();
+    steam(22.6, 12.6, 20.2, 9.4, 24.8, 8.0, 22.6, 6.2); g.stroke();
+    g.strokeStyle = 'rgba(246,240,222,0.9)'; g.lineWidth = 1.7;
+    steam(16.6, 12.8, 14.0, 9.8, 18.6, 8.4, 16.8, 6.6); g.stroke();
+    steam(22.6, 12.6, 20.2, 9.4, 24.8, 8.0, 22.6, 6.2); g.stroke();
+    g.strokeStyle = 'rgba(255,255,248,0.7)'; g.lineWidth = 0.6;
+    steam(16.2, 12.2, 13.8, 9.6, 18.2, 8.4, 16.4, 6.8); g.stroke();
+    const hoop = () => { g.beginPath(); g.arc(25.6, 21.6, 4.6, -1.15, 1.15); };
+    hoop(); g.strokeStyle = OUT; g.lineWidth = 5.6; g.stroke();
+    hoop(); g.strokeStyle = '#c0392b'; g.lineWidth = 3.4; g.stroke();
+    g.strokeStyle = 'rgba(255,186,158,0.5)'; g.lineWidth = 0.8;
+    g.beginPath(); g.arc(25.6, 21.6, 5.5, -0.95, 0.1); g.stroke();
+    const mug = [[12.4, 14.4, 2], [26.0, 14.4, 2], [25.2, 25.0, 2], [23.4, 29.6, 3], [15.0, 29.6, 3], [13.2, 25.0, 2]];
+    apoly(g, mug, '#c0392b', { rim: RIM_WARM, mid: 'rgba(72,10,6,0.14)', shade: 'rgba(72,10,6,0.22)' });
+    g.save(); apath(g, mug); g.clip();
+    g.fillStyle = '#e8d9b0'; g.fillRect(11, 20.2, 18, 3.4);
+    g.fillStyle = 'rgba(120,90,50,0.18)'; g.fillRect(11, 22.8, 18, 0.8);
+    g.fillStyle = 'rgba(255,224,206,0.28)';
+    g.beginPath(); g.ellipse(15.8, 21.4, 1.5, 6.4, 0.04, 0, TAU); g.fill();
+    g.restore();
+    blob(g, 19.2, 14.4, 6.9, 2.3, '#e8d9b0', { flat: true, lw: LW_INT });
+    blob(g, 19.2, 14.6, 5.3, 1.5, '#5a3520', { flat: true, lw: 0.7 });
+    g.fillStyle = 'rgba(150,96,52,0.55)';
+    g.beginPath(); g.ellipse(20.6, 14.9, 2.4, 0.7, 0, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,240,210,0.55)';
+    g.beginPath(); g.ellipse(17.0, 14.1, 1.5, 0.5, -0.1, 0, TAU); g.fill();
+    g.restore();
+  });
+
+  // 7. Open field guide, one gold star earned on the right page.
+  P.mb_naturalist = () => mk(40, 40, (g) => {
+    mbRound(g, '#5c7248', { rim: RIM_GREEN, mid: 'rgba(16,26,8,0.12)', shade: 'rgba(16,26,8,0.2)' });
+    g.save(); mbClipRound(g);
+    blob(g, 20, 28.4, 11.0, 1.9, 'rgba(14,24,8,0.42)', { flat: true, noline: true });
+    // page block under each leaf, so the book has thickness at the outer edge
+    g.fillStyle = '#cdae7e'; g.strokeStyle = 'rgba(96,64,26,0.65)'; g.lineWidth = 0.7;
+    g.beginPath(); g.moveTo(7.4, 23.6); g.lineTo(20, 27.2); g.lineTo(20, 29.0); g.lineTo(7.4, 25.4); g.closePath(); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(32.6, 23.6); g.lineTo(20, 27.2); g.lineTo(20, 29.0); g.lineTo(32.6, 25.4); g.closePath(); g.fill(); g.stroke();
+    // two leaves falling away from a low spine: the open book silhouette
+    const lp = [[7.4, 13.2, 1.6], [19.4, 17.4, 1.2], [19.4, 27.2, 1.2], [7.4, 23.6, 1.6]];
+    const rp = [[20.6, 17.4, 1.2], [32.6, 13.2, 1.6], [32.6, 23.6, 1.6], [20.6, 27.2, 1.2]];
+    apoly(g, lp, '#e8cfa5', { mid: 'rgba(112,80,38,0.1)', shade: 'rgba(112,80,38,0.16)', hi: 'rgba(255,250,232,0.26)' });
+    apoly(g, rp, '#e8cfa5', { mid: 'rgba(112,80,38,0.1)', shade: 'rgba(112,80,38,0.16)', hi: 'rgba(255,250,232,0.26)' });
+    g.strokeStyle = 'rgba(124,88,44,0.7)'; g.lineWidth = 0.9; g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(9.6, 16.4); g.lineTo(17.4, 19.1);
+    g.moveTo(9.6, 19.2); g.lineTo(17.4, 21.9);
+    g.moveTo(9.6, 22.0); g.lineTo(14.6, 23.7);
+    g.moveTo(30.4, 16.4); g.lineTo(22.6, 19.1);
+    g.moveTo(30.4, 19.2); g.lineTo(22.6, 21.9);
+    g.stroke();
+    blob(g, 20, 22.4, 2.2, 5.6, 'rgba(74,52,22,0.34)', { flat: true, noline: true });
+    apoly(g, [[19.1, 17.2, 0.6], [20.9, 17.2, 0.6], [20.9, 27.4, 0.6], [19.1, 27.4, 0.6]], '#7a5230', { lw: LW_INT, mid: 'rgba(40,22,6,0.16)', shade: 'rgba(40,22,6,0.24)' });
+    star5(g, 27.0, 21.4, 3.2);
+    g.fillStyle = '#f4c542'; g.fill();
+    g.lineWidth = 0.9; g.strokeStyle = OUT; g.stroke();
+    star5(g, 27.0, 21.0, 1.5);
+    g.fillStyle = 'rgba(255,246,208,0.85)'; g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.85)';
+    g.beginPath(); g.arc(25.9, 20.1, 0.6, 0, TAU); g.fill();
+    g.restore();
+  });
+
+  // 8. SHIELD. Antlers on a mount plate, three tines a side.
+  P.mb_trophywall = () => mk(40, 40, (g) => {
+    mbShield(g, '#4a2f1c', { rim: RIM_WARM, mid: 'rgba(28,12,2,0.14)', shade: 'rgba(28,12,2,0.24)' });
+    g.save(); mbClipShield(g);
+    apoly(g, [[11.6, 25.4, 2], [28.4, 25.4, 2], [23.0, 30.0, 2], [17.0, 30.0, 2]], '#8a6138', { rim: RIM_WARM, mid: 'rgba(46,24,6,0.14)', shade: 'rgba(46,24,6,0.22)' });
+    g.strokeStyle = 'rgba(255,224,178,0.35)'; g.lineWidth = 0.8;
+    g.beginPath(); g.moveTo(13.2, 26.4); g.lineTo(26.8, 26.4); g.stroke();
+    g.strokeStyle = 'rgba(46,24,8,0.45)'; g.lineWidth = 0.7;
+    g.beginPath(); g.moveTo(14.0, 28.2); g.lineTo(26.0, 28.2); g.stroke();
+    // main beams sweep up and out, tines branch upward off them
+    const beam = [18.2, 24.8, 14.4, 18.4, 13.2, 9.4];
+    const tines = [
+      [15.2, 16.2, 12.0, 13.6, 10.0, 11.0],
+      [16.4, 20.6, 13.4, 19.2, 11.0, 17.2],
+    ];
+    const pass = (set, w, col) => {
+      g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round';
+      for (const b of set) {
+        g.beginPath(); g.moveTo(b[0], b[1]); g.quadraticCurveTo(b[2], b[3], b[4], b[5]); g.stroke();
+        g.beginPath(); g.moveTo(40 - b[0], b[1]); g.quadraticCurveTo(40 - b[2], b[3], 40 - b[4], b[5]); g.stroke();
+      }
+    };
+    pass(tines, 4.0, OUT);
+    pass([beam], 5.6, OUT);
+    pass(tines, 2.3, '#e2dac4');
+    pass([beam], 3.6, '#f0ead8');
+    g.strokeStyle = 'rgba(255,255,255,0.6)'; g.lineWidth = 0.9;
+    g.beginPath(); g.moveTo(17.6, 23.6); g.quadraticCurveTo(13.8, 18.0, 12.7, 11.2); g.stroke();
+    g.beginPath(); g.moveTo(22.4, 23.6); g.quadraticCurveTo(26.2, 18.0, 27.3, 11.2); g.stroke();
+    g.strokeStyle = 'rgba(126,110,80,0.55)'; g.lineWidth = 0.7;
+    g.beginPath(); g.moveTo(19.0, 24.2); g.quadraticCurveTo(15.4, 19.0, 14.2, 13.0); g.stroke();
+    g.beginPath(); g.moveTo(21.0, 24.2); g.quadraticCurveTo(24.6, 19.0, 25.8, 13.0); g.stroke();
+    apoly(g, [[17.4, 23.2, 0.8], [22.6, 23.2, 0.8], [21.8, 26.0, 0.8], [18.2, 26.0, 0.8]], '#6e4526', { lw: LW_INT, mid: 'rgba(36,18,4,0.16)', shade: 'rgba(36,18,4,0.24)' });
+    apoly(g, [[16.8, 27.3, 0.9], [23.2, 27.3, 0.9], [22.4, 29.5, 0.9], [17.6, 29.5, 0.9]], '#d4402c', { lw: LW_INT });
+    g.strokeStyle = 'rgba(255,190,170,0.45)'; g.lineWidth = 0.6;
+    g.beginPath(); g.moveTo(17.8, 28.0); g.lineTo(22.2, 28.0); g.stroke();
+    g.restore();
+  });
+
+  // 9. Boot print pressed into moss: sole and heel as two masses.
+  P.mb_deepwoods = () => mk(40, 40, (g) => {
+    mbRound(g, '#2c4420', { rim: RIM_GREEN, mid: 'rgba(8,20,4,0.14)', shade: 'rgba(8,20,4,0.22)' });
+    g.save(); mbClipRound(g);
+    // wet ground pressed pale around the print, so the black mass reads
+    blob(g, 20, 20, 12.6, 13.4, 'rgba(150,182,104,0.2)', { flat: true, noline: true });
+    blob(g, 20, 20.8, 10.4, 11.8, 'rgba(120,156,80,0.14)', { flat: true, noline: true });
+    // ball of the foot wide at the top, waisted into the arch at the bottom
+    const sole = [[13.6, 8.4, 5], [26.4, 8.4, 5], [28.2, 13.4, 4], [26.6, 18.6, 2.5], [24.6, 22.6, 3], [15.4, 22.6, 3], [13.4, 18.6, 2.5], [11.8, 13.4, 4]];
+    const heel = [[14.8, 25.0, 4], [25.2, 25.0, 4], [24.4, 31.0, 4], [15.6, 31.0, 4]];
+    const ink = { mid: 'rgba(0,0,0,0.16)', shade: 'rgba(0,0,0,0.22)', bounce: 'rgba(120,160,70,0.12)', hi: 'rgba(170,200,130,0.12)' };
+    apoly(g, sole, '#14170f', ink);
+    apoly(g, heel, '#14170f', ink);
+    // lug tread: split bars, so the black mass keeps the silhouette
+    const lug = (y, half, h) => {
+      g.fillStyle = '#7d9a3e';
+      g.beginPath(); g.roundRect(20 - half, y - h / 2, half - 0.8, h, 0.8); g.fill();
+      g.beginPath(); g.roundRect(20 + 0.8, y - h / 2, half - 0.8, h, 0.8); g.fill();
+      g.fillStyle = 'rgba(28,42,14,0.5)';
+      g.fillRect(20 - half, y + h / 2 - 0.5, half - 0.8, 0.5);
+      g.fillRect(20 + 0.8, y + h / 2 - 0.5, half - 0.8, 0.5);
+    };
+    lug(11.0, 5.6, 2.1); lug(14.6, 5.9, 2.1); lug(18.2, 5.2, 2.0); lug(21.2, 4.0, 1.7);
+    lug(26.8, 4.2, 2.1); lug(29.6, 4.0, 2.0);
+    g.strokeStyle = 'rgba(186,216,142,0.32)'; g.lineWidth = 0.9; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(12.6, 16.6); g.quadraticCurveTo(12.2, 11.0, 16.4, 9.2); g.stroke();
+    g.beginPath(); g.moveTo(15.4, 25.8); g.lineTo(24.2, 25.8); g.stroke();
+    g.restore();
+  });
+
+  // 10. Spade standing in a low mound of earth.
+  P.mb_gravefull = () => mk(40, 40, (g) => {
+    mbRound(g, '#5c4028', { rim: RIM_WARM, mid: 'rgba(38,20,4,0.14)', shade: 'rgba(38,20,4,0.22)' });
+    g.save(); mbClipRound(g);
+    const dee = () => {
+      g.beginPath();
+      g.moveTo(17.4, 12.4); g.lineTo(17.0, 10.0);
+      g.quadraticCurveTo(20, 6.4, 23.0, 10.0);
+      g.lineTo(22.6, 12.4);
+    };
+    g.lineCap = 'round';
+    dee(); g.strokeStyle = OUT; g.lineWidth = 5.4; g.stroke();
+    dee(); g.strokeStyle = '#a07446'; g.lineWidth = 3.4; g.stroke();
+    g.strokeStyle = 'rgba(255,222,170,0.45)'; g.lineWidth = 0.8;
+    g.beginPath(); g.moveTo(17.9, 10.4); g.quadraticCurveTo(19.4, 8.2, 21.2, 8.6); g.stroke();
+    apoly(g, [[18.5, 10.6, 0.8], [21.5, 10.6, 0.8], [21.5, 22.2, 0.8], [18.5, 22.2, 0.8]], '#8a6138', { rim: RIM_WARM, mid: 'rgba(48,26,6,0.14)', shade: 'rgba(48,26,6,0.22)' });
+    g.strokeStyle = 'rgba(56,32,10,0.45)'; g.lineWidth = 0.6;
+    g.beginPath(); g.moveTo(19.6, 13.4); g.lineTo(19.6, 21.4); g.stroke();
+    apoly(g, [[18.1, 13.2, 0.7], [21.9, 13.2, 0.7], [21.9, 16.6, 0.7], [18.1, 16.6, 0.7]], '#d4402c', { lw: LW_INT, mid: 'rgba(70,10,4,0.14)', shade: 'rgba(70,10,4,0.22)' });
+    g.strokeStyle = 'rgba(255,190,170,0.4)'; g.lineWidth = 0.6;
+    g.beginPath(); g.moveTo(18.6, 14.2); g.lineTo(21.4, 14.2); g.stroke();
+    apoly(g, [[17.8, 19.4, 0.7], [22.2, 19.4, 0.7], [22.2, 22.4, 0.7], [17.8, 22.4, 0.7]], '#7c8794', { lw: LW_INT, mid: 'rgba(20,30,40,0.14)', shade: 'rgba(20,30,40,0.22)' });
+    apoly(g, [[14.0, 21.4, 1.5], [26.0, 21.4, 1.5], [25.4, 26.4, 2], [20, 32.0, 1.5], [14.6, 26.4, 2]], '#a8b4c2', { rim: RIM_COOL, mid: 'rgba(20,30,40,0.14)', shade: 'rgba(20,30,40,0.22)', hi: 'rgba(250,254,255,0.26)' });
+    g.strokeStyle = 'rgba(240,250,255,0.85)'; g.lineWidth = 1.1; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(15.4, 22.6); g.lineTo(15.9, 26.6); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.55)';
+    g.beginPath(); g.ellipse(17.4, 25.2, 1.3, 3.4, 0.24, 0, TAU); g.fill();
+    g.strokeStyle = 'rgba(40,54,68,0.5)'; g.lineWidth = 0.8;
+    g.beginPath(); g.moveTo(23.0, 23.0); g.lineTo(22.4, 27.4); g.stroke();
+    apoly(g, [
+      [4.6, 34.0, 2], [8.8, 30.4, 3], [14.2, 28.6, 3], [17.8, 29.8, 2], [22.2, 29.8, 2],
+      [26.6, 28.2, 3], [31.6, 30.6, 3], [35.4, 34.0, 2], [35.4, 39, 2], [4.6, 39, 2],
+    ], '#3b2a18', { mid: 'rgba(20,10,2,0.16)', shade: 'rgba(20,10,2,0.24)', bounce: 'rgba(255,166,92,0.12)' });
+    blob(g, 12.6, 30.2, 2.6, 1.6, '#4d3721', { flat: true, lw: 0.8 });
+    blob(g, 25.8, 29.8, 2.2, 1.4, '#4d3721', { flat: true, lw: 0.8 });
+    blob(g, 29.6, 31.8, 1.5, 1.0, '#4d3721', { flat: true, lw: 0.7 });
+    g.strokeStyle = 'rgba(150,110,60,0.4)'; g.lineWidth = 0.8; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(9.4, 31.2); g.quadraticCurveTo(12.4, 29.2, 15.6, 29.0); g.stroke();
+    g.restore();
+  });
+
+  // 11. Four coins stacked, the top one struck with a star.
+  P.mb_corkboard = () => mk(40, 40, (g) => {
+    mbRound(g, '#3a4a63', { rim: RIM_COOL, mid: 'rgba(6,10,20,0.14)', shade: 'rgba(6,10,20,0.22)' });
+    g.save(); mbClipRound(g);
+    const rx = 9.2, ry = 3.2, hh = 4.6;
+    const wall = (cy) => {
+      g.beginPath();
+      g.moveTo(20 - rx, cy);
+      g.lineTo(20 - rx, cy + hh);
+      g.ellipse(20, cy + hh, rx, ry, 0, Math.PI, 0, true);
+      g.lineTo(20 + rx, cy);
+      g.ellipse(20, cy, rx, ry, 0, 0, Math.PI, false);
+      g.closePath();
+    };
+    blob(g, 20, 33.4, 10.6, 1.8, 'rgba(6,10,20,0.45)', { flat: true, noline: true });
+    for (const cy of [25.8, 21.6, 17.4, 13.2]) {
+      wall(cy); g.fillStyle = '#e3b341'; g.fill();
+      g.save(); wall(cy); g.clip();
+      shadePass(g, 20, cy + hh / 2, rx, hh, {
+        mid: 'rgba(96,58,4,0.16)', shade: 'rgba(96,58,4,0.24)',
+        bounce: 'rgba(255,196,110,0.14)', hi: 'rgba(255,248,214,0.2)',
+      });
+      g.restore();
+      wall(cy); g.lineWidth = 2.0; g.strokeStyle = OUT; g.stroke();
+      g.strokeStyle = 'rgba(255,246,206,0.4)'; g.lineWidth = 0.8;
+      g.beginPath(); g.moveTo(20 - rx + 0.9, cy + 0.9); g.lineTo(20 - rx + 0.9, cy + hh - 0.4); g.stroke();
+    }
+    blob(g, 20, 13.2, rx, ry, '#f4c542', { lw: LW_INT, mid: 'rgba(110,68,6,0.12)', shade: 'rgba(110,68,6,0.16)', hi: 'rgba(255,250,222,0.26)' });
+    g.strokeStyle = 'rgba(150,104,14,0.65)'; g.lineWidth = 0.8;
+    g.beginPath(); g.ellipse(20, 13.2, rx - 1.5, ry - 0.7, 0, 0, TAU); g.stroke();
+    g.save(); g.translate(20, 13.4); g.scale(1, 0.42);
+    star5(g, 0, 0, 5.2);
+    g.fillStyle = 'rgba(138,90,8,0.6)'; g.fill();
+    g.lineWidth = 1.4; g.strokeStyle = 'rgba(255,244,196,0.35)'; g.stroke();
+    g.restore();
+    g.fillStyle = 'rgba(255,252,232,0.85)';
+    g.beginPath(); g.ellipse(15.4, 12.2, 2.4, 0.9, -0.1, 0, TAU); g.fill();
+    g.beginPath(); g.arc(12.2, 19.6, 0.8, 0, TAU); g.fill();
+    g.restore();
+  });
+
+  // 12. The sash hanging empty: two bare loops and one lint tuft.
+  P.mb_deepdebt = () => mk(40, 40, (g) => {
+    mbRound(g, '#bdb5a6', { rim: RIM_COOL, mid: 'rgba(60,52,38,0.12)', shade: 'rgba(60,52,38,0.2)' });
+    g.save(); mbClipRound(g);
+    const A = [7.6, 13.4], B = [13.0, 8.2], C = [32.4, 26.6], D = [27.0, 31.8];
+    blob(g, 21.4, 21.4, 10.4, 4.4, 'rgba(50,44,32,0.28)', { flat: true, noline: true, rot: 0.76 });
+    apoly(g, [[A[0], A[1], 2], [B[0], B[1], 2], [C[0], C[1], 2], [D[0], D[1], 2]], '#5c7248', { rim: RIM_GREEN, mid: 'rgba(16,26,8,0.12)', shade: 'rgba(16,26,8,0.2)' });
+    g.strokeStyle = 'rgba(226,238,214,0.45)'; g.lineWidth = 0.7; g.lineCap = 'round';
+    for (let i = 0; i < 9; i++) {
+      const t = 0.06 + i * 0.11;
+      const ux = B[0] + (C[0] - B[0]) * t, uy = B[1] + (C[1] - B[1]) * t;
+      const lx = A[0] + (D[0] - A[0]) * t, ly = A[1] + (D[1] - A[1]) * t;
+      g.beginPath(); g.moveTo(ux - 0.2, uy + 1.5); g.lineTo(ux + 0.9, uy + 0.5); g.stroke();
+      g.beginPath(); g.moveTo(lx + 0.2, ly - 1.5); g.lineTo(lx - 0.9, ly - 0.5); g.stroke();
+    }
+    const loop = (cx, cy) => {
+      for (let i = 0; i < 10; i++) {
+        const a = i / 10 * TAU;
+        const x0 = cx + Math.cos(a) * 2.0, y0 = cy + Math.sin(a) * 2.0;
+        const x1 = cx + Math.cos(a) * 3.3, y1 = cy + Math.sin(a) * 3.3;
+        g.strokeStyle = 'rgba(24,18,8,0.45)'; g.lineWidth = 1.5;
+        g.beginPath(); g.moveTo(x0 + 0.3, y0 + 0.4); g.lineTo(x1 + 0.3, y1 + 0.4); g.stroke();
+        g.strokeStyle = (i % 2) ? '#d8cfc0' : '#efe7d6'; g.lineWidth = 1.2;
+        g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      }
+      g.fillStyle = 'rgba(18,26,10,0.55)';
+      for (let i = 0; i < 6; i++) {
+        const a = i / 6 * TAU + 0.3;
+        g.beginPath(); g.arc(cx + Math.cos(a) * 1.8, cy + Math.sin(a) * 1.8, 0.4, 0, TAU); g.fill();
+      }
+    };
+    loop(16.1, 16.3);
+    loop(23.9, 23.7);
+    clump(g, 17.4, 12.4, 3.2, 4.6, -0.8, '#d8cbaa', { line: OUT, lw: 0.9, hi: 'rgba(255,250,228,0.5)' });
+    clump(g, 18.8, 13.4, 2.2, 3.2, -0.3, '#c9bb98', { line: OUT, lw: 0.8 });
+    g.strokeStyle = 'rgba(232,222,190,0.8)'; g.lineWidth = 0.55; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(16.6, 10.6); g.quadraticCurveTo(14.8, 9.0, 13.4, 9.4); g.stroke();
+    g.beginPath(); g.moveTo(17.8, 9.6); g.quadraticCurveTo(17.4, 7.6, 18.6, 6.6); g.stroke();
+    g.restore();
+  });
+
+  // 13. SHIELD. Sun cresting a ridgeline under three long rays.
+  P.mb_dawnpatrol = () => mk(40, 40, (g) => {
+    mbShield(g, '#2b3a56', {
+      rim: RIM_COOL, mid: 'rgba(6,10,22,0.12)', shade: 'rgba(6,10,22,0.18)',
+      bounce: 'rgba(255,150,70,0.3)',
+    });
+    g.save(); mbClipShield(g);
+    g.fillStyle = 'rgba(255,150,70,0.16)';
+    g.beginPath(); g.ellipse(20, 27.0, 15.0, 6.6, 0, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,200,116,0.16)';
+    g.beginPath(); g.ellipse(20, 25.8, 10.0, 4.2, 0, 0, TAU); g.fill();
+    const ray = (ang, len) => {
+      const bx = 20 + Math.cos(ang) * 6.2, by = 21.4 + Math.sin(ang) * 6.2;
+      const tx = 20 + Math.cos(ang) * len, ty = 21.4 + Math.sin(ang) * len;
+      const nx = -Math.sin(ang) * 1.9, ny = Math.cos(ang) * 1.9;
+      poly(g, [[bx + nx, by + ny], [tx, ty], [bx - nx, by - ny]], 'rgba(244,197,66,0.85)', { lw: 1.0, line: 'rgba(120,80,10,0.45)' });
+    };
+    ray(-Math.PI / 2, 13.2);
+    ray(-Math.PI / 2 - 0.88, 12.4);
+    ray(-Math.PI / 2 + 0.88, 12.4);
+    blob(g, 20, 21.4, 6.4, 6.4, '#f4c542', { lw: LW_SIL, mid: 'rgba(150,86,4,0.14)', shade: 'rgba(150,86,4,0.2)', hi: 'rgba(255,250,220,0.3)' });
+    blob(g, 20, 20.6, 3.6, 3.6, '#ffdc8c', { flat: true, noline: true });
+    g.fillStyle = 'rgba(255,254,240,0.9)';
+    g.beginPath(); g.ellipse(17.8, 18.6, 1.8, 1.2, -0.5, 0, TAU); g.fill();
+    const ridge = [
+      [1, 30.6, 1], [8.4, 25.6, 2], [13.0, 27.8, 2], [17.0, 24.4, 2], [23.0, 26.4, 2],
+      [27.4, 24.0, 2], [33.0, 28.6, 2], [39, 31.4, 1], [39, 41, 1], [1, 41, 1],
+    ];
+    apoly(g, ridge, '#14110e', { mid: 'rgba(0,0,0,0.14)', shade: 'rgba(0,0,0,0.2)' });
+    g.strokeStyle = 'rgba(255,180,90,0.5)'; g.lineWidth = 0.9; g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(8.4, 25.6); g.lineTo(13.0, 27.8); g.lineTo(17.0, 24.4);
+    g.lineTo(23.0, 26.4); g.lineTo(27.4, 24.0); g.lineTo(33.0, 28.6);
+    g.stroke();
+    g.restore();
+  });
+
+  // 14. Nameplate on one nail: the name sanded off, eleven tallies, one
+  // empty space where the twelfth is not.
+  P.mb_twelfthname = () => mk(40, 40, (g) => {
+    mbRound(g, '#1a1712', { rim: RIM_WARM, mid: 'rgba(0,0,0,0.16)', shade: 'rgba(0,0,0,0.26)' });
+    g.save(); mbClipRound(g);
+    blob(g, 20, 29.6, 11.2, 1.8, 'rgba(0,0,0,0.45)', { flat: true, noline: true });
+    g.save(); g.translate(20, 20); g.rotate(-0.055); g.translate(-20, -20);
+    apoly(g, [[8.6, 12.8, 2.5], [31.4, 12.8, 2.5], [31.4, 28.4, 2.5], [8.6, 28.4, 2.5]], '#d9c39a', { rim: RIM_WARM, mid: 'rgba(96,66,30,0.12)', shade: 'rgba(96,66,30,0.2)' });
+    g.strokeStyle = 'rgba(150,110,58,0.3)'; g.lineWidth = 0.7; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(10.0, 20.4); g.quadraticCurveTo(20, 19.2, 30.2, 20.6); g.stroke();
+    g.beginPath(); g.moveTo(10.0, 26.6); g.quadraticCurveTo(20, 25.6, 30.2, 27.0); g.stroke();
+    blob(g, 20, 17.2, 9.0, 3.2, '#e8d8b4', { flat: true, noline: true });
+    g.strokeStyle = 'rgba(126,92,48,0.16)'; g.lineWidth = 1.4;
+    g.beginPath(); g.moveTo(13.6, 18.2); g.lineTo(14.6, 15.8); g.moveTo(16.4, 18.2); g.lineTo(17.6, 16.0);
+    g.moveTo(23.0, 16.2); g.lineTo(23.0, 18.4); g.moveTo(25.6, 16.4); g.lineTo(26.2, 18.2); g.stroke();
+    g.strokeStyle = 'rgba(255,250,232,0.35)'; g.lineWidth = 0.5;
+    for (let i = 0; i < 7; i++) {
+      const y = 15.0 + i * 0.9;
+      g.beginPath(); g.moveTo(12.4 + (i % 2) * 1.6, y); g.lineTo(26.8 - (i % 3) * 1.8, y - 0.3); g.stroke();
+    }
+    const cut = (x0, y0, x1, y1) => {
+      g.strokeStyle = 'rgba(58,38,16,0.9)'; g.lineWidth = 1.1;
+      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      g.strokeStyle = 'rgba(255,246,220,0.45)'; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(x0 + 0.6, y0); g.lineTo(x1 + 0.6, y1); g.stroke();
+    };
+    for (const x of [10.4, 12.1, 13.8, 15.5]) cut(x, 21.8, x - 0.3, 26.4);
+    cut(9.8, 26.2, 16.2, 22.0);
+    for (const x of [18.4, 20.1, 21.8, 23.5]) cut(x, 21.8, x - 0.3, 26.4);
+    cut(17.8, 26.2, 24.2, 22.0);
+    cut(26.4, 21.8, 26.1, 26.4);
+    g.strokeStyle = '#d4402c'; g.lineWidth = 1.3; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(29.4, 22.2); g.lineTo(29.2, 24.4); g.stroke();
+    g.fillStyle = 'rgba(212,64,44,0.55)';
+    g.beginPath(); g.arc(29.2, 25.8, 0.7, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(30,16,4,0.9)';
+    g.beginPath(); g.arc(20, 14.6, 1.2, 0, TAU); g.fill();
+    g.restore();
+    blob(g, 20.1, 14.4, 2.0, 1.9, '#b0b6bd', { lw: LW_INT, mid: 'rgba(20,24,30,0.16)', shade: 'rgba(20,24,30,0.24)' });
+    g.fillStyle = 'rgba(255,255,255,0.8)';
+    g.beginPath(); g.arc(19.4, 13.8, 0.6, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(0,0,0,0.3)';
+    g.beginPath(); g.ellipse(20.4, 16.6, 1.9, 0.7, 0, 0, TAU); g.fill();
+    g.restore();
+  });
+
   P.cocoa = () => mk(24, 22, (g) => {
     g.fillStyle = '#8a5a34'; g.strokeStyle = OUT; g.lineWidth = 1.5;
     g.beginPath(); g.roundRect(4, 7, 13, 12, 2.5); g.fill(); g.stroke();
