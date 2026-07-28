@@ -128,7 +128,13 @@ class Game {
     if (!lines || !lines.length) return;
     if (this.barkCds[trigger] != null && this.t - this.barkCds[trigger] < 25) return;
     this.barkCds[trigger] = this.t;
-    this.barkNow = { text: pick(lines), t: 3.0 };
+    this.barkNow = { text: pick(lines), t: 3.0, trigger };
+    // Voice rides the bark: the subtitle stretches to cover the audio when
+    // a line exists, and silence is a fully supported state.
+    if (typeof Voice !== 'undefined' && Voice.available) {
+      const v = Voice.speak(this.charId, this.barkNow.text, { priority: trigger });
+      if (v && v.dur) this.barkNow.t = Math.max(3.0, v.dur + 0.4);
+    }
   }
 
   // ---------------- stats ----------------
