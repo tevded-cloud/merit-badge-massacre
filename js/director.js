@@ -28,7 +28,7 @@
 
   Game.prototype.spawnEnemy = function (id, x, y, elite) {
     const d = DATA.enemies[id];
-    const m = this.time / 60;
+    const m = this.threat;
     // Elites get their own linear curve: the quadratic trash curve times 9
     // would out-tank the linearly scaled final boss by minute 12.
     const hp = d.hp * (elite ? (1 + m * 0.55) * 9 : DATA.hpScale(m));
@@ -46,6 +46,7 @@
       dead: false, elite: !!elite, boss: false,
       ai: {},
     };
+    e.id = this.nextId++;
     if (d.move === 'hop') e.ai = { state: 'idle', t: rand(0.1, 0.5), k: 0, dx: 0, dy: 0, hopSpd: d.hopSpd };
     if (d.move === 'charge') e.ai = { state: 'stalk', t: rand(1, 2.2), dx: 0, dy: 0, chargeSpd: d.chargeSpd };
     if (d.move === 'ranged') { e.ai = { shotT: rand(1, d.shotCd) }; e.shotCd = d.shotCd; e.shotSpd = d.shotSpd; e.shotDmg = d.shotDmg * DATA.dmgScale(m); }
@@ -56,7 +57,7 @@
 
   Game.prototype.spawnBoss = function (def) {
     const pos = this.spawnPos();
-    const m = this.time / 60;
+    const m = this.threat;
     const hp = def.hp * DATA.bossHpScale(m);
     const e = {
       kind: def.id, spr: def.spr, move: def.move, name: def.name,
@@ -111,7 +112,7 @@
   };
 
   Game.prototype.updateDirector = function (dt) {
-    const m = this.time / 60;
+    const m = this.threat;
 
     // burst queue drains a few per frame so floods pour in
     if (this.spawnQueue.length) {
