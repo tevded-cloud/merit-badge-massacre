@@ -26,8 +26,15 @@ corrupted, and everything alive through motion, not frames.
    renderer can pulse a red glow. Friendly characters get `cuteEye()`: black
    bead plus specular. This is the single strongest theme signal, never skip it.
 5. **Every critter carries one tell that it has been Signed**: the stamped tin
-   Token (`pendant()`), red eyes, or the eye-in-ring Sign. Cute first, wrong
-   second.
+   Token (`pendant()`), red eyes, or the eye-in-ring Sign. Cute first, then
+   wrong, AND THE WRONG IS ALLOWED TO STAY: do not resolve the discomfort
+   inside the sprite. (Amended 2026-07-28 for the Steam repositioning. The old
+   rule ended "cute first, wrong second", with a joke chasing every heavy beat,
+   and that flinch is exactly what capped the eeriness. Humour belongs to
+   characters now, not to reassurance. Gore is permitted at Isaac's level but
+   is a separate toggleable layer, so nothing load-bearing may depend on it:
+   see the Steam bar section in .claude/agents/sprite-artist.md, which is the
+   fuller statement and governs.)
 6. **Silhouette carries identity**: each species must read at 30 pixels by
    outline alone (squirrel tail, rabbit ears, boar tusks, owl discs, beaver
    tail, fox ears, stag antlers). Design the silhouette before the details.

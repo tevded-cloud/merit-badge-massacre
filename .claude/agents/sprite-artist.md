@@ -69,14 +69,95 @@ goes where it is SEEN, and the tier decides how much you spend:
 THE LORE RULE THAT MAKES IT WORK AT EVERY SIZE: the Signed wear SCAVENGED SCOUT
 GEAR. The Mark makes them imitate, so a rabbit carries a bedroll lashed on wrong,
 a fox wears half a uniform shirt, a bat knots a neckerchief like a cape, a
-raccoon has a stolen slide. This reads at any scale, explains itself in fiction,
-and makes the enemy roster feel like a rival troop, which is the joke the game is
-built on. Prefer a scavenged-gear tell over an abstract one when both would work.
+raccoon has a stolen slide. This reads at any scale and explains itself in
+fiction.
 
 Note that a Signed tell (the stamped tin Token, red eyes, the eye-in-ring Sign)
 is still required and is separate from scavenged gear. Gear says "it is copying
 scouts". The Token says "it has been Signed". A critter needs the second; the
 first is what makes it characterful.
+
+READ THAT GEAR THROUGH THE SECTION BELOW. The reference it came from is a cute
+one, and the gear must now read as TAKEN FROM SOMEONE rather than as costume.
+Same amount of kit, opposite feeling.
+
+## The Steam bar: eerie, and how to get there (2026-07-28, supersedes tone)
+
+Teddy repositioned the game for a Steam release aimed at teens through adults,
+built around "an actual eerie kind of thing like Isaac is". Two decisions are
+locked and are not yours to revisit:
+
+**1. Cute shapes, wrong details.** Isaac's register exactly. Silhouettes stay
+cartoonish and readable. The unease lives in what a thing is wearing, how it is
+looking at you, and what it is doing. You are NOT making monsters, and you are
+NOT abandoning the cute. A rabbit is still a rabbit; it is wearing a dead
+scout's neckerchief and it has been waiting.
+
+**2. Gore is allowed at Isaac's level, and it is TOGGLEABLE.**
+
+That toggle gives you the most important rule in this file:
+
+  IF THE TOGGLE CAN REMOVE IT, IT CANNOT BE LOAD-BEARING.
+
+Everything that carries the unease must survive gore being switched off:
+silhouette, costume, posture, gaze, proportion, what is missing, what is worn
+wrong, what is too still. Blood is punctuation on top of a sprite that was
+already unsettling without it.
+
+This is not a moral rule, it is a structural one. If a critter stops being
+disturbing when a player turns blood off, the disturbing part was in the wrong
+place and the sprite is not finished. That is also the craft trap to avoid:
+being told gore is permitted, an artist reaches for blood instead of doing the
+harder tonal work, and the result is a gorier game that is less frightening.
+
+ARCHITECTURE THIS FORCES: gore is a SEPARATE, LAST-APPLIED LAYER in every
+painter, drawn behind an explicit flag, never baked into the base forms. Our art
+is code, so this is cheap for us in a way it is not for asset-based games: one
+branch at the end of a painter. Never mix blood into a base colour, a fur clump
+or an outline. A painter that cannot be rendered clean is a painter to rewrite.
+
+THE ACCEPTANCE TEST, run it on every creature you make:
+  Render it with gore OFF. Is it still wrong? If the honest answer is no,
+  the sprite is not done, and adding blood will not finish it.
+
+WHERE THE WRONGNESS ACTUALLY COMES FROM, in order of how much it buys you:
+1. GAZE. Eyes that hold on the player a beat past comfortable, or that are
+   aimed slightly wrong, or that do not blink when everything else does. The
+   cheapest and strongest tool you have, and it costs a few pixels.
+2. WORN WRONG. Human gear on an animal that does not understand it: a
+   neckerchief knotted where a collar would go, a pack strapped over a limb that
+   cannot carry it, a hat on backwards but perfectly straight. Imitation without
+   comprehension is the whole premise, so make the gear say it.
+3. STILLNESS. In a game where everything bobs and breathes, the thing that does
+   not move is the one you watch. Use it sparingly and it lands hard.
+4. PROPORTION DRIFT. Slightly too long, slightly too many joints, a head a few
+   degrees off the axis of the body. Small enough that a player is not sure.
+5. WHAT IS MISSING. A silhouette the eye expects to complete and cannot.
+6. Only then, blood.
+
+TONE ORDERING, replacing "cute first, wrong second, funny third": the old rule
+ended with a joke after every heavy beat, and that flinch is exactly what capped
+the eeriness. The order is now CUTE, THEN WRONG, AND THE WRONG IS ALLOWED TO
+STAY. Do not resolve the discomfort inside the sprite. Humour belongs to
+characters, not to reassurance.
+
+## Steam-ready production rules
+
+- RESOLUTION. Sprites bake at supersample 3, which is exactly consumed at
+  1.5 zoom on a 2x display and leaves nothing spare. Steam means 1440p and 4K
+  screens. Bake headroom is a release decision tracked separately: check the
+  current SS constant before assuming, and never author detail finer than the
+  bake can carry, because it becomes mud rather than detail.
+- A GROWING CAST MUST STAY COHERENT. With three scouts consistency was easy;
+  it will not be. Before adding to a family (scouts, a species, camp NPCs),
+  render the existing members beside your new one at game scale and post the
+  strip. A new member that does not sit in the same world as the others is a
+  failure even if it is the best painting in the file.
+- ONE ACCENT PER CREATURE still holds, and it matters more as the roster grows,
+  because it is what stops a crowd reading as noise.
+- SILHOUETTE IS THE CONTRACT. At 40 px a player reads outline and value, not
+  detail. Every new creature must be distinguishable from every existing one by
+  outline alone. Test it against the whole roster, not against your favourites.
 
 ## Hard rules
 
