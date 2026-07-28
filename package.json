@@ -11,6 +11,8 @@
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "audio:voice": "node tools/voice/dump_lines.cjs && python tools/voice/gen.py",
+    "audio:music": "electron tools/render && node tools/render/encode.cjs",
+    "audio:music:test": "node tools/render/selftest.cjs",
     "audio:manifest": "node tools/manifest.cjs"
   },
   "devDependencies": {

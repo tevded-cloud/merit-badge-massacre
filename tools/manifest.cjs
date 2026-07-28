@@ -18,10 +18,10 @@ const ASSETS_DIR = path.join(REPO_ROOT, 'assets');
 const MANIFEST_PATH = path.join(ASSETS_DIR, 'manifest.json');
 const LINES_PATH = path.join(__dirname, 'voice', 'lines.json');
 
-// Convention for campfire music, if/when it ships as real asset files instead
-// of the procedural music js/music.js generates today. Only used "when
-// present" (see collectGroups): a missing folder is simply skipped.
-const MUSIC_CAMP_DIR = 'music/camp';
+// Convention for campfire music: the render harness writes flat files named
+// music/<theme>_<layer>.<hash>.webm, so camp tracks are matched by theme
+// prefix, not by folder.
+const MUSIC_CAMP_PREFIX = 'music/camp';
 
 // Matches exactly what gen.py writes: assets/voice/en/<speaker>/<anything>_<hash8>.webm
 const VOICE_FILE_RE = /^voice\/en\/([^/]+)\/[^/]+_([0-9a-f]{8})\.webm$/;
@@ -133,7 +133,7 @@ function main() {
 
   // camp: Brock's voice lines plus campfire music, once/if either exists.
   const brockVoice = voiceEntries.filter((v) => v.speaker === 'brock').map((v) => v.rel);
-  const campMusic = files.filter((f) => f.rel.startsWith(MUSIC_CAMP_DIR + '/')).map((f) => f.rel);
+  const campMusic = files.filter((f) => f.rel.startsWith(MUSIC_CAMP_PREFIX)).map((f) => f.rel);
   groups.camp = brockVoice.concat(campMusic);
 
   // voice:<speaker> for every speaker folder actually found on disk: scouts

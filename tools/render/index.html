@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MBM music render</title>
+<style>
+  body { font: 13px Verdana, 'Segoe UI', sans-serif; background:#0b0e13; color:#d9d2c0; padding:16px; }
+  h1 { font-size:15px; letter-spacing:2px; color:#f4c542; margin:0 0 10px; }
+  #log { white-space:pre-wrap; line-height:1.5; }
+  .ok { color:#8fbf6a; }
+  .warn { color:#f4c542; }
+  .bad { color:#d84b3a; }
+</style>
+</head>
+<body>
+<!--
+  The window this page lives in is never shown. It exists because Chromium's
+  Web Audio implementation is the renderer: OfflineAudioContext bakes the same
+  graph the game plays live. Everything visible here is only for the case where
+  someone opens devtools on the hidden window to see what went wrong.
+-->
+<h1>MERIT BADGE MASSACRE / MUSIC RENDER</h1>
+<div id="log"></div>
+
+<script src="wav.js"></script>
+<script src="stems.js"></script>
+<script src="renderer.js"></script>
+</body>
+</html>

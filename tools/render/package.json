@@ -1,0 +1,7 @@
+{
+  "name": "mbm-render",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline music render harness for Merit Badge Massacre. Author tooling, never shipped.",
+  "main": "main.cjs"
+}
