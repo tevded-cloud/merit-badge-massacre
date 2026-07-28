@@ -3,7 +3,7 @@
 'use strict';
 
 const TAU = Math.PI * 2;
-const ZOOM = 1.22;
+const ZOOM = 1.5;
 
 function rand(a, b) { return a + Math.random() * (b - a); }
 function pick(arr) { return arr[(Math.random() * arr.length) | 0]; }

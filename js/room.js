@@ -13,7 +13,7 @@
 
 const ROOM_TAU = Math.PI * 2;
 const ROOM_CELL = 24;            // block grid resolution, world units
-const ROOM_ENTRY_INSET = 60;     // how far inside the wall the player lands
+const ROOM_ENTRY_INSET = 46;     // how far inside the wall the player lands
 const ROOM_LOCK_STEP = 40;       // how much further in before the doors shut
 const ROOM_LOCK_T = 0.9;         // ... or this long, whichever lands first
 const ROOM_DOOR_R = 46;          // door trigger radius
@@ -22,10 +22,10 @@ const ROOM_DWELL = 0.3;          // seconds stood in a door before it fires
 const ROOM_OPEN_T = 0.25;        // door opening animation
 const ROOM_CLEAR_GRACE = 0.4;    // beat between the last kill and the payout
 const ROOM_RELEASE = 0.06;       // one queued spawn every this many seconds
-const ROOM_SCATTER_INSET = 120;  // scatter stays this far off the walls
-const ROOM_SCATTER_CLEAR = 90;   // ... and this far off anything that matters
-const ROOM_SPAWN_INSET = 40;     // spawns clip to bounds inset by this
-const ROOM_EDGE_AWAY = 260;      // edge spawns land at least this far away
+const ROOM_SCATTER_INSET = 80;   // scatter stays this far off the walls
+const ROOM_SCATTER_CLEAR = 64;   // ... and this far off anything that matters
+const ROOM_SPAWN_INSET = 32;     // spawns clip to bounds inset by this
+const ROOM_EDGE_AWAY = 190;      // edge spawns land at least this far away
 const ROOM_TRIES = 20;           // rejection sampling budget per placement
 
 class Room {
