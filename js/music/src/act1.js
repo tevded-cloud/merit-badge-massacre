@@ -101,6 +101,10 @@
     var c = clock(bpm);
     var loop = bars * BEATS * c.spb;
 
+    // Trim the whole layer: the first render clipped at +1.5 dBFS, and the
+    // stem contract wants every layer peaking safely below zero.
+    master = S.gain(ctx, 0.6, master);
+
     var room = S.reverb(ctx, master, { seconds: 1.7, decay: 4.4, wet: 0.20, tone: 4400, lowCut: 260, seed: 0x0AC1 });
 
     var perc = S.gain(ctx, 0.9, master);
