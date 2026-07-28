@@ -111,6 +111,7 @@ function setState(s) {
   $('camphint').classList.toggle('hidden', s !== 'camp');
   if (s !== 'camp') closeDialog();
   if (s === 'title') refreshBestLine();
+  refreshContinue();
   $('tapstart').classList.toggle('hidden', !(Touch.active && s === 'title' && !Touch.started));
 }
 
@@ -156,6 +157,9 @@ function buildSelect() {
 
 // ---------------- run flow ----------------
 function startRun(charId) {
+  // A fresh night replaces any night still on file, before anything else can
+  // fail. Whatever was saved is not coming back after this line.
+  clearSavedNight();
   App.char = charId;
   App.game = new Game(charId);
   buildSig = '';
@@ -172,6 +176,72 @@ function startRun(charId) {
   }
   setState('play');
   App.game.bark('runstart');
+}
+
+// ---------------- the night in progress ----------------
+// A night runs about nineteen minutes, and a closed tab used to cost every
+// one of them. run.js writes a snapshot at each room boundary; these are the
+// only places it is read, offered and thrown away. Every call is feature
+// tested and every element optional, so a page without the button, or a
+// browser that refuses storage, plays exactly as it did before.
+function savedNight() {
+  if (MBM_FIELD) return null;
+  if (typeof Run === 'undefined' || !Run || typeof Run.peek !== 'function') return null;
+  try { return Run.peek(); } catch (e) { return null; }
+}
+
+function clearSavedNight() {
+  if (typeof Run === 'undefined' || !Run || typeof Run.clearSave !== 'function') return;
+  try { Run.clearSave(); } catch (e) {}
+  refreshContinue();
+}
+
+// Show or hide the two ways back into a night: the title screen and camp.
+function refreshContinue() {
+  const snap = savedNight();
+  let label = null;
+  if (snap && typeof Run.peekLabel === 'function') {
+    try { label = Run.peekLabel(); } catch (e) { label = null; }
+  }
+  const btn = $('btncontinue');
+  if (btn) btn.classList.toggle('hidden', !snap);
+  const line = $('continueline');
+  if (line) {
+    line.classList.toggle('hidden', !(snap && label));
+    if (label) line.textContent = label;
+  }
+  const camp = $('campcontinue');
+  if (camp) camp.classList.toggle('hidden', !(snap && App.state === 'camp'));
+}
+
+// Walk back into the night on file: rebuild the scout, rebuild the plan, and
+// enter the room they were about to enter. Any refusal on the way leaves the
+// player exactly where they were standing, with the offer withdrawn.
+function continueRun() {
+  const snap = savedNight();
+  if (!snap) { refreshContinue(); return; }
+  const g = (typeof Game.restore === 'function') ? Game.restore(snap.game) : null;
+  if (!g) { clearSavedNight(); return; }
+
+  App.char = snap.charId;
+  App.game = g;
+  buildSig = '';
+  toastTimer = 0;
+  AudioSys.init();
+  AudioSys.setVolumes({ music: SETTINGS.musicVol, sfx: SETTINGS.sfxVol, voice: SETTINGS.voiceVol });
+  AudioSys.startMusic();
+
+  Run.reset();
+  let room = null;
+  try { room = Run.resume(snap); } catch (e) { room = null; }
+  if (!room) {
+    App.game = null;
+    Run.reset();
+    AudioSys.stopMusic();
+    clearSavedNight();
+    return;
+  }
+  setState('play');
 }
 
 function enterCamp() {
@@ -218,6 +288,8 @@ function quitToTitle() {
     showOver(g.phase === 'dawn' || g.phase === 'win');
     return;
   }
+  // Abandoning is a decision, and it ends the night: nothing left to continue.
+  clearSavedNight();
   App.game = null;
   Run.reset();
   AudioSys.stopMusic();
@@ -819,6 +891,10 @@ function closeDialog() {
 function showOver(won) {
   const g = App.game;
 
+  // Died or saw the sun, either way the night is spent. game.js drops the
+  // snapshot the moment it decides; this is the belt to that pair of braces.
+  clearSavedNight();
+
   // Cookie Money is spent or it is turned in. Either way it leaves the run as
   // badges before the camp counts anything, and only ever once.
   if (!g._cashedOut) {
@@ -1125,8 +1201,127 @@ function showPause() {
 }
 
 // ---------------- options ----------------
+// ---------------- camp transfer ----------------
+// Progress lives in one browser, so a phone and a laptop are two camps that
+// have never met. The code in this panel is the paperwork between them.
+// meta.js owns the packing; this owns the buttons and the plain words.
+let tfPending = null;
+
+function transferOn() {
+  return typeof Transfer !== 'undefined' && Transfer && typeof Transfer.make === 'function';
+}
+
+function tfSay(text, kind) {
+  const el = $('tfmsg');
+  if (!el) return;
+  el.textContent = text || '';
+  el.classList.toggle('hidden', !text);
+  el.classList.toggle('bad', kind === 'bad');
+  el.classList.toggle('good', kind === 'good');
+}
+
+function tfShowConfirm(lines) {
+  const box = $('tfconfirm');
+  const sum = $('tfsummary');
+  if (!box || !sum) return;
+  sum.textContent = '';
+  const head = document.createElement('div');
+  head.textContent = 'That code carries:';
+  sum.appendChild(head);
+  for (const line of lines || []) {
+    const d = document.createElement('div');
+    d.textContent = '  ' + line;
+    sum.appendChild(d);
+  }
+  box.classList.remove('hidden');
+}
+
+function tfReset() {
+  tfPending = null;
+  const box = $('tfconfirm');
+  if (box) box.classList.add('hidden');
+  tfSay('', null);
+}
+
+// Called every time the panel opens, so the code always describes the camp as
+// it stands right now rather than as it stood when the page loaded.
+function buildTransfer() {
+  const block = $('transfer');
+  if (!block) return;
+  if (!transferOn()) { block.classList.add('hidden'); return; }
+  block.classList.remove('hidden');
+  tfReset();
+  const box = $('tfcode');
+  if (box) {
+    let code = '';
+    try { code = Transfer.make(App.best); } catch (e) { code = ''; }
+    box.value = code;
+  }
+  const inp = $('tfin');
+  if (inp) inp.value = '';
+}
+
+function tfCopy() {
+  const box = $('tfcode');
+  if (!box || !box.value) return;
+  let done = false;
+  try {
+    box.focus();
+    box.select();
+    box.setSelectionRange(0, box.value.length);
+    done = document.execCommand && document.execCommand('copy');
+  } catch (e) { done = false; }
+  if (!done && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(box.value).then(
+      () => tfSay('Code copied. Paste it into the game on the other device.', 'good'),
+      () => tfSay('Could not reach the clipboard. Select the code and copy it by hand.', 'bad')
+    );
+    return;
+  }
+  if (done) tfSay('Code copied. Paste it into the game on the other device.', 'good');
+  else tfSay('Could not reach the clipboard. Select the code and copy it by hand.', 'bad');
+}
+
+// Read only: nothing is written until the player agrees to the summary.
+function tfRead() {
+  if (!transferOn()) return;
+  const inp = $('tfin');
+  const res = Transfer.read(inp ? inp.value : '');
+  if (!res || !res.ok) {
+    tfReset();
+    tfSay((res && res.why) || 'That code could not be read.', 'bad');
+    AudioSys.play('click');
+    return;
+  }
+  tfPending = res.data;
+  tfSay('', null);
+  tfShowConfirm(res.lines);
+  AudioSys.play('click');
+}
+
+function tfApply() {
+  if (!tfPending || !transferOn()) return;
+  let best = null;
+  try { best = Transfer.apply(tfPending); } catch (e) { best = null; }
+  if (!best) { tfReset(); tfSay('That camp could not be brought in.', 'bad'); return; }
+  Object.assign(App.best, best);
+  saveBest();
+  // The camp scene is built from the save, and the save just changed.
+  App.camp = null;
+  // A night in progress belonged to the camp that was here a moment ago.
+  clearSavedNight();
+  syncFeatPools();
+  refreshBestLine();
+  const lines = Transfer.describe(tfPending);
+  tfReset();
+  buildTransfer();
+  tfSay('Camp restored: ' + lines.join(', ') + '.', 'good');
+  AudioSys.play('levelup');
+}
+
 function showOptions(from) {
   App.optionsFrom = from;
+  buildTransfer();
   $('optmusic').value = Math.round(SETTINGS.musicVol * 100);
   $('optsfx').value = Math.round(SETTINGS.sfxVol * 100);
   $('optvoice').value = Math.round(SETTINGS.voiceVol * 100);
@@ -1660,6 +1855,14 @@ function gesture() {
 }
 
 window.addEventListener('keydown', (e) => {
+  // A text field owns its own keys. The transfer panel has two of them, and
+  // inside one an M is a letter, not the mute button. Escape steps out of the
+  // field so the next Escape closes the screen the way it always has.
+  const el = e.target;
+  if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) {
+    if (e.code === 'Escape' && typeof el.blur === 'function') el.blur();
+    return;
+  }
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
   if (e.repeat) { INPUT.keys.add(e.code); return; }
   gesture();
@@ -1680,6 +1883,7 @@ window.addEventListener('keydown', (e) => {
 
   switch (App.state) {
     case 'title':
+      if (e.code === 'KeyC' && savedNight()) { AudioSys.play('click'); continueRun(); break; }
       if (e.code === 'Enter' || e.code === 'Space') { AudioSys.play('click'); enterCamp(); }
       break;
     case 'camp': {
@@ -1695,6 +1899,12 @@ window.addEventListener('keydown', (e) => {
           break;
         }
         setState('title');
+        break;
+      }
+      if (e.code === 'KeyC' && savedNight()) {
+        if (App.dialogOpen) { closeDialog(); break; }
+        AudioSys.play('click');
+        continueRun();
         break;
       }
       if (e.code === 'KeyJ') {
@@ -1809,6 +2019,12 @@ window.addEventListener('contextmenu', (e) => e.preventDefault());
 
 // ---------------- buttons ----------------
 $('btnstart').addEventListener('click', () => { gesture(); AudioSys.play('click'); enterCamp(); });
+// Both doors back into a night on file. Optional elements: an older page that
+// does not carry them simply has no way in, and nothing throws on boot.
+for (const id of ['btncontinue', 'campcontinue']) {
+  const el = $(id);
+  if (el) el.addEventListener('click', () => { gesture(); AudioSys.play('click'); continueRun(); });
+}
 $('btnshopback').addEventListener('click', () => { gesture(); AudioSys.play('click'); setState('camp'); });
 $('btnrsback').addEventListener('click', () => { gesture(); AudioSys.play('click'); setState('play'); });
 $('btnjback').addEventListener('click', () => { gesture(); AudioSys.play('click'); setState('camp'); });
@@ -1839,6 +2055,23 @@ $('optvoice').addEventListener('input', () => { SETTINGS.voiceVol = $('optvoice'
 $('optsubs').addEventListener('change', () => { SETTINGS.subtitles = $('optsubs').checked; saveSettings(); });
 $('optshake').addEventListener('change', () => { SETTINGS.shake = $('optshake').checked; saveSettings(); });
 $('optnums').addEventListener('change', () => { SETTINGS.dmgNums = $('optnums').checked; saveSettings(); });
+// The transfer panel. Every element is optional: a page built before this
+// section existed simply has no transfer controls and boots the same.
+(function wireTransfer() {
+  const on = (id, fn) => { const el = $(id); if (el) el.addEventListener('click', () => { gesture(); fn(); }); };
+  on('btntfcopy', tfCopy);
+  on('btntfload', tfRead);
+  on('btntfyes', tfApply);
+  on('btntfno', () => { AudioSys.play('click'); tfReset(); });
+  const inp = $('tfin');
+  if (inp) {
+    inp.addEventListener('keydown', (e) => { if (e.code === 'Enter') tfRead(); });
+    // Typing a new code puts any pending confirmation away.
+    inp.addEventListener('input', () => { if (tfPending) tfReset(); });
+  }
+  const code = $('tfcode');
+  if (code) code.addEventListener('click', () => { try { code.select(); } catch (e) {} });
+})();
 
 // ---------------- main loop ----------------
 let last = performance.now();

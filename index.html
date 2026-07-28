@@ -237,6 +237,24 @@
   #dialog.withport #dlgname { display:none; }
 
   #camphint { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); font-size:11px; letter-spacing:1px; color:#5d6370; }
+  #campcontinue { position:absolute; bottom:44px; left:50%; transform:translateX(-50%); font-size:13px; padding:9px 20px; }
+  #campcontinue:hover { transform:translateX(-50%) translateY(-2px); }
+
+  /* ---------- camp transfer ---------- */
+  #transfer { margin-top:16px; padding-top:16px; border-top:1px solid #262c36; text-align:left; max-width:540px; }
+  .tsub { font-size:14px; font-weight:bold; letter-spacing:3px; color:#e8e0cc; margin-bottom:8px; }
+  .tnote { font-size:11px; line-height:1.6; color:#8d947f; margin-bottom:12px; }
+  .tlabel { font-size:10px; letter-spacing:2px; color:#5d6370; margin-bottom:5px; }
+  .trow { display:flex; gap:8px; align-items:stretch; margin-bottom:12px; }
+  .trow input { flex:1; min-width:0; font-family:inherit; font-size:11px; letter-spacing:1px;
+    color:#d9d2c0; background:#0b0e13; border:1px solid #333a46; border-radius:6px; padding:9px 10px; }
+  .trow input:focus { outline:none; border-color:#f4c542; }
+  .trow input::placeholder { color:#4c525e; letter-spacing:0; }
+  #tfmsg { font-size:11px; line-height:1.6; margin:0 0 12px; color:#8d947f; }
+  #tfmsg.bad { color:#d84b3a; }
+  #tfmsg.good { color:#7ec87e; }
+  #tfsummary { font-size:12px; line-height:1.8; color:#d9d2c0; background:#0b0e13;
+    border:1px solid #333a46; border-radius:6px; padding:10px 12px; margin-bottom:10px; }
 
   .optrow { display:flex; align-items:center; justify-content:space-between; gap:24px; margin:12px 0; font-size:13px; letter-spacing:1px; color:#8d947f; }
   .optrow input[type=range] { width:180px; accent-color:#f4c542; }
@@ -362,6 +380,8 @@
     <h1 class="logo">MERIT BADGE<br><span class="red">MASSACRE</span></h1>
     <div class="sub">Troop 13 vs. the Cult of the Antlered One</div>
     <div class="tag">The critters found a religion. It has horns.</div>
+    <button class="btn hidden" id="btncontinue">CONTINUE NIGHT</button>
+    <div class="best hidden" id="continueline"></div>
     <button class="btn" id="btnstart">ENTER CAMP</button>
     <button class="btn" id="btnoptions">OPTIONS</button>
     <div class="best hidden" id="bestline"></div>
@@ -465,9 +485,10 @@
   </div>
 
   <div id="camphint" class="hidden">WASD walk &nbsp;|&nbsp; E interact &nbsp;|&nbsp; J field guide &nbsp;|&nbsp; B merit badges &nbsp;|&nbsp; Esc leave camp</div>
+  <button class="btn hidden" id="campcontinue">CONTINUE NIGHT &nbsp;(C)</button>
 
   <div id="options" class="screen solid hidden">
-    <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:26px 34px;min-width:420px;">
+    <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:26px 34px;min-width:420px;max-height:88vh;overflow-y:auto;">
       <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;margin-bottom:16px;">OPTIONS</div>
       <div class="optrow"><label for="optmusic">MUSIC VOLUME</label><input type="range" id="optmusic" min="0" max="100" value="80"></div>
       <div class="optrow"><label for="optsfx">SOUND VOLUME</label><input type="range" id="optsfx" min="0" max="100" value="80"></div>
@@ -475,6 +496,31 @@
       <div class="optrow"><label for="optsubs">SUBTITLES</label><input type="checkbox" id="optsubs" checked></div>
       <div class="optrow"><label for="optshake">SCREEN SHAKE</label><input type="checkbox" id="optshake" checked></div>
       <div class="optrow"><label for="optnums">DAMAGE NUMBERS</label><input type="checkbox" id="optnums" checked></div>
+
+      <div id="transfer" class="hidden">
+        <div class="tsub">TRANSFER CAMP</div>
+        <div class="tnote">Your camp lives in this browser and nowhere else. The transfer code below is your camp on paper: copy it into the game on another browser or another device and everything you have earned turns up there.</div>
+        <div class="tlabel">YOUR CAMP TRANSFER CODE</div>
+        <div class="trow">
+          <input type="text" id="tfcode" readonly spellcheck="false">
+          <button class="btn small" id="btntfcopy">COPY</button>
+        </div>
+        <div class="tlabel">BRING A CAMP IN</div>
+        <div class="trow">
+          <input type="text" id="tfin" spellcheck="false" autocomplete="off" placeholder="Paste a camp transfer code">
+          <button class="btn small" id="btntfload">READ IT</button>
+        </div>
+        <div id="tfmsg" class="hidden"></div>
+        <div id="tfconfirm" class="hidden">
+          <div id="tfsummary"></div>
+          <div class="tnote">Bringing this camp in replaces the camp already in this browser. There is no undo.</div>
+          <div class="btnrow" style="justify-content:flex-start;">
+            <button class="btn danger small" id="btntfyes">REPLACE MY CAMP</button>
+            <button class="btn small" id="btntfno">CANCEL</button>
+          </div>
+        </div>
+      </div>
+
       <div class="hint" style="margin:14px 0;">F fullscreen &nbsp;|&nbsp; M mute &nbsp;|&nbsp; Esc back</div>
       <div class="btnrow"><button class="btn" id="btnoptback">BACK</button></div>
     </div>

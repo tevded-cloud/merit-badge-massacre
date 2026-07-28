@@ -36,6 +36,14 @@ const Run = (function () {
   // How far inside the wall the player lands when walking into a room.
   const ENTRY_INSET = 70;
 
+  // ------------------------------------------------------------ the save --
+  // One night in progress, written at every room boundary under its own key.
+  // The version is exact: a snapshot stamped by another build is dropped on
+  // sight rather than half understood. Nothing else in the game reads or
+  // writes this key, and a page with no snapshot behaves exactly as before.
+  const SAVE_KEY = 'mbm_run';
+  const SAVE_VERSION = 1;
+
   // THE HOLLOW is authored as the room after act 3, not as act 3's boss arena,
   // so the generic boss arena pick skips it until the epilogue lands.
   const HOLLOW_ID = 'hollow';
@@ -53,14 +61,28 @@ const Run = (function () {
   };
 
   // ------------------------------------------------------------------ rng --
+  // The whole stream is one 32 bit counter, so where the dice have got to is
+  // a single number. read and seek let a continued night pick the stream back
+  // up exactly where it was rather than starting a new one.
   function mulberry32(a) {
     let t = a >>> 0;
-    return function () {
+    const fn = function () {
       t = (t + 0x6d2b79f5) >>> 0;
       let x = Math.imul(t ^ (t >>> 15), 1 | t);
       x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
       return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
     };
+    fn.read = function () { return t >>> 0; };
+    fn.seek = function (v) { t = v >>> 0; };
+    return fn;
+  }
+
+  function rngRead(fn) {
+    return (fn && typeof fn.read === 'function') ? (fn.read() >>> 0) : 0;
+  }
+
+  function rngSeek(fn, v) {
+    if (fn && typeof fn.seek === 'function' && isNum(v)) fn.seek(v >>> 0);
   }
 
   // The one sanctioned entropy read in the whole run system. Everything after
@@ -93,6 +115,208 @@ const Run = (function () {
     if (typeof Totem === 'undefined' || !Totem) return false;
     if (typeof META === 'undefined' || !META) return false;
     try { return !!Totem.open(META) && !!Totem.on(id, META); } catch (e) { return false; }
+  }
+
+  // The carvings this night started under, held for the length of the run.
+  // A player who carves the pole between sessions changes the next night,
+  // never the one they are standing in, so every read of the totem during a
+  // run answers with the list the night began with. On a night nobody
+  // interrupted the frozen list is the live list, so this changes nothing.
+  let frozenNight = null;
+
+  function liveCarvings() {
+    if (typeof Totem === 'undefined' || !Totem || typeof Totem.active !== 'function') return [];
+    if (typeof META === 'undefined' || !META) return [];
+    try {
+      if (!Totem.open(META)) return [];
+      const out = [];
+      for (const c of (Totem.active(META) || [])) if (c && c.id) out.push(c.id);
+      return out;
+    } catch (e) { return []; }
+  }
+
+  // Both totem readers are wrapped once, in place: room.js and director.js ask
+  // the pole directly and neither is this unit's file. The wrappers hand every
+  // question straight back to the original while no run is frozen.
+  function installFreeze() {
+    if (typeof Totem === 'undefined' || !Totem || Totem._runFrozen) return;
+    const on = Totem.on;
+    const active = Totem.active;
+    if (typeof on !== 'function' || typeof active !== 'function') return;
+    Totem._runFrozen = true;
+    Totem.on = function (id, m) {
+      if (frozenNight) return frozenNight.indexOf(id) !== -1;
+      return on.call(this, id, m);
+    };
+    Totem.active = function (m) {
+      if (!frozenNight) return active.call(this, m);
+      const out = [];
+      for (const c of (this.list || [])) if (frozenNight.indexOf(c.id) !== -1) out.push(c);
+      return out;
+    };
+  }
+
+  function freezeNight(list) {
+    installFreeze();
+    frozenNight = null;
+    if (Array.isArray(list)) {
+      const out = [];
+      for (const id of list) if (typeof id === 'string' && id) out.push(id);
+      frozenNight = out;
+    } else {
+      frozenNight = liveCarvings();
+    }
+  }
+
+  function thawNight() { frozenNight = null; }
+
+  // ---------------------------------------------------------- the storage --
+  function store() {
+    try {
+      if (typeof localStorage === 'undefined' || !localStorage) return null;
+      return localStorage;
+    } catch (e) { return null; }
+  }
+
+  function writeSave(obj) {
+    const st = store();
+    if (!st) return false;
+    try { st.setItem(SAVE_KEY, JSON.stringify(obj)); return true; } catch (e) { return false; }
+  }
+
+  function dropSave() {
+    const st = store();
+    if (!st) return;
+    try { st.removeItem(SAVE_KEY); } catch (e) {}
+  }
+
+  // Every reason to refuse a snapshot lives here, and refusing is silent: a
+  // bad save is a save that never existed, and the title screen never learns
+  // there was one. Anything the build no longer has a definition for (a
+  // scout, a weapon, a patch, a layout, a boss) fails the same way.
+  function readSave() {
+    const st = store();
+    if (!st) return null;
+    let raw = null;
+    try { raw = st.getItem(SAVE_KEY); } catch (e) { return null; }
+    if (!raw) return null;
+    let s = null;
+    try { s = JSON.parse(raw); } catch (e) { return null; }
+    if (!s || typeof s !== 'object') return null;
+    if (s.v !== SAVE_VERSION) return null;
+    if (!isNum(s.seed) || !isNum(s.rng)) return null;
+    if (!isNum(s.act) || !isNum(s.roomIdx) || s.act < 1 || s.roomIdx < 0) return null;
+    if (typeof s.charId !== 'string') return null;
+    if (typeof DATA === 'undefined' || !DATA || !DATA.characters || !DATA.characters[s.charId]) return null;
+    if (!Array.isArray(s.plan) || !s.plan.length) return null;
+    const plan = planIn(s.plan);
+    if (!plan) return null;
+    if (!slotAt(plan, s.act, s.roomIdx)) return null;
+    const g = s.game;
+    if (!g || typeof g !== 'object') return null;
+    if (!Array.isArray(g.weapons) || !g.weapons.length) return null;
+    for (const w of g.weapons) {
+      if (!w || typeof w.id !== 'string' || !DATA.weapons || !DATA.weapons[w.id]) return null;
+    }
+    if (g.passives && typeof g.passives === 'object') {
+      for (const id in g.passives) if (!DATA.passives || !DATA.passives[id]) return null;
+    }
+    if (!Array.isArray(s.recent)) s.recent = [];
+    if (!Array.isArray(s.carvings)) s.carvings = [];
+    return s;
+  }
+
+  // A boss by id, out of the tier table the plan deals from. A snapshot naming
+  // a boss this build no longer ships is a snapshot we decline.
+  function bossById(id) {
+    if (typeof DATA === 'undefined' || !DATA || !DATA.bossTiers) return null;
+    for (const tier in DATA.bossTiers) {
+      const list = DATA.bossTiers[tier];
+      if (!Array.isArray(list)) continue;
+      for (const def of list) if (def && def.id === id) return def;
+    }
+    return null;
+  }
+
+  // The plan, flattened for storage and read back. Only what cannot be
+  // derived travels: the type, the layout and the boss id.
+  function planOut(plan) {
+    const out = [];
+    if (!Array.isArray(plan)) return out;
+    for (const act of plan) {
+      const arr = [];
+      if (!Array.isArray(act)) { out.push(arr); continue; }
+      for (const s of act) {
+        if (!s) continue;
+        const boss = s.bossDef || s.boss || null;
+        arr.push({ t: s.type, l: s.layoutId || null, b: (boss && boss.id) || null });
+      }
+      out.push(arr);
+    }
+    return out;
+  }
+
+  function planIn(stored) {
+    if (!Array.isArray(stored) || !stored.length) return null;
+    const out = [];
+    for (let a = 0; a < stored.length; a++) {
+      const act = stored[a];
+      if (!Array.isArray(act) || !act.length) return null;
+      const arr = [];
+      for (let i = 0; i < act.length; i++) {
+        const r = act[i];
+        if (!r || typeof r.t !== 'string') return null;
+        const layoutId = (typeof r.l === 'string' && r.l) ? r.l : null;
+        // A slot with no layout is legal (a type this act has no rooms for
+        // builds a default arena), but a named layout has to still exist.
+        if (layoutId && !layoutDef(r.t, layoutId)) return null;
+        let boss = null;
+        if (r.b) {
+          boss = bossById(r.b);
+          if (!boss) return null;
+        }
+        arr.push({ act: a + 1, idx: i, type: r.t, layoutId, boss, bossDef: boss });
+      }
+      out.push(arr);
+    }
+    return out;
+  }
+
+  // The stored plan against the plan the seed rebuilds. The seed is the truth
+  // about how the night was dealt, but door choices rewrite slots as they are
+  // walked into and the codex moves under the boss weights, so the two are
+  // allowed to differ. What is not allowed is differing quietly: the stored
+  // plan wins, and the difference is written down where a test can read it.
+  function comparePlans(derived, stored) {
+    const rep = { match: true, at: null, note: null };
+    if (!Array.isArray(derived) || derived.length !== stored.length) {
+      rep.match = false;
+      rep.note = 'act count';
+      return rep;
+    }
+    for (let a = 0; a < stored.length; a++) {
+      const d = derived[a] || [];
+      const s = stored[a];
+      if (d.length !== s.length) {
+        rep.match = false;
+        rep.at = 'act ' + (a + 1);
+        rep.note = 'length ' + d.length + ' vs ' + s.length;
+        return rep;
+      }
+      for (let i = 0; i < s.length; i++) {
+        const ds = d[i] || {};
+        const ss = s[i];
+        const db = (ds.bossDef && ds.bossDef.id) || null;
+        const sb = (ss.bossDef && ss.bossDef.id) || null;
+        if (ds.type !== ss.type || (ds.layoutId || null) !== (ss.layoutId || null) || db !== sb) {
+          rep.match = false;
+          rep.at = 'act ' + (a + 1) + ' room ' + (i + 1);
+          rep.note = (ds.type + '/' + (ds.layoutId || '-')) + ' vs ' + (ss.type + '/' + (ss.layoutId || '-'));
+          return rep;
+        }
+      }
+    }
+    return rep;
   }
 
   // The beats this run is actually walking, act keyed. THE LONG WALK adds a
@@ -299,6 +523,20 @@ const Run = (function () {
     return slots;
   }
 
+  // A restored plan is the truth about how long an act is, so the beats have
+  // to agree with it or every beat read past the cursor lines up with the
+  // wrong slot. With the night's carvings frozen first this is already true
+  // and the loop does nothing; it exists for the save that disagrees anyway.
+  function syncBeats(plan) {
+    for (let a = 0; a < plan.length; a++) {
+      const want = plan[a].length;
+      let beats = PLAN_BEATS[a + 1];
+      if (!Array.isArray(beats)) { beats = []; PLAN_BEATS[a + 1] = beats; }
+      while (beats.length > want) beats.pop();
+      while (beats.length < want) beats.splice(Math.max(0, beats.length - 1), 0, 'combat');
+    }
+  }
+
   function buildPlan(rng, recent) {
     if (typeof ACT_TEMPLATES === 'undefined' || !Array.isArray(ACT_TEMPLATES)) return [];
     PLAN_BEATS = {};
@@ -488,12 +726,14 @@ const Run = (function () {
     roomIdx: 0,
     plan: null,
     doors: [],
+    carvings: [],
+    lastResume: null,
     _entered: false,
     _recent: [],
 
     // Start a run. Seed is optional: leave it out and the run reads the clock
     // once, stores the number, and never touches entropy again.
-    begin(charId, seed) {
+    begin(charId, seed, carvings) {
       const s = (seed === undefined || seed === null) ? entropySeed() : (seed >>> 0);
       this.charId = charId || ((typeof META !== 'undefined' && META && META.selected) || 'max');
       this.seed = s;
@@ -505,6 +745,10 @@ const Run = (function () {
       this._entered = false;
       this._recent = [];
       this.doors = [];
+      // The pole is read once, here, and held for the night. A fresh run
+      // freezes exactly what the player just carved, so nothing moves.
+      freezeNight(carvings);
+      this.carvings = frozenNight.slice();
       this.plan = buildPlan(this.rng, this._recent);
       return this.plan;
     },
@@ -519,6 +763,8 @@ const Run = (function () {
       this.roomIdx = 0;
       this._entered = false;
       this._recent = [];
+      this.carvings = [];
+      thawNight();
     },
 
     // The plan is the truth about how long an act is: THE LONG WALK makes it
@@ -608,9 +854,17 @@ const Run = (function () {
         }
       }
 
+      // The save boundary. The world has just been emptied by the transition,
+      // the slot the player is walking into is decided, and nothing inside the
+      // room has run yet. The dice and the recent layouts are read from before
+      // the room takes its turn with them, so continuing replays this room
+      // exactly rather than dealing a different one.
+      const pre = { recent: this._recent.slice(), rng: rngRead(this.rng) };
+
       noteLayout(this._recent, slot.layoutId);
 
       const def = layoutDef(slot.type, slot.layoutId);
+      this._write(g, cur, pre);
       const room = new Room(def, this.rng);
       const total = this.roomsInAct(cur.act) || (this.plan[cur.act - 1] || []).length || 1;
       const base = (typeof DATA !== 'undefined' && typeof DATA.threatOf === 'function')
@@ -655,6 +909,82 @@ const Run = (function () {
         }
       }
       return room;
+    },
+
+    // ------------------------------------------------------------- saving --
+    // Called from advance at the room boundary and nowhere else. Everything
+    // the night is made of goes in: the seed and where the dice have got to,
+    // the plan and the cursor into it, the carvings the night started under,
+    // and whatever the game says its own state is.
+    _write(g, cur, pre) {
+      if (!this.active || !g || typeof g.snapshot !== 'function') return false;
+      let mine = null;
+      try { mine = g.snapshot(); } catch (e) { return false; }
+      if (!mine) return false;
+      return writeSave({
+        v: SAVE_VERSION,
+        at: Date.now(),
+        seed: this.seed >>> 0,
+        rng: pre.rng >>> 0,
+        charId: this.charId,
+        act: cur.act,
+        roomIdx: cur.idx,
+        recent: pre.recent.slice(),
+        carvings: (this.carvings || []).slice(),
+        plan: planOut(this.plan),
+        game: mine,
+      });
+    },
+
+    // The one snapshot on disk, fully validated, or null. Reads only: asking
+    // twice costs nothing and changes nothing.
+    peek() { return readSave(); },
+
+    // A line for the title screen, in the player's words rather than the
+    // save's. Null when there is nothing to continue.
+    peekLabel() {
+      const s = readSave();
+      if (!s) return null;
+      const c = (typeof DATA !== 'undefined' && DATA.characters && DATA.characters[s.charId]) || null;
+      const g = s.game || {};
+      const bits = [];
+      if (c && c.name) bits.push(String(c.name).toUpperCase());
+      bits.push('ACT ' + s.act + ', ROOM ' + ((s.roomIdx | 0) + 1));
+      if (isNum(g.level)) bits.push('LV ' + g.level);
+      return bits.join('  |  ');
+    },
+
+    clearSave() { dropSave(); },
+
+    // Put a night back. The game is already rebuilt and handed in; this puts
+    // the plan, the cursor and the dice back, then walks the player into the
+    // room they were about to enter. Returns the room, or null if the save
+    // could not be honored, in which case nothing is left half restored.
+    resume(s) {
+      if (!s) return null;
+      const stored = planIn(s.plan);
+      if (!stored) return null;
+      // The carvings go back before the plan is rebuilt, because the beats
+      // themselves read the pole: a night carved for THE LONG WALK is one
+      // room longer and has to stay that way whatever the pole says now.
+      this.begin(s.charId, s.seed, s.carvings);
+      this.lastResume = comparePlans(this.plan, stored);
+      this.plan = stored;
+      syncBeats(stored);
+      const slot = slotAt(stored, s.act, s.roomIdx);
+      if (!slot) { this.reset(); return null; }
+      // The window was written down before this room was counted into it, and
+      // advance is about to count it in again, so it goes back exactly as
+      // stored. Trimming anything here would drop a layout that legitimately
+      // repeats, and the next room's door would offer the wrong thing.
+      this._recent = Array.isArray(s.recent) ? s.recent.slice(-2) : [];
+      rngSeek(this.rng, s.rng);
+      this.act = s.act;
+      this.roomIdx = s.roomIdx;
+      this._entered = false;
+      this.finished = false;
+      this.doors = [];
+      return this.advance(null);
     },
   };
 

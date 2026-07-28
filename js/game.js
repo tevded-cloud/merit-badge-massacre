@@ -500,6 +500,10 @@ class Game {
       }
       this.bark('death');
       p.hp = 0;
+      // The night is over the instant the scout goes down, so the night in
+      // progress stops existing here rather than at the results screen. A tab
+      // closed during the death animation cannot be continued back to life.
+      if (typeof Run !== 'undefined' && Run && typeof Run.clearSave === 'function') Run.clearSave();
       this.phase = 'dying';
       this.phaseT = 0;
       this.hitstop = 0.28;
@@ -516,6 +520,8 @@ class Game {
 
   triggerDawn() {
     if (this.phase !== 'play') return;
+    // Dawn ends the night as surely as dying does: nothing left to continue.
+    if (typeof Run !== 'undefined' && Run && typeof Run.clearSave === 'function') Run.clearSave();
     this.phase = 'dawn';
     this.phaseT = 0;
     // Nothing collects loot after the phase flip, so bank the field now:
@@ -1524,6 +1530,150 @@ Game.prototype.gainCoins = function (n) {
     }
   };
 
+})();
+
+// ------------------------------------------------------- the night, written
+// A run is nineteen minutes on a good night, and a closed tab used to cost
+// all of it. These two are the whole of what the game itself hands to the
+// save and takes back from it: run.js owns the plan, the cursor and the file,
+// this owns the scout. Nothing here writes storage or reads it.
+(function () {
+  function num(v, fallback) {
+    return (typeof v === 'number' && isFinite(v)) ? v : fallback;
+  }
+
+  // What the scout is carrying at a room boundary. Read before the room is
+  // entered, so a rest stop's comfort and a cache's haul land once when the
+  // night is continued instead of once per continue.
+  Game.prototype.snapshot = function () {
+    const p = this.player || {};
+    const weapons = [];
+    for (const w of this.weapons || []) {
+      if (w && w.id) weapons.push({ id: w.id, lvl: Math.max(1, w.lvl | 0) });
+    }
+    if (!weapons.length) return null;
+    const passives = {};
+    for (const id in (this.passives || {})) {
+      const r = this.passives[id] | 0;
+      if (r > 0) passives[id] = r;
+    }
+    const s = this.skill;
+    // The night's feat counters live on META while you play and are only
+    // banked at the end, so they ride along here or a continued night forgets
+    // everything it set alight.
+    const c = (typeof META !== 'undefined' && META && META.counters) ? META.counters : null;
+    return {
+      charId: this.charId,
+      level: this.level | 0,
+      xp: num(this.xp, 0),
+      xpNext: num(this.xpNext, 0),
+      pendingLevelups: this.pendingLevelups | 0,
+      coins: num(this.coins, 0),
+      badges: num(this.badges, 0),
+      kills: this.kills | 0,
+      time: num(this.time, 0),
+      hp: num(p.hp, 0),
+      maxhp: num(p.maxhp, 0),
+      // Where the scout is standing at the swap, which is still the last
+      // room's floor. The next room is built around them (spawn points reject
+      // anything too close to the player), so the same coordinates have to go
+      // back or the room rebuilds itself slightly differently.
+      px: num(p.x, 0),
+      py: num(p.y, 0),
+      revived: !!this.revived,
+      act: this.act | 0,
+      roomIdx: this.roomIdx | 0,
+      threat: num(this._threat, null),
+      bossSpawned: Array.isArray(this.bossSpawned) ? this.bossSpawned.slice() : null,
+      weapons,
+      passives,
+      skill: s && s.id ? { id: s.id, t: Math.max(0, num(s.t, 0)) } : null,
+      counters: c ? { burned: c.burned | 0, lowHpTime: Math.round(num(c.lowHpTime, 0) * 10) / 10 } : null,
+    };
+  };
+
+  // The other direction. Anything the build no longer has a definition for
+  // answers null and the caller throws the save away: half a scout is worse
+  // than starting the night again.
+  Game.restore = function (s) {
+    if (!s || typeof s !== 'object') return null;
+    if (typeof DATA === 'undefined' || !DATA || !DATA.characters) return null;
+    const id = s.charId;
+    if (typeof id !== 'string' || !DATA.characters[id]) return null;
+    if (!Array.isArray(s.weapons) || !s.weapons.length) return null;
+    for (const w of s.weapons) if (!w || !DATA.weapons[w.id]) return null;
+    if (s.passives && typeof s.passives === 'object') {
+      for (const pid in s.passives) if (!DATA.passives[pid]) return null;
+    }
+
+    let g = null;
+    try { g = new Game(id); } catch (e) { return null; }
+
+    // Gear, exactly as it stood: the same ids at the same levels, with the
+    // stat block recomputed rather than trusted from the file.
+    const maxLvl = (typeof DATA.WEAPON_MAX === 'number') ? DATA.WEAPON_MAX : 5;
+    g.weapons.length = 0;
+    for (const w of s.weapons) {
+      g.addWeapon(w.id);
+      const held = g.weapons[g.weapons.length - 1];
+      held.lvl = Math.max(1, Math.min(maxLvl, w.lvl | 0));
+      held.stats = g.computeWeaponStats(w.id, held.lvl);
+    }
+    g.passives = {};
+    if (s.passives && typeof s.passives === 'object') {
+      for (const pid in s.passives) {
+        const def = DATA.passives[pid];
+        const r = Math.max(0, Math.min(def.max | 0, s.passives[pid] | 0));
+        if (r > 0) g.passives[pid] = r;
+      }
+    }
+    g.recalc();
+
+    g.level = Math.max(1, s.level | 0);
+    g.xp = Math.max(0, num(s.xp, 0));
+    const nxt = num(s.xpNext, 0);
+    g.xpNext = nxt > 0 ? nxt : DATA.xpNext(g.level);
+    // Head Start already banked its rank ups when the night began, so the
+    // stored count replaces the constructor's rather than adding to it.
+    g.pendingLevelups = Math.max(0, s.pendingLevelups | 0);
+    g.coins = Math.max(0, num(s.coins, 0));
+    g.badges = Math.max(0, num(s.badges, 0));
+    g.kills = Math.max(0, s.kills | 0);
+    g.time = Math.max(0, num(s.time, 0));
+    g.revived = !!s.revived;
+    g.act = Math.max(1, s.act | 0);
+    g.roomIdx = Math.max(0, s.roomIdx | 0);
+    if (typeof s.threat === 'number' && isFinite(s.threat)) g._threat = s.threat;
+    if (Array.isArray(s.bossSpawned)) {
+      for (let i = 0; i < g.bossSpawned.length && i < s.bossSpawned.length; i++) {
+        g.bossSpawned[i] = !!s.bossSpawned[i];
+      }
+    }
+
+    const maxhp = num(s.maxhp, 0);
+    if (maxhp > 0) g.player.maxhp = maxhp;
+    const hp = num(s.hp, 0);
+    g.player.hp = Math.max(1, Math.min(g.player.maxhp, hp > 0 ? hp : g.player.maxhp));
+    g.player.x = num(s.px, g.player.x);
+    g.player.y = num(s.py, g.player.y);
+
+    // The skill on the button, and how much of its cooldown was still
+    // burning. A skill this save has since lost keeps whatever the badge
+    // board grants now, which is the same answer a fresh run would give.
+    if (s.skill && typeof s.skill.id === 'string') {
+      const set = (typeof g.setSkill === 'function') ? g.setSkill(s.skill.id) : null;
+      if (set) set.t = Math.max(0, Math.min(set.cd || 0, num(s.skill.t, 0)));
+    }
+
+    // Feat counters only ever climb, so the night's total is taken as a floor.
+    // Anything earned in camp since (a knocked birdhouse) is left alone.
+    if (s.counters && typeof META !== 'undefined' && META && META.counters) {
+      META.counters.burned = Math.max(META.counters.burned | 0, s.counters.burned | 0);
+      META.counters.lowHpTime = Math.max(num(META.counters.lowHpTime, 0), num(s.counters.lowHpTime, 0));
+    }
+
+    return g;
+  };
 })();
 
 // debug hooks (harmless in production, invaluable in test)

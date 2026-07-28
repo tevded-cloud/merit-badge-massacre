@@ -145,3 +145,413 @@ const META = {
   },
 };
 META.load();
+
+// ---------------------------------------------------------------------------
+// The camp transfer code
+// ---------------------------------------------------------------------------
+// Progress lives in this browser, which means a phone and a laptop are two
+// separate camps. The transfer code is the paperwork between them: everything
+// permanent packed into one line you can copy, type or read down a phone.
+//
+// It carries the camp, never the night: a run in progress belongs to the
+// machine it is being played on, and mbm_run is deliberately not in here.
+//
+// SHAPE. A byte string, then a two byte checksum, then Crockford base 32,
+// then groups of five with hyphens. The first group is the literal stamp
+// MBM1, so a wrong code says what it is before anything is decoded.
+//
+// THE LISTS. Everything set shaped (merit badges, journal entries, carvings,
+// scouts) travels as one bit per entry, counted against the game's own
+// tables. Those tables must only ever be appended to: a code stores how many
+// bits it wrote, so a shorter list from an older build reads fine (the tail
+// is simply unearned) and a longer one is refused as newer than this build.
+const Transfer = (function () {
+  const STAMP = 'MBM';
+  const VERSION = 1;
+  // Crockford's alphabet: no I, L, O or U, so nothing reads as something else
+  // in handwriting. Decoding is forgiving in the same spirit.
+  const ALPHA = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+  const GROUP = 5;
+
+  function tables() {
+    const chars = (typeof DATA !== 'undefined' && DATA && DATA.characters) ? Object.keys(DATA.characters) : [];
+    const ups = (typeof METADEFS !== 'undefined' && METADEFS) ? Object.keys(METADEFS) : [];
+    const finds = (typeof FINDS !== 'undefined' && Array.isArray(FINDS)) ? FINDS.map(f => f.id) : [];
+    const feats = (typeof FEATS !== 'undefined' && Array.isArray(FEATS)) ? FEATS.map(f => f.id) : [];
+    const carvings = (typeof NIGHT_CARVINGS !== 'undefined' && Array.isArray(NIGHT_CARVINGS)) ? NIGHT_CARVINGS.map(c => c.id) : [];
+    const arcs = (typeof BROCK !== 'undefined' && BROCK && Array.isArray(BROCK.arc)) ? BROCK.arc.map(b => b.id) : [];
+    const bosses = (typeof DATA !== 'undefined' && DATA && Array.isArray(DATA.bosses)) ? DATA.bosses.map(b => b.id) : [];
+    return { chars, ups, finds, feats, carvings, arcs, bosses };
+  }
+
+  function n0(v) { return (typeof v === 'number' && isFinite(v) && v > 0) ? Math.floor(v) : 0; }
+  // The same, for the one counter that is measured in tenths of a second.
+  function f0(v) { return (typeof v === 'number' && isFinite(v) && v > 0) ? v : 0; }
+
+  // ------------------------------------------------------------- the bytes --
+  function Writer() { this.b = []; }
+  Writer.prototype.byte = function (v) { this.b.push(v & 0xff); };
+  Writer.prototype.varint = function (v) {
+    let n = n0(v);
+    if (n > 0xffffffff) n = 0xffffffff;
+    do { let part = n & 0x7f; n = Math.floor(n / 128); this.b.push(n > 0 ? (part | 0x80) : part); } while (n > 0);
+  };
+  // One bit per id in the table, plus how many bits were written.
+  Writer.prototype.bits = function (list, has) {
+    this.varint(list.length);
+    for (let i = 0; i < list.length; i += 8) {
+      let byte = 0;
+      for (let k = 0; k < 8 && i + k < list.length; k++) if (has(list[i + k])) byte |= (1 << k);
+      this.b.push(byte);
+    }
+  };
+  // Four bits per id, for the small counted things (badge board ranks).
+  Writer.prototype.nibbles = function (list, val) {
+    this.varint(list.length);
+    for (let i = 0; i < list.length; i += 2) {
+      const a = Math.max(0, Math.min(15, val(list[i]) | 0));
+      const b = (i + 1 < list.length) ? Math.max(0, Math.min(15, val(list[i + 1]) | 0)) : 0;
+      this.b.push(a | (b << 4));
+    }
+  };
+
+  // Reading past the end answers zero rather than failing, because the writer
+  // trims trailing zero bytes: a camp with nothing in its tail simply stops
+  // early. Damage is caught by the checksum, which is what a checksum is for.
+  function Reader(bytes) { this.b = bytes; this.i = 0; this.bad = false; }
+  Reader.prototype.byte = function () {
+    if (this.i >= this.b.length) { this.i++; return 0; }
+    return this.b[this.i++];
+  };
+  Reader.prototype.varint = function () {
+    let n = 0, shift = 1, guard = 0;
+    while (guard++ < 6) {
+      const v = this.byte();
+      if (this.bad) return 0;
+      n += (v & 0x7f) * shift;
+      if (!(v & 0x80)) return n;
+      shift *= 128;
+    }
+    this.bad = true;
+    return 0;
+  };
+  // Returns the ids whose bit is set. A count longer than the table means the
+  // code knows about content this build does not: that is a newer game.
+  Reader.prototype.bits = function (list) {
+    const n = this.varint();
+    if (this.bad) return null;
+    if (n > list.length) { this.newer = true; this.bad = true; return null; }
+    const out = [];
+    for (let i = 0; i < n; i += 8) {
+      const byte = this.byte();
+      if (this.bad) return null;
+      for (let k = 0; k < 8 && i + k < n; k++) if (byte & (1 << k)) out.push(list[i + k]);
+    }
+    return out;
+  };
+  Reader.prototype.nibbles = function (list) {
+    const n = this.varint();
+    if (this.bad) return null;
+    if (n > list.length) { this.newer = true; this.bad = true; return null; }
+    const out = {};
+    for (let i = 0; i < n; i += 2) {
+      const byte = this.byte();
+      if (this.bad) return null;
+      const a = byte & 0x0f, b = (byte >> 4) & 0x0f;
+      if (a) out[list[i]] = a;
+      if (i + 1 < n && b) out[list[i + 1]] = b;
+    }
+    return out;
+  };
+
+  // ---------------------------------------------------------- the checksum --
+  // FNV 1a, sixteen bits, seeded with the version so a hand edited stamp fails
+  // here rather than somewhere further in.
+  function checksum(bytes, version) {
+    let h = 0x811c9dc5 ^ (version >>> 0);
+    for (let i = 0; i < bytes.length; i++) {
+      h ^= bytes[i] & 0xff;
+      h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+    }
+    return ((h >>> 16) ^ (h & 0xffff)) & 0xffff;
+  }
+
+  // -------------------------------------------------------------- base 32 --
+  function toBase32(bytes) {
+    let out = '', bits = 0, acc = 0;
+    for (let i = 0; i < bytes.length; i++) {
+      acc = (acc << 8) | (bytes[i] & 0xff);
+      bits += 8;
+      while (bits >= 5) { bits -= 5; out += ALPHA[(acc >> bits) & 31]; }
+    }
+    if (bits > 0) out += ALPHA[(acc << (5 - bits)) & 31];
+    return out;
+  }
+
+  function fromBase32(str) {
+    const out = [];
+    let bits = 0, acc = 0;
+    for (const ch of str) {
+      const v = ALPHA.indexOf(ch);
+      if (v < 0) return null;
+      acc = (acc * 32) + v;
+      bits += 5;
+      if (bits >= 8) { bits -= 8; out.push(Math.floor(acc / Math.pow(2, bits)) & 0xff); acc = acc % Math.pow(2, bits); }
+    }
+    return out;
+  }
+
+  // Typed by hand, read off a screen, or pasted with the hyphens left in: all
+  // of it lands in the same alphabet. O is zero, I and L are one, as Crockford
+  // intended, because that is the mistake people actually make.
+  function normalize(code) {
+    return String(code || '').toUpperCase().replace(/[^0-9A-Z]/g, '')
+      .replace(/O/g, '0').replace(/[IL]/g, '1');
+  }
+
+  function group(str) {
+    const parts = [];
+    for (let i = 0; i < str.length; i += GROUP) parts.push(str.slice(i, i + GROUP));
+    return parts.join('-');
+  }
+
+  // ------------------------------------------------------------- the pack --
+  function packFlags(m) {
+    const f = (m && m.flags) || {};
+    let bits = 0;
+    if (m && m.metBrock) bits |= 1;
+    if (f.tarpAck) bits |= 2;
+    if (f.blinkFriend) bits |= 4;
+    if (f.metQuartermaster) bits |= 8;
+    if (f.act2) bits |= 16;
+    if (f.act3) bits |= 32;
+    return bits;
+  }
+
+  const api = {
+    version: VERSION,
+
+    // The whole camp as one line. best is App.best, handed in rather than
+    // reached for, because the records live in the UI's file, not this one.
+    make(best, m) {
+      const meta = m || META;
+      const t = tables();
+      const f = (meta.flags && typeof meta.flags === 'object') ? meta.flags : {};
+      const feats = (f.feats && typeof f.feats === 'object') ? f.feats : {};
+      const ack = (f.featAck && typeof f.featAck === 'object') ? f.featAck : {};
+      const arcs = (f.arcSeen && typeof f.arcSeen === 'object') ? f.arcSeen : {};
+      const carv = (f.night && Array.isArray(f.night.carvings)) ? f.night.carvings : [];
+      const journal = (meta.journal && typeof meta.journal === 'object') ? meta.journal : {};
+      const codex = (meta.codex && typeof meta.codex === 'object') ? meta.codex : {};
+      const counters = meta.counters || {};
+      const camp = meta.camp || {};
+      const b = best || {};
+      const unlocked = Array.isArray(meta.unlocked) ? meta.unlocked : [];
+      const ups = meta.upgrades || {};
+
+      const w = new Writer();
+      w.varint(n0(meta.badges));
+      w.varint(n0(meta.lifetime));
+      w.varint(n0(meta.spent));
+      w.varint(n0(meta.dawns));
+      w.varint(n0(meta.deaths));
+      w.varint(n0(meta.runs));
+      w.varint(n0(b.time));
+      w.varint(n0(b.kills));
+      w.varint(n0(b.dawns));
+      w.varint(n0(b.runs));
+      w.varint(n0(counters.burned));
+      w.varint(Math.round(f0(counters.lowHpTime) * 10));
+      w.varint(n0(counters.birdhouses));
+      w.varint(n0(camp.banner));
+      w.varint(n0(camp.tentPattern));
+      w.varint(n0(f.blink));
+      w.byte(packFlags(meta));
+      const sel = t.chars.indexOf(meta.selected);
+      w.byte(sel < 0 ? 0xff : sel);
+      w.bits(t.chars, id => unlocked.indexOf(id) !== -1);
+      w.nibbles(t.ups, id => ups[id] | 0);
+      w.bits(t.finds, id => !!journal[id]);
+      w.bits(t.feats, id => !!feats[id]);
+      w.bits(t.feats, id => !!ack[id]);
+      w.bits(t.arcs, id => !!arcs[id]);
+      w.bits(t.carvings, id => carv.indexOf(id) !== -1);
+      // The field guide's kill and sighting counts, two numbers a boss.
+      w.varint(t.bosses.length);
+      for (const id of t.bosses) {
+        const e = codex[id];
+        let seen = 0, killed = 0;
+        if (e && typeof e === 'object') { seen = n0(e.seen); killed = n0(e.killed) || n0(e.kills); }
+        else if (e === 'killed') { seen = 1; killed = 1; }
+        else if (e) seen = 1;
+        w.varint(seen);
+        w.varint(killed);
+      }
+
+      // Trailing zeros carry no news: a young camp is mostly zeros and its
+      // code should look like it. The reader fills them back in.
+      const body = w.b.slice();
+      while (body.length && body[body.length - 1] === 0) body.pop();
+      const ck = checksum(body, VERSION);
+      const bytes = body.concat([(ck >> 8) & 0xff, ck & 0xff]);
+      return STAMP + ALPHA[VERSION] + '-' + group(toBase32(bytes));
+    },
+
+    // Read a code without touching anything. Answers { ok, why } on refusal,
+    // or { ok: true, data, lines } where lines is the plain words summary the
+    // player has to agree to before any of it lands.
+    read(code) {
+      const raw = normalize(code);
+      if (!raw) return { ok: false, why: 'Paste a camp transfer code first.' };
+      if (raw.slice(0, 3) !== STAMP) return { ok: false, why: 'That does not look like a camp transfer code.' };
+      // The version is exactly one character, so the stamp is always four and
+      // a payload that happens to start with digits cannot be read as part of
+      // it. A version past Z would need a new stamp, and would deserve one.
+      const v = ALPHA.indexOf(raw.charAt(3));
+      if (v < 0) return { ok: false, why: 'That code is missing its version stamp.' };
+      if (v > VERSION) return { ok: false, why: 'That code was made by a newer version of the game. Update this one first.' };
+      if (v < VERSION) return { ok: false, why: 'That code was made by an older version of the game.' };
+      const bytes = fromBase32(raw.slice(4));
+      if (!bytes) return { ok: false, why: 'That code has a character in it that does not belong. Copy the whole thing again.' };
+      if (bytes.length < 3) return { ok: false, why: 'That code is too short to be a whole camp.' };
+
+      const ck = ((bytes[bytes.length - 2] << 8) | bytes[bytes.length - 1]) & 0xffff;
+      const payload = bytes.slice(0, bytes.length - 2);
+      if (checksum(payload, v) !== ck) {
+        return { ok: false, why: 'That code is damaged or incomplete. Copy the whole thing and try again.' };
+      }
+
+      const t = tables();
+      const r = new Reader(payload);
+      const d = {};
+      d.badges = r.varint(); d.lifetime = r.varint(); d.spent = r.varint();
+      d.dawns = r.varint(); d.deaths = r.varint(); d.runs = r.varint();
+      d.best = { time: r.varint(), kills: r.varint(), dawns: r.varint(), runs: r.varint() };
+      d.counters = { burned: r.varint(), lowHpTime: r.varint() / 10, birdhouses: r.varint() };
+      d.camp = { banner: r.varint(), tentPattern: r.varint() };
+      d.blink = r.varint();
+      const bits = r.byte();
+      d.metBrock = !!(bits & 1);
+      d.tarpAck = !!(bits & 2);
+      d.blinkFriend = !!(bits & 4);
+      d.metQuartermaster = !!(bits & 8);
+      d.act2 = !!(bits & 16);
+      d.act3 = !!(bits & 32);
+      const sel = r.byte();
+      d.selected = (sel === 0xff || sel >= t.chars.length) ? null : t.chars[sel];
+      d.unlocked = r.bits(t.chars);
+      d.upgrades = r.nibbles(t.ups);
+      d.journal = r.bits(t.finds);
+      d.feats = r.bits(t.feats);
+      d.featAck = r.bits(t.feats);
+      d.arcSeen = r.bits(t.arcs);
+      d.carvings = r.bits(t.carvings);
+      d.codex = {};
+      const nb = r.varint();
+      if (!r.bad) {
+        if (nb > t.bosses.length) { r.newer = true; r.bad = true; }
+        else {
+          for (let i = 0; i < nb && !r.bad; i++) {
+            const seen = r.varint();
+            const killed = r.varint();
+            if (seen > 0 || killed > 0) d.codex[t.bosses[i]] = { seen: Math.max(seen, killed, 1), killed };
+          }
+        }
+      }
+      if (r.bad) {
+        return {
+          ok: false,
+          why: r.newer
+            ? 'That code was made by a newer version of the game. Update this one first.'
+            : 'That code is damaged or incomplete. Copy the whole thing and try again.',
+        };
+      }
+      return { ok: true, data: d, lines: this.describe(d) };
+    },
+
+    // What the player is agreeing to, in words rather than fields.
+    describe(d) {
+      const n = v => String(n0(v));
+      const plural = (v, one, many) => n0(v) === 1 ? (n(v) + ' ' + one) : (n(v) + ' ' + (many || one + 's'));
+      const lines = [];
+      lines.push(plural(d.runs, 'night walked', 'nights walked'));
+      lines.push(plural(d.dawns, 'dawn seen', 'dawns seen'));
+      lines.push(n(d.lifetime) + ' badges earned in all, ' + n(d.badges) + ' left to spend');
+      let ranks = 0;
+      for (const id in (d.upgrades || {})) ranks += n0(d.upgrades[id]);
+      lines.push(plural(ranks, 'badge board rank', 'badge board ranks'));
+      lines.push(plural((d.feats || []).length, 'merit badge', 'merit badges'));
+      lines.push(plural(((d.unlocked || []).length + 1), 'scout', 'scouts'));
+      lines.push(plural((d.journal || []).length, 'field guide entry', 'field guide entries'));
+      if ((d.carvings || []).length) lines.push(plural(d.carvings.length, 'carving on the totem', 'carvings on the totem'));
+      return lines;
+    },
+
+    // Overwrite this camp with that one. Everything goes through META.save
+    // and META.load, so a code full of nonsense lands as the same normalized
+    // shape any other save would. Returns the records block for the caller to
+    // install, because App.best is not this file's to write.
+    apply(d, m) {
+      const meta = m || META;
+      if (!d) return null;
+      meta.badges = n0(d.badges);
+      meta.lifetime = n0(d.lifetime);
+      meta.spent = n0(d.spent);
+      meta.dawns = n0(d.dawns);
+      meta.deaths = n0(d.deaths);
+      meta.runs = n0(d.runs);
+      meta.upgrades = {};
+      for (const id in (d.upgrades || {})) {
+        const def = (typeof METADEFS !== 'undefined' && METADEFS) ? METADEFS[id] : null;
+        const cap = def ? def.ranks : 0;
+        const r = Math.max(0, Math.min(cap, n0(d.upgrades[id])));
+        if (r > 0) meta.upgrades[id] = r;
+      }
+      meta.selected = d.selected || 'max';
+      meta.unlocked = (d.unlocked || []).slice();
+      meta.metBrock = !!d.metBrock;
+      meta.journal = {};
+      for (const id of (d.journal || [])) meta.journal[id] = true;
+      meta.codex = {};
+      for (const id in (d.codex || {})) meta.codex[id] = d.codex[id];
+      meta.counters = this.norm(meta, d.counters);
+      meta.camp = { banner: n0(d.camp && d.camp.banner), tentPattern: n0(d.camp && d.camp.tentPattern) };
+      // lastRun describes one night on one machine, so it does not travel.
+      meta.lastRun = null;
+
+      const flags = {};
+      flags.feats = {};
+      for (const id of (d.feats || [])) flags.feats[id] = true;
+      flags.featAck = {};
+      for (const id of (d.featAck || [])) flags.featAck[id] = true;
+      flags.arcSeen = {};
+      for (const id of (d.arcSeen || [])) flags.arcSeen[id] = true;
+      flags.night = { carvings: (d.carvings || []).slice() };
+      if (d.tarpAck) flags.tarpAck = true;
+      if (d.blinkFriend) flags.blinkFriend = true;
+      if (d.metQuartermaster) flags.metQuartermaster = true;
+      if (d.act2) flags.act2 = true;
+      if (d.act3) flags.act3 = true;
+      if (n0(d.blink) > 0) flags.blink = n0(d.blink);
+      meta.flags = flags;
+
+      // Written, then read straight back, so an imported camp is loaded from
+      // storage exactly like any other camp: same normalizers, same defaults.
+      meta.save();
+      meta.load();
+      // The pools follow the merit badges, and the badges just changed.
+      if (typeof Feats !== 'undefined' && Feats && typeof Feats.syncPools === 'function') {
+        try { Feats.syncPools(meta); } catch (e) {}
+      }
+      const b = d.best || {};
+      return { time: n0(b.time), kills: n0(b.kills), dawns: n0(b.dawns), runs: n0(b.runs) };
+    },
+
+    norm(meta, c) {
+      if (meta && typeof meta.normCounters === 'function') return meta.normCounters(c);
+      return { burned: n0(c && c.burned), lowHpTime: n0(c && c.lowHpTime), birdhouses: n0(c && c.birdhouses) };
+    },
+  };
+
+  return api;
+})();
