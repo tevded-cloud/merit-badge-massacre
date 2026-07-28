@@ -1794,7 +1794,7 @@ whose composition rect (840 x 840) admits a true circle. Its layout at
 `js/rooms.js:1603` should be worked as a second example once the Boulder Run
 template is proven.
 
-## Validator baseline (recorded 2026-07-28, at v2.0)
+## Validator baseline (recorded 2026-07-28, at v2.0) [SUPERSEDED, see below]
 
 `npm run rooms:check` exits 1 today and is EXPECTED to. The doctrine above is
 deliberately stricter than the shipped layouts, so the validator is a ratchet,
@@ -1817,3 +1817,23 @@ either direction. Fewer failures is progress and should be recorded here. More
 failures means a layout edit broke something the doctrine cares about, and is a
 finding. A gate with nothing to compare against cannot do its job: this section
 exists because one ran without it.
+
+## Correction to the baseline above (same day, after play)
+
+The section above framed 85 failures as an accepted baseline and the validator
+as a ratchet. That was too generous and it was wrong in a specific way: nobody
+checked whether the failures were things a PLAYER COULD SEE.
+
+They are. The owner, playing the shipped build, reported that "doors on the
+sides of the levels are not lined up correctly". That is predicate D2, "entry to
+door corridors clear", which fails in 28 of 46 layouts and is the single most
+common failure in the game. E3 (25) and D3 (20) are the same family: they are
+all about whether a player entering a room can see and reach the way out.
+
+So the numbers stand as a measurement, but their STATUS changes. These are a bug
+list, not a baseline. The ratchet framing still applies to predicates that are
+genuinely stricter than the shipped game intends; it does not apply to D1, D2,
+D3, E3 and E4, which describe whether a room is navigable and readable on entry.
+
+The lesson worth keeping: a validator baseline recorded without asking "would a
+player notice this one?" converts real defects into accepted furniture.
