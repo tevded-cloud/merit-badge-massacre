@@ -50,8 +50,19 @@ const PROPS = {};
       spr: 'mailbox', w: 26, r: 12, hp: 10, solid: false, breakable: true,
       shard: '#8a4423',
       drop(g, x, y) {
-        // The "found item" hook (letters, quest triggers) lands with a
-        // later unit; for now the mailbox just pays out coins.
+        // Sometimes there is post. A mailbox in a room whose act still owes
+        // you something hands that over instead of its coins, once per room,
+        // so a room full of mailboxes cannot be farmed for the whole story.
+        const room = g.room;
+        if (room && !room.mailFind && typeof Finds !== 'undefined' && Finds &&
+            Math.random() < 0.3) {
+          const id = Finds.nextFor(g.act || 1);
+          if (id) {
+            room.mailFind = true;
+            Finds.grant(g, id);
+            return;
+          }
+        }
         dropCoinsFx(g, x, y, randInt(2, 4));
       },
     },

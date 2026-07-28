@@ -378,7 +378,9 @@ function bossRoll() {
 function codexState(id) {
   const e = META.codex && META.codex[id];
   if (!e) return 'unknown';
-  const killed = e === 'killed' || e.killed === true || (typeof e.kills === 'number' && e.kills > 0);
+  const killed = e === 'killed' || e.killed === true ||
+    (typeof e.killed === 'number' && e.killed > 0) ||
+    (typeof e.kills === 'number' && e.kills > 0);
   if (killed) return 'killed';
   return 'seen';
 }
@@ -446,7 +448,11 @@ function journalTroop() {
     n.textContent = (i + 1) + '.';
     const w = document.createElement('div');
     w.className = 'jw';
-    w.textContent = keys[i] ? String(keys[i]).toUpperCase() : 'UNKNOWN SCOUT';
+    // A journal key is a find id. Show what the find is called when the table
+    // knows it, and fall back to the raw key for anything it does not.
+    const def = (typeof Finds !== 'undefined' && Finds && keys[i]) ? Finds.byId(keys[i]) : null;
+    const label = def ? def.title : keys[i];
+    w.textContent = keys[i] ? String(label).toUpperCase() : 'UNKNOWN SCOUT';
     row.appendChild(n); row.appendChild(w);
     wrap.appendChild(row);
   }
@@ -928,6 +934,114 @@ function drainToasts(dt) {
   }
 }
 
+// ---------------- the find card ----------------
+// Picking something up off the trail is never an interruption. The card slides
+// into the bottom left corner, says its piece for five seconds and leaves. It
+// takes no clicks (pointer-events are off), it pauses nothing, and two finds
+// arriving together queue instead of fighting over the corner.
+//
+// index.html does not know this thing exists: the element and its styles are
+// both made here, on first use. The icon is a small canvas, the same way every
+// other icon in this UI is drawn, because SPR.icon paints to a context.
+const FIND_HOLD = 5;      // seconds the card stays up
+const FIND_GAP = 0.4;     // beat between one card leaving and the next arriving
+
+const findQueue = [];
+let findCard = null;
+let findPhase = 'idle';   // idle, show, gap
+let findT = 0;
+
+function findCardStyle() {
+  if (document.getElementById('findcardcss')) return;
+  const st = document.createElement('style');
+  st.id = 'findcardcss';
+  st.textContent =
+    '#findcard{position:fixed;left:18px;bottom:18px;z-index:55;width:296px;' +
+    'display:flex;gap:11px;padding:12px 14px;box-sizing:border-box;' +
+    'border-radius:10px;background:rgba(14,16,20,0.94);' +
+    'border:1px solid rgba(244,197,66,0.45);box-shadow:0 8px 24px rgba(0,0,0,0.55);' +
+    'pointer-events:none;font-family:Verdana,sans-serif;color:#e8e0cc;' +
+    'transform:translateX(-120%);opacity:0;' +
+    'transition:transform 340ms cubic-bezier(0.2,0.9,0.3,1),opacity 340ms ease}' +
+    '#findcard.on{transform:translateX(0);opacity:1}' +
+    '#findcard canvas{width:34px;height:34px;flex:0 0 34px;margin-top:1px}' +
+    '#findcard .fbody{min-width:0}' +
+    '#findcard .ftitle{font-size:11px;font-weight:bold;letter-spacing:1.4px;' +
+    'text-transform:uppercase;color:#f4c542}' +
+    '#findcard .fline{font-size:11px;line-height:1.45;color:#c6c0af;margin-top:5px}' +
+    '#findcard .fkind{font-size:9px;letter-spacing:1.6px;text-transform:uppercase;' +
+    'color:#7f8a72;margin-top:8px}';
+  document.head.appendChild(st);
+}
+
+function buildFindCard() {
+  findCardStyle();
+  const el = document.createElement('div');
+  el.id = 'findcard';
+  const ic = document.createElement('canvas');
+  ic.width = 68; ic.height = 68;
+  const body = document.createElement('div');
+  body.className = 'fbody';
+  const title = document.createElement('div');
+  title.className = 'ftitle';
+  const lines = document.createElement('div');
+  const kind = document.createElement('div');
+  kind.className = 'fkind';
+  body.appendChild(title); body.appendChild(lines); body.appendChild(kind);
+  el.appendChild(ic); el.appendChild(body);
+  document.body.appendChild(el);
+  findCard = { el, ic, title, lines, kind };
+  return findCard;
+}
+
+function startFindCard(def) {
+  const c = findCard || buildFindCard();
+  const g = c.ic.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, c.ic.width, c.ic.height);
+  g.scale(2, 2);
+  SPR.icon(g, def.icon, 17, 17, 30);
+  c.title.textContent = def.title;
+  c.lines.innerHTML = '';
+  const lines = def.lines || [];
+  for (let i = 0; i < lines.length; i++) {
+    const row = document.createElement('div');
+    row.className = 'fline';
+    row.textContent = lines[i];
+    c.lines.appendChild(row);
+  }
+  c.kind.textContent = def.kind === 'sign' ? 'A sign on the trail' : 'Troop 12';
+  // Commit the off screen position before asking for the slide, or the browser
+  // batches both and the card simply appears.
+  void c.el.offsetWidth;
+  c.el.classList.add('on');
+  findPhase = 'show';
+  findT = FIND_HOLD;
+  AudioSys.play('chest');
+}
+
+// Called by Finds.grant. Queueing is all it does: the loop puts cards up.
+function showFindCard(def) {
+  if (def) findQueue.push(def);
+}
+
+function drainFinds(dt) {
+  if (findPhase === 'idle') {
+    if (findQueue.length) startFindCard(findQueue.shift());
+    return;
+  }
+  findT -= dt;
+  if (findT > 0) return;
+  if (findPhase === 'show') {
+    if (findCard) findCard.el.classList.remove('on');
+    findPhase = 'gap';
+    findT = FIND_GAP;
+    return;
+  }
+  findPhase = 'idle';
+  if (findQueue.length) startFindCard(findQueue.shift());
+}
+
 // ---------------- input ----------------
 let audioBooted = false;
 function bootAudio() {
@@ -1096,6 +1210,8 @@ function frame(now) {
 
   // Sticks resolve before the simulation reads input, never after.
   Touch.update(dt);
+  // The find card lives outside every screen: it comes and goes on its own.
+  drainFinds(dt);
 
   const g = App.game;
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);

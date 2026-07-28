@@ -29,15 +29,24 @@ const META = {
   journal: {},     // long form notes the camp remembers
   flags: {},       // one off story switches
   codex: {},       // boss id -> { seen, killed }
+  // Feat counters, banked at the end of a night rather than written per frame.
+  // burned is critters set alight, lowHpTime is seconds spent under 15% HP.
+  counters: { burned: 0, lowHpTime: 0 },
 
   load() {
     try {
       const s = JSON.parse(localStorage.getItem('mbm_meta') || '{}');
-      for (const k of ['badges', 'lifetime', 'spent', 'dawns', 'deaths', 'runs', 'upgrades', 'selected', 'lastRun', 'metBrock', 'unlocked', 'journal', 'flags', 'codex']) {
+      for (const k of ['badges', 'lifetime', 'spent', 'dawns', 'deaths', 'runs', 'upgrades', 'selected', 'lastRun', 'metBrock', 'unlocked', 'journal', 'flags', 'codex', 'counters']) {
         if (s[k] !== undefined) this[k] = s[k];
       }
       if (!DATA.characters[this.selected]) this.selected = 'max';
       if (!Array.isArray(this.unlocked)) this.unlocked = [];
+      // Every story field is additive, so a save written before any of them
+      // existed loads with the field simply absent. Put the shape back.
+      if (!this.journal || typeof this.journal !== 'object') this.journal = {};
+      if (!this.flags || typeof this.flags !== 'object') this.flags = {};
+      if (!this.codex || typeof this.codex !== 'object') this.codex = {};
+      this.counters = this.normCounters(this.counters);
       // 1.0 saves had the whole troop open from the start. Anyone who already
       // walked the trail keeps the scouts they were playing with.
       if (this.runs > 0 && this.unlocked.length === 0) this.unlocked.push('junie', 'gus');
@@ -52,8 +61,19 @@ const META = {
         lastRun: this.lastRun, metBrock: this.metBrock,
         unlocked: this.unlocked, journal: this.journal,
         flags: this.flags, codex: this.codex,
+        counters: this.counters,
       }));
     } catch (e) {}
+  },
+
+  // A counters block from any save, or from nothing at all.
+  normCounters(c) {
+    const out = { burned: 0, lowHpTime: 0 };
+    if (c && typeof c === 'object') {
+      if (c.burned > 0) out.burned = c.burned;
+      if (c.lowHpTime > 0) out.lowHpTime = c.lowHpTime;
+    }
+    return out;
   },
 
   rank(id) { return this.upgrades[id] || 0; },
@@ -87,6 +107,11 @@ const META = {
       killer: g.lastKiller || null,
       char: g.charId,
     };
+    // The night's feat counters ride home with the run. They are kept in
+    // memory while you play, on purpose: a per frame localStorage write for a
+    // low health timer would be the most expensive thing in the game.
+    this.counters = this.normCounters(this.counters);
+    this.counters.lowHpTime = Math.round(this.counters.lowHpTime * 10) / 10;
     this.save();
   },
 

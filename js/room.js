@@ -27,6 +27,8 @@ const ROOM_SCATTER_CLEAR = 64;   // ... and this far off anything that matters
 const ROOM_SPAWN_INSET = 32;     // spawns clip to bounds inset by this
 const ROOM_EDGE_AWAY = 190;      // edge spawns land at least this far away
 const ROOM_TRIES = 20;           // rejection sampling budget per placement
+const ROOM_FIND_R = 46;          // how close you stand to a find to read it
+const ROOM_FIND_DWELL = 0.4;     // ... and how long you stand there
 
 class Room {
   constructor(def, rng) {
@@ -60,6 +62,12 @@ class Room {
     this.objectiveDone = false;
     this.doorFired = false;
     this.t = 0;
+
+    // The one thing a lore room holds: { x, y, id, def }, or null once the act
+    // has nothing left to hand over. Filled in by enter().
+    this.findSpot = null;
+    this.findT = 0;
+    this.mailFind = false;
 
     // wave machinery, armed by the lock-in
     this.waves = [];
@@ -214,9 +222,59 @@ class Room {
     if (this.roomIdx != null) g.roomIdx = this.roomIdx;
     if (this.threatValue != null) g._threat = this.threatValue;
 
+    this._markAct(g);
+    this._placeFind(g);
+
     this.state = 'entering';
     this.enterT = 0;
     return this;
+  }
+
+  // Getting this deep is the story beat. Brock reads these two switches at the
+  // fire, and the room is the thing that moves the act, so the room sets them.
+  _markAct(g) {
+    if (typeof META === 'undefined' || !META) return;
+    const act = (g && g.act != null) ? g.act : this.act;
+    if (!(act >= 2)) return;
+    if (!META.flags || typeof META.flags !== 'object') META.flags = {};
+    let changed = false;
+    if (act >= 2 && !META.flags.act2) { META.flags.act2 = true; changed = true; }
+    if (act >= 3 && !META.flags.act3) { META.flags.act3 = true; changed = true; }
+    if (changed && typeof META.save === 'function') META.save();
+  }
+
+  // A lore room holds exactly one find, standing on the layout's first spawn
+  // marker (the lore layouts leave that spot clear for it) or on the room
+  // center when the layout has no markers. Once the act's finds are all in the
+  // journal there is nothing to stand there, so nothing does.
+  _placeFind(g) {
+    this.findSpot = null;
+    this.findT = 0;
+    const def = this.def;
+    if (!def || def.type !== 'lore') return;
+    if (typeof Finds === 'undefined' || !Finds) return;
+    const act = (g && g.act != null) ? g.act : this.act;
+    const id = Finds.nextFor(act);
+    if (!id) return;
+    const mk = (Array.isArray(def.spawnMarkers) && def.spawnMarkers.length) ? def.spawnMarkers[0] : null;
+    const p = mk ? this.toWorld(mk.x, mk.y) : { x: 0, y: 0 };
+    this.findSpot = { x: p.x, y: p.y, id, def: Finds.byId(id) };
+  }
+
+  // Stand on it and read it. Walking off resets faster than it fills, so a
+  // find is a small deliberate stop rather than something you collect by
+  // running past at the wrong angle.
+  _tickFind(g, dt) {
+    const spot = this.findSpot;
+    if (!spot) return;
+    const p = g ? g.player : null;
+    if (!p) return;
+    if (this._d2(p.x, p.y, spot.x, spot.y) <= ROOM_FIND_R * ROOM_FIND_R) this.findT += dt;
+    else this.findT = Math.max(0, this.findT - dt * 2);
+    if (this.findT < ROOM_FIND_DWELL) return;
+    this.findSpot = null;
+    this.findT = 0;
+    if (typeof Finds !== 'undefined' && Finds) Finds.grant(g, spot.id);
   }
 
   _scatterSpot(g) {
@@ -370,6 +428,7 @@ class Room {
         if (this.objectiveDone === true) this._onObjective(g);
       }
     }
+    this._tickFind(g, dt);
     this._tickDoors(g, dt);
   }
 

@@ -354,14 +354,54 @@ class Game {
 
   applyBurn(e, dps, dur) {
     if (e.boss) dur *= 0.6;
+    // Feat counter: one tick per critter set alight, guarded on the critter,
+    // or a flamethrower would count the same rabbit sixty times a second.
+    if (!e.burnCounted) {
+      e.burnCounted = true;
+      if (typeof META !== 'undefined' && META && META.counters) META.counters.burned++;
+    }
     e.burnDps = Math.max(e.burnDps || 0, dps);
     e.burnT = Math.max(e.burnT || 0, dur);
+  }
+
+  // The camp's field guide. Every named thing the troop has laid eyes on, and
+  // how many of them it has put down for good. Seen is never below one:
+  // nothing gets killed that was never seen. Reads whatever shape the codex
+  // is already in, since it has been written by more than one hand.
+  recordBoss(e, killed) {
+    if (!e || !e.kind) return;
+    if (typeof META === 'undefined' || !META) return;
+    if (!META.codex || typeof META.codex !== 'object') META.codex = {};
+    const prev = META.codex[e.kind];
+    let seen = 0, kills = 0;
+    if (prev && typeof prev === 'object') {
+      if (prev.seen > 0) seen = prev.seen;
+      if (prev.killed > 0) kills = prev.killed;
+      else if (prev.kills > 0) kills = prev.kills;
+      else if (prev.killed === true) kills = 1;
+    } else if (prev === 'killed') { seen = 1; kills = 1; }
+    else if (prev) seen = 1;
+
+    if (killed) kills++; else seen++;
+    seen = Math.max(1, seen, kills);
+    META.codex[e.kind] = { seen, killed: kills };
+
+    if (killed) {
+      // A downed boss is a story switch at the fire: which one depends only on
+      // how deep the run had gotten when it fell.
+      if (!META.flags || typeof META.flags !== 'object') META.flags = {};
+      const act = this.act >= 3 ? 3 : (this.act >= 2 ? 2 : 1);
+      META.flags['act' + act + 'boss'] = true;
+    }
+    if (typeof META.save === 'function') META.save();
   }
 
   killEnemy(e, noDrops) {
     if (e.dead) return;
     e.dead = true;
     this.kills++;
+    // Before the noDrops bail: a bloodless sweep still killed the thing.
+    if (e.boss) this.recordBoss(e, true);
     AudioSys.play('pop', { pitch: e.boss ? 0.5 : rand(0.85, 1.2) });
     this.spawnPuff(e.x, e.y - e.r * 0.5, e.boss ? 26 : (e.elite ? 14 : 7));
     // squash-pop corpse flash, then a soul wisp escapes
@@ -637,6 +677,19 @@ class Game {
 
     this.time += dt;
     const p = this.player;
+
+    // A boss lands in the codex the frame it arrives, however it got here: the
+    // spawner lives in director.js, the bookkeeping lives with the save.
+    for (const e of this.enemies) {
+      if (e.boss && !e.codexSeen) { e.codexSeen = true; this.recordBoss(e, false); }
+    }
+
+    // Feat counter: seconds spent one bad hit from the end of the night.
+    // Nothing is written to storage here, credit() banks it when the run ends.
+    if (typeof META !== 'undefined' && META && META.counters &&
+        p.hp > 0 && p.hp < p.maxhp * 0.15) {
+      META.counters.lowHpTime += dt;
+    }
 
     this.updateDodge(dt);      // dodge.js, integrates its own movement
 
@@ -1146,4 +1199,15 @@ window.MBM = {
     }
   },
   coins(n) { if (App.game) App.game.gainCoins(n); },
+  find() {
+    // Debug: hand over the next thing this act owes you, card and all.
+    if (!App.game) { console.log('find needs a live run'); return null; }
+    if (typeof Finds === 'undefined' || !Finds) { console.log('finds.js is not loaded'); return null; }
+    const act = App.game.act || 1;
+    const id = Finds.nextFor(act);
+    if (!id) { console.log('act ' + act + ' has nothing left to find'); return null; }
+    Finds.grant(App.game, id);
+    console.log('found ' + id);
+    return id;
+  },
 };
