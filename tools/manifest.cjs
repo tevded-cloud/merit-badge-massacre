@@ -158,12 +158,37 @@ function main() {
     });
   }
 
+  // Music loop truth: encode.cjs writes exact source sample counts to a
+  // sidecar because Opus cannot carry them and the stem player needs them to
+  // loop sample accurately. Merge them when present: per file fields onto the
+  // matching entries, and the per theme table (bpm, bars, layers) wholesale.
+  let themes = null;
+  const sidecarPath = path.join(__dirname, 'render', 'out', 'samplecounts.json');
+  if (fs.existsSync(sidecarPath)) {
+    try {
+      const sc = JSON.parse(fs.readFileSync(sidecarPath, 'utf8'));
+      Object.keys(sc.files || {}).forEach((rel) => {
+        if (filesMap[rel]) {
+          const m = sc.files[rel];
+          filesMap[rel].samples = m.samples;
+          filesMap[rel].sampleRate = m.sampleRate;
+          filesMap[rel].theme = m.theme;
+          filesMap[rel].layer = m.layer;
+        }
+      });
+      themes = sc.themes || null;
+    } catch (e) {
+      console.warn('manifest.cjs: samplecounts sidecar unreadable, music loops fall back to decoded length');
+    }
+  }
+
   const manifest = {
     generatedAt: new Date().toISOString(),
     groups,
     files: filesMap,
     prune,
   };
+  if (themes) manifest.themes = themes;
 
   fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
 
