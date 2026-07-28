@@ -85,6 +85,40 @@ const Run = (function () {
 
   function isNum(v) { return typeof v === 'number' && isFinite(v); }
 
+  // ------------------------------------------------------------ the totem --
+  // Deeper Nights, read from the run. Defensive on every read: a save from
+  // before the pole was raised, and a pole nobody has carved, both answer
+  // false, and the plan this file builds is the plan it has always built.
+  function nightOn(id) {
+    if (typeof Totem === 'undefined' || !Totem) return false;
+    if (typeof META === 'undefined' || !META) return false;
+    try { return !!Totem.open(META) && !!Totem.on(id, META); } catch (e) { return false; }
+  }
+
+  // The beats this run is actually walking, act keyed. THE LONG WALK adds a
+  // slot, so everything that reads a beat by index has to read the run's copy
+  // rather than the template's or it reads the wrong beat for every slot past
+  // the new one. Rebuilt from scratch by buildPlan.
+  let PLAN_BEATS = {};
+
+  // One more room in every act. The extra slot is another fight, dropped in
+  // front of the boss, so the act still opens and ends the way it was written
+  // to: only the walk between them gets longer.
+  function actBeats(t) {
+    const beats = (t && Array.isArray(t.beats)) ? t.beats.slice() : [];
+    if (!beats.length || !nightOn('longwalk')) return beats;
+    const at = beats[beats.length - 1] === 'boss' ? beats.length - 1 : beats.length;
+    beats.splice(at, 0, 'combat');
+    return beats;
+  }
+
+  function beatsOf(act) {
+    const b = PLAN_BEATS[act];
+    if (b) return b;
+    const t = actTemplate(act);
+    return (t && Array.isArray(t.beats)) ? t.beats : [];
+  }
+
   // ---------------------------------------------------------------- lookup --
   function gameRef() {
     if (typeof App === 'undefined' || !App) return null;
@@ -100,6 +134,11 @@ const Run = (function () {
   // Every layout of this type this act may deal, in authored order.
   function layoutsFor(type, act) {
     if (typeof ROOMS === 'undefined' || !ROOMS) return [];
+    // NOTHING WASTED deals no cache rooms. A type with no layout for this act
+    // is already a type the plan cannot use: the beat roll drops it, the act's
+    // guarantee skips it, the repair site declines it and no door offers it,
+    // so one answer here takes the supply cache out of the whole run.
+    if (type === 'loot' && nightOn('nothing')) return [];
     const tbl = ROOMS[type];
     if (!tbl) return [];
     const out = [];
@@ -185,7 +224,8 @@ const Run = (function () {
 
   // ----------------------------------------------------------- plan build --
   function buildAct(t, rng, recent) {
-    const beats = Array.isArray(t.beats) ? t.beats : [];
+    const beats = actBeats(t);
+    PLAN_BEATS[t.act] = beats;
     const rules = t.rules || {};
     const win = rules.noRepeatType || 0;
     const types = [];
@@ -261,6 +301,7 @@ const Run = (function () {
 
   function buildPlan(rng, recent) {
     if (typeof ACT_TEMPLATES === 'undefined' || !Array.isArray(ACT_TEMPLATES)) return [];
+    PLAN_BEATS = {};
     const plan = [];
     for (const t of ACT_TEMPLATES) {
       if (!t) continue;
@@ -424,7 +465,8 @@ const Run = (function () {
     const arr = plan[act - 1] || [];
     const typeAt = i => (arr[i] ? arr[i].type : undefined);
     const want = [slot.type];
-    const beat = (t && Array.isArray(t.beats) && t.beats[idx]) ? String(t.beats[idx]) : '';
+    const own = beatsOf(act);
+    const beat = own[idx] ? String(own[idx]) : '';
     for (const o of beat.split('|')) if (o && want.indexOf(o) === -1) want.push(o);
     for (const o of (ALT_TYPES[slot.type] || [])) if (want.indexOf(o) === -1) want.push(o);
     return want.filter(o => {
@@ -479,11 +521,14 @@ const Run = (function () {
       this._recent = [];
     },
 
+    // The plan is the truth about how long an act is: THE LONG WALK makes it
+    // one longer than the template says, and the threat curve reads this to
+    // decide how far through the act a room stands.
     roomsInAct(act) {
-      const t = actTemplate(act);
-      if (t && isNum(t.rooms)) return t.rooms;
       const arr = this.plan && this.plan[act - 1];
-      return arr ? arr.length : 0;
+      if (arr && arr.length) return arr.length;
+      const t = actTemplate(act);
+      return (t && isNum(t.rooms)) ? t.rooms : 0;
     },
 
     isBossRoom() {

@@ -31,9 +31,36 @@ const ROOM_FIND_R = 46;          // how close you stand to a find to read it
 const ROOM_FIND_DWELL = 0.4;     // ... and how long you stand there
 
 class Room {
+  // Deeper Nights, read from the room. Every read is defensive on purpose:
+  // the open field, the layout validator and any save written before the
+  // totem was raised all answer false, so an uncarved night is the room this
+  // file has always built.
+  static night(id) {
+    if (typeof Totem === 'undefined' || !Totem) return false;
+    if (typeof META === 'undefined' || !META) return false;
+    try { return !!Totem.open(META) && !!Totem.on(id, META); } catch (e) { return false; }
+  }
+
   constructor(def, rng) {
     this.def = def || null;
     this.rng = typeof rng === 'function' ? rng : Math.random;
+
+    // THE MARK SPREADS. Corruption is decided off the layout def (render.js
+    // rdCorruption reads def.corruption first, then falls back to boss rooms
+    // and the last two rooms of an act), so a marked night hands this room a
+    // copy of its own def with the tier turned up. The copy is the reason the
+    // shared ROOMS table is never written to: the tier belongs to tonight,
+    // not to the layout.
+    if (this.def && Room.night('mark') && (this.def.corruption | 0) < 1) {
+      this.def = Object.assign({}, this.def, { corruption: 1 });
+      def = this.def;
+    }
+
+    // TIGHTER WOODS packs twenty percent more bodies into every room. The
+    // remainder rides along from wave to wave rather than being rounded away,
+    // so a room of small waves still ends up a fifth heavier.
+    this.bodyMul = Room.night('tighter') ? 1.2 : 1;
+    this._bodyCarry = 0.5;
 
     const size = def && def.size ? def.size : null;
     this.w = size && size.w > 0 ? size.w : 1900;
@@ -510,7 +537,7 @@ class Room {
     const before = this.pending.length;
     for (let s = 0; s < w.spawns.length; s++) {
       const sp = w.spawns[s];
-      const n = sp && sp.n > 0 ? (sp.n | 0) : 0;
+      const n = this._bodyCount(sp && sp.n > 0 ? (sp.n | 0) : 0);
       for (let k = 0; k < n; k++) this._queueOne(g, sp.id, sp, k, n, i);
     }
     const mine = this.pending.length - before;
@@ -525,6 +552,20 @@ class Room {
     }
 
     if (w.name && typeof g.toast === 'function') g.toast(w.name);
+  }
+
+  // How many bodies an authored count is worth tonight. On an uncarved night
+  // this is the authored number and nothing else happens. TIGHTER WOODS keeps
+  // the fraction it could not spend and spends it on the next group, so three
+  // groups of three become 4, 4, 3 rather than three untouched groups. The
+  // carry starts at a half so the running total rounds rather than always
+  // rounding down, which is what keeps a whole room honest at a fifth more.
+  _bodyCount(n) {
+    if (!(n > 0) || this.bodyMul === 1) return n;
+    const want = n * this.bodyMul + this._bodyCarry;
+    const take = Math.floor(want);
+    this._bodyCarry = want - take;
+    return take;
   }
 
   _endWave(g) {

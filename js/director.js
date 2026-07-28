@@ -4,6 +4,42 @@
 
 (function () {
 
+  // ===================================================================
+  // Deeper Nights, read from the director. Defensive on every read: the
+  // field game, a save written before the totem was raised, and a pole
+  // nobody has carved all answer false, and everything below behaves
+  // exactly as it did before the pole existed.
+  // ===================================================================
+  function nightCarved(id) {
+    if (typeof Totem === 'undefined' || !Totem) return false;
+    if (typeof META === 'undefined' || !META) return false;
+    try { return !!Totem.open(META) && !!Totem.on(id, META); } catch (e) { return false; }
+  }
+
+  // SHARP TEETH: everything out there hits twenty five percent harder. Damage
+  // is stamped on a body when it is made, so the bump lands at spawn and the
+  // hurt path in game.js never learns about the totem at all.
+  function nightDmgMul() { return nightCarved('teeth') ? 1.25 : 1; }
+
+  // LEAN SEASON: Cookie Money payouts are halved. Every coin the run pays out
+  // goes through gainCoins (room clears, caches, smashed props, the collector
+  // settling up), so the halving lives on that one door rather than on each
+  // of the tills behind it. Spending and theft are not payouts and are not
+  // touched: only a positive grant is ever halved.
+  function nightCoin(n) {
+    if (!(n > 0) || !nightCarved('lean')) return n;
+    return Math.floor(n / 2);
+  }
+
+  const rawGainCoins = Game.prototype.gainCoins;
+  if (typeof rawGainCoins === 'function') {
+    // opts.raw is the one way past the scaler, for a grant that is giving
+    // back money the player already earned rather than paying out new money.
+    Game.prototype.gainCoins = function (n, opts) {
+      return rawGainCoins.call(this, (opts && opts.raw) ? n : nightCoin(n));
+    };
+  }
+
   Game.prototype.viewRadius = function () {
     return Math.hypot(window.innerWidth, window.innerHeight) / (2 * ZOOM) + 70;
   };
@@ -128,6 +164,7 @@
     }
     const d = DATA.enemies[id];
     const m = this.threat;
+    const teeth = nightDmgMul();
     // Elites get their own linear curve: the quadratic trash curve times 9
     // would out-tank the linearly scaled final boss by minute 12.
     const hp = d.hp * (elite ? (1 + m * 0.55) * 9 : DATA.hpScale(m));
@@ -135,7 +172,7 @@
       kind: id, spr: d.spr, move: d.move,
       x, y, hp, maxhp: hp,
       spd: d.spd * (1 + m * 0.012) * (elite ? 0.9 : 1),
-      dmg: d.dmg * DATA.dmgScale(m) * (elite ? 1.5 : 1),
+      dmg: d.dmg * DATA.dmgScale(m) * (elite ? 1.5 : 1) * teeth,
       r: d.r * (elite ? 1.5 : 1),
       w: d.w * (elite ? 1.5 : 1),
       xp: d.xp,
@@ -170,7 +207,7 @@
     if (d.shotCd != null) {
       e.shotCd = d.shotCd;
       e.shotSpd = d.shotSpd;
-      e.shotDmg = d.shotDmg * DATA.dmgScale(m);
+      e.shotDmg = d.shotDmg * DATA.dmgScale(m) * teeth;
       if (e.ai.shotT == null) e.ai.shotT = rand(0.6, d.shotCd);
       if (d.tongue != null) e.tongue = d.tongue;
       if (d.puff != null) e.puff = d.puff;
@@ -262,7 +299,7 @@
       kind: def.id, spr: def.spr, move: def.move, name: def.name,
       x: pos.x, y: pos.y, hp, maxhp: hp,
       spd: def.spd || 0,
-      dmg: def.dmg * DATA.dmgScale(m * 0.5),
+      dmg: def.dmg * DATA.dmgScale(m * 0.5) * nightDmgMul(),
       r: def.r, w: def.w, xp: def.xp,
       flip: false, bob: rand(0, TAU),
       kx: 0, ky: 0, slowT: 0, stunT: 0, flash: 0,
@@ -279,11 +316,12 @@
     e.id = this.nextId++;
 
     // Phase cuts, as fractions of max hp. A boss without cuts keeps the old
-    // single-phase behaviour, which is what the retired vicar still wants.
+    // single-phase behaviour.
     if (def.move === 'bosshare') e.ai.cuts = [0.6, 0.25];
     if (def.move === 'bossmole') e.ai.cuts = [0.65, 0.3];
     if (def.move === 'bossbehind') e.ai.cuts = [0.6, 0.25];
     if (def.move === 'bossstag') e.ai.cuts = [0.7, 0.35];
+    if (def.move === 'bossvicar') e.ai.cuts = [0.66, 0.33];
 
     // Per-fight clocks, so nothing counts down from undefined.
     if (def.move === 'bossmole') {
@@ -305,6 +343,21 @@
       e.ai.tineT = 9;
       e.ai.state = 'chase';
       e.ai.t = rand(2.5, 3.5);
+    }
+    // THE TALLYMAN keeps a book at boss size the same way his collector does
+    // in the early acts: nothing is taken until the ledger opens in phase two,
+    // and everything in it comes back over the body.
+    if (def.move === 'bossvicar') {
+      e.ai.ringT = 3.5;
+      e.ai.summonT = 9;
+      e.ai.spiralA = 0;
+      e.ai.spiralT = 0;
+      e.ai.fleeT = 0;
+      e.steals = false;
+      e.stolen = 0;
+      e.stealT = 0;
+      e.onDeath = 'tally';
+      e._watchDeath = true;
     }
 
     // THE BEHIND needs something to stand behind. An arena that was not built
@@ -751,9 +804,11 @@
         this.spawnPuff(e.x, e.y, 8);
       } else if (od === 'tally') {
         // The book closes. Everything he took comes back, plus what he was
-        // charging you to hold it.
-        const pay = (e.stolen || 0) + 10;
-        this.gainCoins(pay);
+        // charging you to hold it. The refund is your own money coming home,
+        // so it comes home whole; the fee is a payout like any other, and a
+        // lean night halves it with the rest.
+        const pay = (e.stolen || 0) + nightCoin(10);
+        this.gainCoins(pay, { raw: true });
         this.spawnBurst(e.x, e.y, '#f4c542', 18);
         this.spawnNum(e.x, e.y - 26, '+' + pay, '#f4c542', true);
         this.toast('THE TALLYMAN SETTLES UP', '#f4c542');
@@ -793,6 +848,20 @@
       // Armour without touching dealDamage: hand back the share of this
       // frame's loss the plating was supposed to eat.
       e.hp = Math.min(e.maxhp, e.hp + (e._hpPrev - e.hp) * (1 - e.armorMul));
+    }
+    // A cornered accountant runs. Reading the hurt here rather than in
+    // dealDamage keeps the damage path in game.js free of boss special cases:
+    // this already has both this frame's health and the last one's. It is a
+    // bolt for the trees on a cooldown, not a retreat: without the cooldown
+    // continuous fire would keep him running forever and the last phase would
+    // be a chase with no fight in it. The held-health test keeps the buffer
+    // the roar parks him on from reading as a wound the frame it is released.
+    if (e.move === 'bossvicar' && e.ai && e.ai.phase === 3 &&
+        e.phaseGuard <= 0 && e._hpHold == null &&
+        e._hpPrev != null && e._hpPrev <= e.maxhp && e.hp < e._hpPrev &&
+        this.t >= (e.ai.fleeCd || 0)) {
+      e.ai.fleeT = VICAR_FLEE;
+      e.ai.fleeCd = this.t + VICAR_FLEE_CD;
     }
     e._hpPrev = e.hp;
     if (e.ai && e.ai.cuts) this.tickBossPhase(e, dt);
@@ -878,8 +947,121 @@
     } else if (e.move === 'bossstag') {
       if (phase === 2) this.stagPlant(e);
       if (phase === 3) this.stagHollow(e);
+    } else if (e.move === 'bossvicar') {
+      if (phase === 2) this.vicarOpenLedger(e);
+      if (phase === 3) this.vicarDesperate(e);
     }
     this.toast(e.name, '#ff5b45');
+  };
+
+  // =====================================================================
+  // THE TALLYMAN: the ring, then the ledger, then the run for the trees.
+  //
+  // Three phases on one body, cut at two thirds and one third. He opens on
+  // the pattern his collector walks the early acts with. At the first cut the
+  // book comes out and he starts working your pockets on contact, with the
+  // rings tighter and quicker to pay for it. At the second there is nothing
+  // left to collect and nothing left to stand still for: the ring stops being
+  // a beat and becomes a spiral that never closes, the hands come in fives,
+  // and every hit that lands sends him for the treeline. Everything he took
+  // is in the book, and the book comes off the body.
+  // =====================================================================
+
+  // Per phase: ring cadence, shots per ring, shot speed, share of his damage
+  // each shot carries, summon cadence, hands per summon, and how hard he
+  // walks you down.
+  const VICAR = {
+    1: { ringT: 4.0,  n: 10, spd: 160, dmg: 0.55, summonT: 15, hands: 3, chase: 1.00 },
+    2: { ringT: 2.4,  n: 14, spd: 195, dmg: 0.50, summonT: 11, hands: 4, chase: 1.15 },
+    3: { ringT: 0.18, n: 2,  spd: 175, dmg: 0.35, summonT: 7,  hands: 5, chase: 1.30 },
+  };
+  const VICAR_CROWD = 18;      // hands already standing before he stops calling
+  const VICAR_SPIRAL = 0.52;   // how far the third phase's ring turns per beat
+  const VICAR_FLEE = 1.1;      // how long a hit sends him for the treeline
+  const VICAR_FLEE_CD = 3.5;   // ... and how long before a hit can do it again
+
+  // Phase 2, the frame the roar ends. The book opens: he skims on contact for
+  // as long as he is standing on you, on the same clock and the same cap his
+  // collector uses, so a purse can never go negative and never empty at once.
+  Game.prototype.vicarOpenLedger = function (e) {
+    e.steals = true;
+    e.stolen = e.stolen || 0;
+    e.stealT = 0;
+    e.ai.ringT = 1.2;
+    e.ai.summonT = 2;
+    this.toast('THE BOOK IS OPEN', '#f4c542');
+  };
+
+  // Phase 3. The spiral starts from wherever the last ring left off, and the
+  // flee timer starts clear so the roar is not immediately walked out of.
+  Game.prototype.vicarDesperate = function (e) {
+    e.ai.spiralA = e.ai.spiralA || 0;
+    e.ai.ringT = 0.4;
+    e.ai.summonT = 1.5;
+    e.ai.fleeT = 0;
+    e.ai.fleeCd = 0;
+  };
+
+  // Where a hurt Tallyman goes: straight away from the player and out to the
+  // wall, so being hit in the last phase costs you the ground you closed.
+  Game.prototype.vicarEdgeSpot = function (e) {
+    const p = this.player;
+    const ax = e.x - p.x, ay = e.y - p.y;
+    const al = Math.hypot(ax, ay) || 1;
+    let tx = e.x + (ax / al) * 460;
+    let ty = e.y + (ay / al) * 460;
+    if (this.room) {
+      const cb = Collide.clampToBounds(tx, ty, bodyR(e) + 30, this.room.bounds);
+      tx = cb.x; ty = cb.y;
+    }
+    return { x: tx, y: ty };
+  };
+
+  Game.prototype.bossVicar = function (e, dt, ux, uy, d, slowMul) {
+    const ai = e.ai;
+    if (e.phaseGuard > 0) return;
+    const ph = ai.phase >= 3 ? 3 : (ai.phase >= 2 ? 2 : 1);
+    const V = VICAR[ph];
+
+    if (ai.fleeT > 0) {
+      ai.fleeT -= dt;
+      const t = this.vicarEdgeSpot(e);
+      const fx = t.x - e.x, fy = t.y - e.y;
+      const fl = Math.hypot(fx, fy) || 1;
+      e.x += (fx / fl) * e.spd * 1.7 * slowMul * dt;
+      e.y += (fy / fl) * e.spd * 1.7 * slowMul * dt;
+    } else {
+      e.x += ux * e.spd * V.chase * slowMul * dt;
+      e.y += uy * e.spd * V.chase * slowMul * dt;
+    }
+
+    ai.ringT -= dt;
+    if (ai.ringT <= 0) {
+      ai.ringT += V.ringT;
+      if (ai.ringT <= 0) ai.ringT = V.ringT;
+      if (ph === 3) {
+        // Two shots a beat at an angle that keeps walking. It reads as one
+        // unbroken spiral pouring off him rather than as a ring on a clock,
+        // and it is quiet: a roar every fifth of a second is not a roar.
+        ai.spiralA = (ai.spiralA || 0) + VICAR_SPIRAL;
+        for (let i = 0; i < V.n; i++) {
+          this.fireEshot(e.x, e.y - 10, ai.spiralA + i * TAU / V.n, V.spd, e.dmg * V.dmg, e.kind);
+        }
+      } else {
+        for (let i = 0; i < V.n; i++) {
+          this.fireEshot(e.x, e.y - 10, i * TAU / V.n + this.t, V.spd, e.dmg * V.dmg, e.kind);
+        }
+        AudioSys.play('roar');
+      }
+    }
+
+    ai.summonT -= dt;
+    if (ai.summonT <= 0) {
+      ai.summonT = V.summonT;
+      let crowd = 0;
+      for (const o of this.enemies) if (!o.dead && !o.boss) crowd++;
+      if (crowd < VICAR_CROWD) this.summonAround(e, ['raccoon'], V.hands);
+    }
   };
 
   // =====================================================================
@@ -1882,15 +2064,20 @@
             break;
           }
           case 'bossvicar': {
-            // The same pattern serves the boss and the collector who walks the
-            // early acts with it: thinner rings and fewer hands when it is not
-            // the fight the whole room is built around.
+            // The fight and the collector share a move name and nothing else
+            // now: the boss runs the three phase machine, and the collector
+            // who walks the early acts keeps the thin ring and the two hands
+            // he has always had.
+            if (e.boss) {
+              this.bossVicar(e, dt, ux, uy, d, slowMul);
+              break;
+            }
             e.x += ux * e.spd * dt;
             e.y += uy * e.spd * dt;
             ai.ringT -= dt;
             if (ai.ringT <= 0) {
-              ai.ringT = e.boss ? 4 : 5.5;
-              const n = e.boss ? 10 : 7;
+              ai.ringT = 5.5;
+              const n = 7;
               for (let i = 0; i < n; i++) {
                 this.fireEshot(e.x, e.y - 10, i * TAU / n + this.t, 160, e.dmg * 0.55, e.kind);
               }
@@ -1898,8 +2085,8 @@
             }
             ai.summonT -= dt;
             if (ai.summonT <= 0) {
-              ai.summonT = e.boss ? 15 : 20;
-              this.summonAround(e, ['raccoon'], e.boss ? 3 : 2);
+              ai.summonT = 20;
+              this.summonAround(e, ['raccoon'], 2);
             }
             break;
           }
@@ -1980,7 +2167,7 @@
       // contact damage (nothing underground touches you)
       const rr = e.r + p.r;
       if (!e.hidden && dist2(e.x, e.y, p.x, p.y) < rr * rr) {
-        if (e.tally) this.tallySteal(e);
+        if (e.tally || e.steals) this.tallySteal(e);
         this.damagePlayer(e.dmg * (e.dmgF || 1), e.x, e.y, e.kind);
       }
 
