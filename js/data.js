@@ -40,12 +40,12 @@ DATA.weapons = {
   slingshot: {
     name: 'Slingshot', kind: 'manual', icon: 'slingshot',
     desc: 'Pelts the faithful with river stones. Hold attack to fire.',
-    base: { cd: 0.42, dmg: 11, count: 1, speed: 520, pierce: 0, spread: 0.07 },
+    base: { cd: 0.42, dmg: 12, count: 1, speed: 520, pierce: 0, spread: 0.07 },
     levels: [
-      { dmg: 5, text: '+5 damage' },
+      { dmg: 4, text: '+4 damage' },
       { count: 1, text: '+1 stone per volley' },
-      { pierce: 1, dmg: 4, text: 'Stones pierce, +4 damage' },
-      { count: 1, cdMul: 0.8, text: '+1 stone, 20% faster volleys' },
+      { pierce: 1, dmg: 5, text: 'Stones pierce, +5 damage' },
+      { count: 1, dmg: 6, cdMul: 0.70, text: '+1 stone, +6 damage, 30% faster volleys' },
     ],
   },
   roaster: {
@@ -56,7 +56,7 @@ DATA.weapons = {
       { dmg: 2, text: '+2 damage per gob' },
       { range: 55, text: 'Longer flame' },
       { burnDps: 5, text: 'Burns hotter' },
-      { count: 1, dmg: 2, text: 'Wider gout, +2 damage' },
+      { count: 1, dmg: 5, burnDps: 4, text: 'Wider gout, +5 damage, hotter burn' },
     ],
   },
   hatchet: {
@@ -67,7 +67,7 @@ DATA.weapons = {
       { dmg: 12, text: '+12 damage' },
       { range: 22, arc: 0.4, text: 'Wider, longer swing' },
       { cdMul: 0.78, text: 'Swing 22% faster' },
-      { dmg: 18, knock: 140, text: '+18 damage, heavy knockback' },
+      { dmg: 30, knock: 140, text: '+30 damage, heavy knockback' },
     ],
   },
   firecracker: {
@@ -100,7 +100,7 @@ DATA.weapons = {
       { count: 1, text: '+1 knife' },
       { dmg: 7, text: '+7 damage' },
       { radius: 22, rot: 0.7, text: 'Wider, faster orbit' },
-      { count: 1, dmg: 8, text: '+1 knife, +8 damage' },
+      { count: 1, dmg: 14, text: '+1 knife, +14 damage' },
     ],
   },
   bugspray: {
@@ -111,7 +111,7 @@ DATA.weapons = {
       { radius: 20, text: 'Bigger cloud' },
       { dps: 5, text: 'Nastier fumes' },
       { slow: 0.3, text: 'Fumes slow critters' },
-      { radius: 26, dps: 6, text: 'Bigger, nastier cloud' },
+      { radius: 26, dps: 12, text: 'Bigger, far nastier cloud' },
     ],
   },
   canteen: {
@@ -122,7 +122,7 @@ DATA.weapons = {
       { radius: 18, text: 'Wider puddles' },
       { count: 1, text: '+1 splash' },
       { dps: 7, text: 'Holier water' },
-      { dur: 1.5, count: 1, text: '+1 splash, lingers longer' },
+      { dur: 1.5, count: 1, dps: 6, text: '+1 splash, holier, lingers longer' },
     ],
   },
   bugle: {
@@ -152,13 +152,13 @@ DATA.passives = {
 DATA.enemies = {
   squirrel: { hp: 9,   spd: 96,  dmg: 7,  r: 11, xp: 1, w: 32, spr: 'squirrel', move: 'walk' },
   rabbit:   { hp: 13,  spd: 0,   dmg: 8,  r: 11, xp: 1, w: 30, spr: 'rabbit',   move: 'hop', hopSpd: 310 },
-  doe:      { hp: 34,  spd: 54,  dmg: 12, r: 14, xp: 2, w: 40, spr: 'doe',      move: 'walk' },
+  doe:      { hp: 38,  spd: 54,  dmg: 12, r: 14, xp: 2, w: 40, spr: 'doe',      move: 'walk' },
   bat:      { hp: 12,  spd: 120, dmg: 7,  r: 10, xp: 1, w: 34, spr: 'bat',      move: 'sine' },
-  raccoon:  { hp: 60,  spd: 64,  dmg: 14, r: 13, xp: 3, w: 36, spr: 'raccoon',  move: 'walk' },
+  raccoon:  { hp: 64,  spd: 64,  dmg: 14, r: 13, xp: 3, w: 36, spr: 'raccoon',  move: 'walk' },
   owl:      { hp: 45,  spd: 82,  dmg: 10, r: 12, xp: 3, w: 34, spr: 'owl',      move: 'ranged', shotCd: 2.8, shotDmg: 9, shotSpd: 190 },
-  boar:     { hp: 95,  spd: 56,  dmg: 20, r: 16, xp: 5, w: 48, spr: 'boar',     move: 'charge', chargeSpd: 340 },
-  fox:      { hp: 70,  spd: 140, dmg: 14, r: 12, xp: 5, w: 40, spr: 'fox',      move: 'weave' },
-  beaver:   { hp: 170, spd: 44,  dmg: 18, r: 14, xp: 6, w: 38, spr: 'beaver',   move: 'walk' },
+  boar:     { hp: 80,  spd: 56,  dmg: 20, r: 16, xp: 5, w: 48, spr: 'boar',     move: 'charge', chargeSpd: 340 },
+  fox:      { hp: 60,  spd: 140, dmg: 14, r: 12, xp: 5, w: 40, spr: 'fox',      move: 'weave' },
+  beaver:   { hp: 132, spd: 44,  dmg: 18, r: 14, xp: 6, w: 38, spr: 'beaver',   move: 'walk' },
 
   // ---- the room roster ----------------------------------------------------
   // Nine species the room run deals and the open field never sees: DATA.pool
@@ -182,25 +182,32 @@ DATA.enemies = {
   // Never one chipmunk. Always the trio, and they will not be separated.
   chipchoir:      { hp: 16,  spd: 92,  dmg: 7,  r: 10, xp: 2, w: 26, spr: 'chipchoir',      move: 'leash', leash: true },
   // Hops in, inflates, and the tongue comes out straight.
-  bogfrog:        { hp: 34,  spd: 0,   dmg: 10, r: 13, xp: 3, w: 32, spr: 'bogfrog',        move: 'hop', hopSpd: 260, shotCd: 2.4, shotDmg: 8, shotSpd: 300, tongue: 320, puff: 0.35 },
+  bogfrog:        { hp: 36,  spd: 0,   dmg: 10, r: 13, xp: 3, w: 32, spr: 'bogfrog',        move: 'hop', hopSpd: 260, shotCd: 2.4, shotDmg: 8, shotSpd: 300, tongue: 320, puff: 0.35 },
   // Stands off and throws. Let it get close and the bill comes down instead.
-  stiltheron:     { hp: 85,  spd: 48,  dmg: 12, r: 13, xp: 5, w: 44, spr: 'stiltheron',     move: 'ranged', shotCd: 2.6, shotDmg: 11, shotSpd: 230, stab: true },
+  stiltheron:     { hp: 78,  spd: 48,  dmg: 12, r: 13, xp: 5, w: 44, spr: 'stiltheron',     move: 'ranged', shotCd: 2.6, shotDmg: 11, shotSpd: 230, stab: true },
   // Under the whole time it matters, up for exactly as long as it does not.
-  sapperrat:      { hp: 30,  spd: 78,  dmg: 11, r: 11, xp: 3, w: 28, spr: 'sapperrat',      move: 'burrow', underT: 2.2 },
+  sapperrat:      { hp: 32,  spd: 78,  dmg: 11, r: 11, xp: 3, w: 28, spr: 'sapperrat',      move: 'burrow', underT: 2.2 },
   // Runs at you smouldering and the lane stays lit behind it.
-  ashelk:         { hp: 110, spd: 58,  dmg: 19, r: 17, xp: 5, w: 52, spr: 'ashelk',         move: 'charge', chargeSpd: 320, trail: true },
+  ashelk:         { hp: 86,  spd: 58,  dmg: 19, r: 17, xp: 5, w: 52, spr: 'ashelk',         move: 'charge', chargeSpd: 320, trail: true },
   // Kill it and there are two. Kill those and there are only two.
   cindercrow:     { hp: 30,  spd: 104, dmg: 9,  r: 12, xp: 3, w: 30, spr: 'cindercrow',     move: 'sine', onDeath: 'split2', splitAgain: false },
   // Works a shift: plates down and nothing lands, then a beat where it does.
-  quarrybadger:   { hp: 120, spd: 50,  dmg: 17, r: 15, xp: 5, w: 42, spr: 'quarrybadger',   move: 'walk', guard: [2.5, 1.5], guardArmor: 0.15 },
+  quarrybadger:   { hp: 92,  spd: 50,  dmg: 17, r: 15, xp: 5, w: 42, spr: 'quarrybadger',   move: 'walk', guard: [2.5, 1.5], guardArmor: 0.15 },
 };
 
 // Display names only. The ids are save keys and never change: the journal, the
 // codex and Brock's lines all hang off hare / vicar / antlered.
+// BRAMBLEBUCK was the wall of the whole run: most losses happened in his den,
+// at three minutes in, on a first night. THE TALLYMAN was the opposite, dead
+// in under half a minute. OLD NOBODY ran a three minute health bar and, in the
+// last phase, outran the player at 76 speed times the 2.2 the phase applies.
+// 58 keeps him catchable by the slowest scout in the troop (Gus, 132) with no
+// boot patch on: at 76 he could not be caught by anyone who had not bought
+// speed, and the fight simply never ended.
 DATA.bosses = [
-  { id: 'hare',     at: 300, name: 'BRAMBLEBUCK',  hp: 1300, dmg: 16, r: 26, w: 76,  spr: 'rabbit',  move: 'bosshare', hopSpd: 360, xp: 60 },
-  { id: 'vicar',    at: 600, name: 'THE TALLYMAN', hp: 3600, dmg: 22, r: 30, w: 88,  spr: 'raccoon', move: 'bossvicar', spd: 58, xp: 120 },
-  { id: 'antlered', at: 840, name: 'OLD NOBODY',   hp: 8500, dmg: 28, r: 32, w: 120, spr: 'stag',    move: 'bossstag', spd: 76, xp: 0, final: true },
+  { id: 'hare',     at: 300, name: 'BRAMBLEBUCK',  hp: 1050, dmg: 13, r: 26, w: 76,  spr: 'rabbit',  move: 'bosshare', hopSpd: 360, xp: 60 },
+  { id: 'vicar',    at: 600, name: 'THE TALLYMAN', hp: 5000, dmg: 21, r: 30, w: 88,  spr: 'raccoon', move: 'bossvicar', spd: 58, xp: 120 },
+  { id: 'antlered', at: 840, name: 'OLD NOBODY',   hp: 6000, dmg: 26, r: 32, w: 120, spr: 'stag',    move: 'bossstag', spd: 54, xp: 0, final: true },
 ];
 
 DATA.pool = [
@@ -224,18 +231,23 @@ DATA.pool = [
 // differently without needing two rosters to say so.
 //
 // The open field never reads this. DATA.pool above still drives that game.
+// The three lists are also the difficulty ramp, and they used to be a cliff:
+// an act 1 body averaged 16 health, an act 2 body averaged 35, and the door
+// between them more than doubled what a body was worth in a single step. That
+// door is where the losses piled up. Act 1 carries a little more meat now, act
+// 2 leans back on its chaff, and the curve above carries the ramp instead.
 DATA.rosters = {
   // THE UNDERSTORY: small, quick, and far too many of them.
-  1: { squirrel: 30, rabbit: 24, doe: 14, bat: 10, ticktot: 14, pineconepuffer: 6, chipchoir: 8 },
+  1: { squirrel: 22, rabbit: 20, doe: 26, bat: 10, ticktot: 8, pineconepuffer: 12, chipchoir: 12 },
   // THE SOG: wet things that hold ground and shoot from it. The chaff weights
   // are load bearing, not filler: with only the wet bodies in the list an act 2
-  // room is nothing but 30 to 170 hp targets and takes twice as long to clear
-  // as the layouts were authored for. Beaver is deliberately rare, at 170 hp it
+  // room is nothing but 32 to 150 hp targets and takes twice as long to clear
+  // as the layouts were authored for. Beaver is deliberately rare, at 150 hp it
   // is an event rather than a regular.
-  2: { bogfrog: 24, sapperrat: 18, stiltheron: 7, raccoon: 12, beaver: 6, bat: 16, chipchoir: 14, ticktot: 22 },
+  2: { bogfrog: 22, sapperrat: 20, stiltheron: 6, raccoon: 10, beaver: 4, bat: 18, chipchoir: 16, ticktot: 24 },
   // THE BURN: everything here is heavy, on fire, or both. The crows and owls
   // are what keeps it from being a wall of hp.
-  3: { ashelk: 12, cindercrow: 20, quarrybadger: 9, boar: 14, fox: 16, owl: 14, doe: 10 },
+  3: { ashelk: 11, cindercrow: 24, quarrybadger: 8, boar: 13, fox: 16, owl: 18, doe: 12 },
 };
 
 DATA.events = [
@@ -253,10 +265,18 @@ DATA.fillers = [
   { id: 'stash', name: 'Badge Stash', desc: 'Gain 25 badge XP.', icon: 'fieldguide' },
 ];
 
-DATA.xpNext = l => Math.floor(6 + l * 3.5 + Math.pow(l, 1.8) * 0.8);
-DATA.hpScale = m => 1 + m * 0.5 + m * m * 0.035;
-DATA.dmgScale = m => 1 + m * 0.11;
-DATA.bossHpScale = m => 1 + m * 0.09;
+// Ranks. The old curve handed out about twenty six of them a night, which was
+// enough to finish every weapon and every patch you were carrying: by act 3
+// every build was the same build, and what you had picked stopped mattering.
+// Nineteen or twenty is the number where the picks are still choices.
+DATA.xpNext = l => Math.floor(6 + l * 5.0 + Math.pow(l, 1.8) * 2.0);
+// Body health. The quadratic used to do all the work at the top of the ramp
+// and none at the bottom, which is how act 3 ended up more than half the
+// night with rooms running three minutes each. Nearly linear now: the ramp is
+// spread across the whole run instead of parked on the last act.
+DATA.hpScale = m => 1 + m * 1.16 + m * m * 0.008;
+DATA.dmgScale = m => 1 + m * 0.125;
+DATA.bossHpScale = m => 1 + m * 0.105;
 DATA.spawnInterval = m => Math.max(0.24, 1.05 - m * 0.062);
 DATA.spawnBatch = m => 1 + Math.floor(m * 0.55);
 
@@ -267,10 +287,12 @@ DATA.spawnBatch = m => 1 + Math.floor(m * 0.55);
 
 // Difficulty on the same 0 to 14 scale the curves above already use, except
 // keyed to where you are in the run instead of the wall clock. Each act is
-// worth 4.6, so act 1 room 0 is 0 and the last room of act 3 is 13.8, which
-// puts a winning 15 minute run on the same curve the timed field ends on.
+// worth 4.2, so act 1 room 0 is 0 and the last room of act 3 is 12.6. The
+// step used to be 4.6, which put the end of a room run at the far end of a
+// curve written for a fifteen minute open field: a room run gets there with a
+// smaller build, and the top of that ramp was where act 3 turned into a wall.
 DATA.threatOf = (act, roomIdx, roomsInAct) =>
-  (act - 1) * 4.6 + (roomIdx / Math.max(1, roomsInAct)) * 4.6;
+  (act - 1) * 4.2 + (roomIdx / Math.max(1, roomsInAct)) * 4.2;
 
 // Floor themes, one per act plus the final arena. deco lists existing ground
 // painters from sprites.js with pick weights; the hollow has none, on purpose.
