@@ -14,7 +14,13 @@ var MBM_MUSIC_SOURCES = {
   ],
   compositions: [
     'act1.js',
+    'act2.js',
+    'act3.js',
     'camp.js',
+    'boss_bramblebuck.js',
+    'boss_mawmole.js',
+    'boss_behind.js',
+    'boss_oldnobody.js',
   ],
 };
 
