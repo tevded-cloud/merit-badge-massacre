@@ -435,9 +435,53 @@ const AudioSys = (() => {
   const live = [];
   let emitterSeq = 0;
 
+  // ------------------------------------------------------------- scenes ----
+  // A loop belongs to the scene that was current when it was made, and a scene
+  // is only alive while something keeps saying its name. Camp says its name
+  // every frame it updates; a run says the name of the room the player is
+  // standing in. That single rule covers every way a world can go away without
+  // this file having to know any of them: walking out to the trail, a room
+  // wiped at a door, the pause menu, a quit to the title, a tab left behind.
+  //
+  // Two stages, because they answer different questions. HUSH is "nobody is
+  // driving this any more, go quiet", and it keeps the nodes so unpausing is a
+  // fade back in rather than a rebuild. DROP is "this is not coming back", and
+  // it gives the nodes away; the next call for that scene rebuilds from
+  // nothing, so nothing can be left holding a handle.
+  const SCENE_HUSH_MS = 700;
+  const SCENE_DROP_MS = 4000;
+  const HUSH_TAU = 0.13;        // about 0.4s down to inaudible
+  let activeScene = null;
+  let sceneStamp = 0;
+  let hushed = false;
+
   function setListener(x, y) {
     listenerX = x;
     listenerY = y;
+  }
+
+  // Name the world the listener is standing in. Returns true when that is a
+  // different world from last call, which is the caller's cue to build its
+  // loops: everything belonging to the old scene is already gone by then.
+  function setScene(name) {
+    const id = name == null ? null : String(name);
+    sceneStamp = performance.now();
+    hushed = false;
+    if (id === activeScene) return false;
+    activeScene = id;
+    for (let i = live.length - 1; i >= 0; i--) {
+      if (!live[i].dead && live[i].scene !== id) teardown(live[i], 0.12);
+    }
+    return true;
+  }
+
+  function sceneWatch() {
+    const age = performance.now() - sceneStamp;
+    if (activeScene !== null && age > SCENE_DROP_MS) {
+      for (let i = live.length - 1; i >= 0; i--) if (!live[i].dead) teardown(live[i], 0.12);
+      activeScene = null;
+    }
+    hushed = activeScene !== null && age > SCENE_HUSH_MS;
   }
 
   // Shared distance model. Returns gain scale, pan and cutoff for a point.
@@ -518,6 +562,7 @@ const AudioSys = (() => {
       recipe: recipeId,
       x: typeof opt.x === 'number' ? opt.x : 0,
       y: typeof opt.y === 'number' ? opt.y : 0,
+      scene: typeof opt.scene === 'string' ? opt.scene : activeScene,
       src, lp, gain: g, pan,
       connected: true,
       base: recipe.gain,
@@ -554,6 +599,12 @@ const AudioSys = (() => {
 
   function updateEmitter(e) {
     if (e.dead) return;
+    // Nobody is driving this scene: go quiet and freeze, including any fade in
+    // flight, so a paused world is a paused world.
+    if (hushed) {
+      ramp(e.gain.gain, 0.0001, HUSH_TAU);
+      return;
+    }
     if (e.fadeDur > 0) {
       const k = clamp((performance.now() - e.fadeT0) / e.fadeDur, 0, 1);
       e.userGain = e.fadeFrom + (e.fadeTo - e.fadeFrom) * k;
@@ -561,16 +612,27 @@ const AudioSys = (() => {
     }
     const f = fieldAt(e.x, e.y, e.ref, e.max, e.lpCeil);
 
-    // out of range sources stop costing anything until the player comes back
+    // Out of range sources stop costing anything until the player comes back.
+    // ORDER MATTERS: a gain node with nothing feeding it stops advancing its
+    // automation in Chrome, so unhooking first froze the volume wherever the
+    // ramp had got to. Walking away left it parked around 0.44 instead of
+    // silent, and walking back in played that stale value for about a tenth of
+    // a second, measured at 25 dB too loud. So the value is SET, not ramped,
+    // and only then is the source let go.
     if (f.t <= 0) {
       if (e.connected) {
+        try { e.gain.gain.cancelScheduledValues(ac.currentTime); } catch (err) {}
+        try { e.gain.gain.setValueAtTime(0.0001, ac.currentTime); } catch (err) {}
         try { e.src.disconnect(); } catch (err) {}
         e.connected = false;
       }
-      ramp(e.gain.gain, 0.0001, SMOOTH);
       return;
     }
     if (!e.connected) {
+      // Coming back: pin silence before the source is hooked up again, so the
+      // ramp below starts from nothing rather than from whatever was left.
+      try { e.gain.gain.cancelScheduledValues(ac.currentTime); } catch (err) {}
+      try { e.gain.gain.setValueAtTime(0.0001, ac.currentTime); } catch (err) {}
       try { e.src.connect(e.lp || e.gain); } catch (err) {}
       e.connected = true;
     }
@@ -583,6 +645,7 @@ const AudioSys = (() => {
   function tick() {
     if (!started) return;
     if (purgeDucks()) applyDucks();
+    sceneWatch();
     for (let i = live.length - 1; i >= 0; i--) updateEmitter(live[i]);
   }
 
@@ -661,10 +724,12 @@ const AudioSys = (() => {
   return {
     init, play, cue, hold, poke,
     setMuted, setVolumes, duck,
-    setListener, emitter, playAt,
+    setListener, setScene, emitter, playAt,
     startMusic, stopMusic, setIntensity,
     get muted() { return muted; },
     get started() { return started; },
+    get scene() { return activeScene; },
+    get hushed() { return hushed; },
     get emitterCount() {
       let n = 0;
       for (let i = 0; i < live.length; i++) if (!live[i].dead) n++;

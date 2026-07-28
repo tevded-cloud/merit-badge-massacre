@@ -604,6 +604,11 @@ class Camp {
       stillT: 0, landed: false,
     };
     this.lastRuns = META.runs;
+    // Live ambience handles (the fire, the lake) and the name of the sound
+    // scene they were built for. Both are rebuilt from scratch whenever that
+    // name changes, so nothing survives a scene it does not belong to.
+    this.amb = [];
+    this._ambKey = null;
     this.bakedTier = -1;
     this.bakedFeatSig = null;
     this._interior = null;
@@ -927,6 +932,7 @@ class Camp {
     }
 
     this.clampWalk(p);
+    this.updateAmbience();
 
     // walking into the cabin door steps inside
     if (this.tier() >= 1 && this.sceneT <= 0) {
@@ -1000,6 +1006,52 @@ class Camp {
     const y0 = CAMP_G.y0 - CAMP_PEEK, y1 = CAMP_G.y1 + CAMP_PEEK;
     this.cam.x = (x1 - x0) < hw * 2 ? (x0 + x1) / 2 : clamp(this.cam.x, x0 + hw, x1 - hw);
     this.cam.y = (y1 - y0) < hh * 2 ? (y0 + y1) / 2 : clamp(this.cam.y, y0 + hh, y1 - hh);
+  }
+
+  // ------------------------------------------------------------- sound -----
+  // The ear rides the scout, and the fire is a place rather than a track: walk
+  // at it and it swells and brightens, walk out to the trail sign and it has
+  // gone. Called from both camp updates, once per frame, right after the walk
+  // is resolved, so the ear is never a frame behind the feet.
+  //
+  // Saying the scene's name every frame is also what keeps it alive: stop
+  // updating (a run starts, a menu opens, the tab goes away) and audio.js
+  // quiets the loops on its own and eventually gives the nodes back. Nothing
+  // here has to be told that the camp is over.
+  updateAmbience() {
+    if (typeof AudioSys === 'undefined' || !AudioSys || typeof AudioSys.setScene !== 'function') return;
+    // Tier is in the name because the lake only exists from tier 2: the night
+    // it opens, the scene is a new scene and the shoreline is built with it.
+    const key = this.scene === 'cabin' ? 'camp:cabin' : ('camp:grounds:' + this.tier());
+    AudioSys.setListener(this.p.x, this.p.y);
+    if (AudioSys.setScene(key) || this._ambKey !== key) this.buildAmbience(key);
+  }
+
+  buildAmbience(key) {
+    for (const h of (this.amb || [])) { try { h.stop(0.12); } catch (e) {} }
+    this.amb = [];
+    this._ambKey = null;
+    // No audio context yet (nobody has clicked anything): leave the key unset
+    // so the next frame tries again, rather than believing a dead handle.
+    if (!AudioSys.started) return;
+    if (this.scene === 'grounds') {
+      // The fire circle, the one thing the whole camp is arranged around. This
+      // is the fire's own coordinate: the keep-out, the sparks and the sound
+      // all read it from the same place.
+      this.amb.push(AudioSys.emitter('campfire', { x: 0, y: -70 }));
+      // The lake, once the trail down to it is cleared. A shoreline is not a
+      // point, and one voice in the middle of it would read as a puddle, so
+      // three sit on the water line far enough apart to cover the whole bank
+      // and close enough that walking the bank never crosses a gap.
+      if (this.tier() >= 2) {
+        for (const lx of [-260, 0, 260]) {
+          this.amb.push(AudioSys.emitter('water', { x: lx, y: this.bankY(lx) }));
+        }
+      }
+    }
+    // Inside the cabin you hear the room you are in, which is nothing yet: the
+    // door shuts the fire out, and the empty list is what does it.
+    this._ambKey = key;
   }
 
   // Scouts live here: they sleep by their tents when locked, drift from tent
@@ -1285,6 +1337,7 @@ class Camp {
     p.x = clamp(p.x, -150, 150);
     p.y = clamp(p.y, -70, 118);
     if (this.sceneT <= 0 && p.y > 108 && Math.abs(p.x) < 30) { this.exitCabin(); return; }
+    this.updateAmbience();
 
     this.near = null;
     let best = Infinity;

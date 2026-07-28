@@ -28,6 +28,12 @@ const CELL = 72;
 // this.speed, which dodge.js reads and recalc() owns.
 const HASTE_MUL = 1.3;
 
+// Ceiling on the positional loops one room may stand up. The engine's own cap
+// is 24 for the whole game and drops the farthest when a new one would break
+// it; the busiest layout in the catalogue asks for 7, so this is a fence
+// against a future layout, not a limit anything hits today.
+const ROOM_AMBIENCE_MAX = 12;
+
 class Game {
   constructor(charId) {
     const c = DATA.characters[charId];
@@ -47,6 +53,12 @@ class Game {
     // Room-system fields. The open-field run leaves them at these values;
     // later waves fill them in.
     this.room = null;
+    // Positional ambience for the room in play: the live handles, the room
+    // they were built for, and the scene name they answer to.
+    this.amb = [];
+    this._ambRoom = null;
+    this._ambSeq = 0;
+    this._ambKey = null;
     this.act = 1;
     this.roomIdx = 0;
     this.coins = 0;
@@ -746,6 +758,7 @@ class Game {
     // positional audio (campfire/torch/water/hazard emitters) tracks the
     // player from here every frame
     AudioSys.setListener(p.x, p.y);
+    this.updateAmbience();
 
     // aim at the cursor (world space)
     const dxm = p.in.aimX - p.x, dym = p.in.aimY - p.y;
@@ -783,6 +796,72 @@ class Game {
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       if (this.enemies[i].dead) this.enemies.splice(i, 1);
     }
+  }
+
+  // ---------------- room ambience ----------------
+  // The standing water and the burnt strips a layout already draws are given a
+  // voice here, and only here. Every room the run deals is a brand new Room
+  // object, so comparing the object itself is enough to know the world changed:
+  // the counter turns that into a new scene name, and naming a new scene is
+  // what tears the last room's loops down. run.js never has to know audio
+  // exists, and there is no path through a door that can leave a loop behind.
+  //
+  // Not calling this is also a statement: the pause menu, the level up card
+  // and the run-over screen all stop updating the game, and audio.js quiets
+  // the room a beat later on its own.
+  updateAmbience() {
+    if (typeof AudioSys === 'undefined' || !AudioSys || typeof AudioSys.setScene !== 'function') return;
+    const room = this.room || null;
+    if (room !== this._ambRoom) {
+      this._ambRoom = room;
+      this._ambSeq = (this._ambSeq | 0) + 1;
+    }
+    // The scene name has to identify the WORLD, not just the position in it.
+    // setScene compares names, so two Games that both call their first room
+    // "run:1" look like the same scene and the old one is never torn down: its
+    // loops stay and the new one stacks on top. RETRY walks straight into that,
+    // since every fresh Game starts its count at 1. Harmless only by luck today
+    // (no act 1 layout has water or a burn band, so both sets are empty), and
+    // it would double the loops the day one does, or the day biomes land.
+    if (!this._ambId) this._ambId = ++Game._ambIdSeq;
+    const key = 'run:' + this._ambId + ':' + (this._ambSeq | 0);
+    if (AudioSys.setScene(key) || this._ambKey !== key) this.buildAmbience(key, room);
+  }
+
+  buildAmbience(key, room) {
+    if (!Array.isArray(this.amb)) this.amb = [];
+    for (const h of this.amb) { try { h.stop(0.12); } catch (e) {} }
+    this.amb = [];
+    this._ambKey = null;
+    if (!AudioSys.started) return;   // no context yet: try again next frame
+
+    const dress = (room && room.def && Array.isArray(room.def.dressing)) ? room.def.dressing : [];
+    const spots = [];
+    for (const en of dress) {
+      if (!en) continue;
+      if (en.kind === 'pool') {
+        // Dressing is authored from the room's top left corner, the world has
+        // the room centred on the origin. toWorld is the only place that
+        // conversion is allowed to live.
+        const p = room.toWorld(en.x, en.y);
+        spots.push({ recipe: 'water', x: p.x, y: p.y });
+      } else if (en.kind === 'burnband') {
+        const a = room.toWorld(en.x0, en.y0), b = room.toWorld(en.x1, en.y1);
+        const len = Math.hypot(b.x - a.x, b.y - a.y);
+        // A charred strip is a line, not a place. One ember voice per 200
+        // units, three at most: the hazard recipe is silent past 260, so 200
+        // apart is close enough that walking the strip never crosses a hole.
+        const n = Math.max(1, Math.min(3, Math.round(len / 200)));
+        for (let i = 0; i < n; i++) {
+          const t = (i + 0.5) / n;
+          spots.push({ recipe: 'hazard', x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+        }
+      }
+    }
+    for (let i = 0; i < spots.length && i < ROOM_AMBIENCE_MAX; i++) {
+      this.amb.push(AudioSys.emitter(spots[i].recipe, { x: spots[i].x, y: spots[i].y }));
+    }
+    this._ambKey = key;
   }
 
   // ---------------- weapons ----------------
@@ -1253,6 +1332,10 @@ class Game {
     }
   }
 }
+
+// One number per Game ever made, so two nights can never claim the same scene
+// name. Read by updateAmbience; see the note there for why it matters.
+Game._ambIdSeq = 0;
 
 Game.prototype.gainCoins = function (n) {
   this.coins += n;
