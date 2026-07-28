@@ -23,7 +23,7 @@ const AudioSys = (() => {
 
   // Mixer headroom per bus, tuned so the shipped default slider (0.8) lands
   // at exactly the loudness the old linear mixer produced there.
-  const HEADROOM = { music: 0.344, sfx: 0.775, voice: 0.9 };
+  const HEADROOM = { music: 0.275, sfx: 0.775, voice: 0.9 };
   // Slider value assumed before anyone calls setVolumes: the shipped default,
   // which against these headrooms reproduces the old init gains.
   const DEFAULT_V = 0.8;

@@ -317,6 +317,7 @@ class Game {
   dealDamage(e, base, o) {
     o = o || {};
     if (e.dead) return;
+    if (e.prop) return this.damageProp(e, base * this.dmgMul, o);
     let dmg = base * this.dmgMul;
     let crit = false;
     if (!o.noCrit && Math.random() < this.critCh) { crit = true; dmg *= 2; }
@@ -407,7 +408,7 @@ class Game {
 
   damagePlayer(dmg, fx, fy, kind) {
     const p = this.player;
-    if (p.iframe > 0 || p.god || this.phase !== 'play') return;
+    if (p.iframe > 0 || p.dashI > 0 || p.god || this.phase !== 'play') return;
     const taken = Math.max(1, Math.round(dmg - this.armor));
     p.hp -= taken;
     if (kind) this.lastKiller = kind;
@@ -526,8 +527,15 @@ class Game {
       if (!arr) { arr = []; this.grid.set(k, arr); }
       arr.push(e);
     }
+    for (const pr of this.props) {
+      if (pr.dead) continue;
+      const k = ((pr.x / CELL) | 0) + '|' + ((pr.y / CELL) | 0);
+      let arr = this.grid.get(k);
+      if (!arr) { arr = []; this.grid.set(k, arr); }
+      arr.push(pr);
+    }
   }
-  queryEnemies(x, y, r) {
+  queryEnemies(x, y, r, includeProps) {
     const buf = this._qbuf;
     buf.length = 0;
     const x0 = ((x - r) / CELL) | 0, x1 = ((x + r) / CELL) | 0;
@@ -539,6 +547,7 @@ class Game {
         if (!arr) continue;
         for (const e of arr) {
           if (e.dead) continue;
+          if (e.prop && !includeProps) continue;
           if (dist2(e.x, e.y, x, y) <= (r + e.r) * (r + e.r)) buf.push(e);
         }
       }
@@ -623,10 +632,12 @@ class Game {
     this.time += dt;
     const p = this.player;
 
-    // movement
+    this.updateDodge(dt);      // dodge.js, integrates its own movement
+
+    // movement (a dash owns the player's position while it runs)
     const ax = p.in.moveX, ay = p.in.moveY;
     p.moving = (ax !== 0 || ay !== 0);
-    if (p.moving) {
+    if (p.moving && !(p.dashT > 0)) {
       p.x += ax * this.speed * dt;
       p.y += ay * this.speed * dt;
       p.lastDir.x = ax; p.lastDir.y = ay;
@@ -651,6 +662,7 @@ class Game {
     this.updateRings(dt);
     this.updateDirector(dt);   // director.js
     this.updateEnemies(dt);    // director.js
+    this.updateProps(dt);      // props.js
     this.updateEshots(dt);
     this.updateLoot(dt);
     this.updateFx(dt);
@@ -688,7 +700,7 @@ class Game {
           const a = w.angle + i * TAU / n;
           const kx = p.x + Math.cos(a) * st.radius;
           const ky = p.y + Math.sin(a) * st.radius;
-          const hits = this.queryEnemies(kx, ky, 13);
+          const hits = this.queryEnemies(kx, ky, 13, true);
           for (const e of hits) {
             if ((e.knifeT || 0) > this.t - st.hitCd) continue;
             e.knifeT = this.t;
@@ -702,7 +714,7 @@ class Game {
         w.tickT -= dt;
         if (w.tickT <= 0) {
           w.tickT += st.tick;
-          const hits = this.queryEnemies(p.x, p.y, st.radius);
+          const hits = this.queryEnemies(p.x, p.y, st.radius, true);
           for (const e of hits) {
             this.dealDamage(e, st.dps * st.tick, { small: true, quiet: true, noCrit: true, color: '#9ed88a' });
             if (st.slow > 0) e.slowT = Math.max(e.slowT || 0, 0.5);
@@ -765,7 +777,7 @@ class Game {
       case 'hatchet': {
         const range = st.range * (0.8 + gs * 0.25);
         this.swings.push({ x: p.x, y: p.y, a: aim, t: 0, dur: 0.2, range, arc: st.arc });
-        const hits = this.queryEnemies(p.x, p.y, range);
+        const hits = this.queryEnemies(p.x, p.y, range, true);
         for (const e of hits) {
           const ea = Math.atan2(e.y - p.y, e.x - p.x);
           if (Math.abs(angDiff(ea, aim)) <= st.arc / 2 + 0.25) {
@@ -847,7 +859,7 @@ class Game {
         }
         s.life -= dt;
         if (s.life <= 0) remove = true;
-        const hits = this.queryEnemies(s.x, s.y, s.r);
+        const hits = this.queryEnemies(s.x, s.y, s.r, true);
         for (const e of hits) {
           const last = s.hits.get(e);
           if (last != null && this.t - last < 0.4) continue;
@@ -863,7 +875,7 @@ class Game {
       s.life -= dt;
       if (s.life <= 0) { this.shots.splice(i, 1); continue; }
 
-      const hits = this.queryEnemies(s.x, s.y, s.r);
+      const hits = this.queryEnemies(s.x, s.y, s.r, true);
       for (const e of hits) {
         if (s.kind === 'flame') {
           this.dealDamage(e, s.dmg, { small: true, color: '#ffb347' });
@@ -899,7 +911,7 @@ class Game {
           this.spawnBoom(b.tx, b.ty, b.radius);
           this.shakeAdd(4);
           AudioSys.play('boom');
-          const hits = this.queryEnemies(b.tx, b.ty, b.radius);
+          const hits = this.queryEnemies(b.tx, b.ty, b.radius, true);
           for (const e of hits) {
             this.dealDamage(e, b.dmg, { knock: 240, fx: b.tx, fy: b.ty });
           }
@@ -919,7 +931,7 @@ class Game {
       pd.tick -= dt;
       if (pd.tick <= 0) {
         pd.tick += 0.25;
-        const hits = this.queryEnemies(pd.x, pd.y, pd.r);
+        const hits = this.queryEnemies(pd.x, pd.y, pd.r, true);
         for (const e of hits) {
           this.dealDamage(e, pd.dps * 0.25, { small: true, quiet: true, noCrit: true, color: '#7ec8e8' });
         }
@@ -933,7 +945,7 @@ class Game {
       const rg = this.rings[i];
       const prev = rg.r;
       rg.r += rg.speed * dt;
-      const hits = this.queryEnemies(rg.x, rg.y, rg.r + 20);
+      const hits = this.queryEnemies(rg.x, rg.y, rg.r + 20, true);
       for (const e of hits) {
         if (rg.hit.has(e)) continue;
         const d = Math.hypot(e.x - rg.x, e.y - rg.y);

@@ -1,7 +1,7 @@
 // Merit Badge Massacre: UI shell. Screens, HUD, input, settings, records.
 'use strict';
 
-const INPUT = { keys: new Set(), mx: window.innerWidth / 2, my: window.innerHeight / 2, fire: false, mdown: false };
+const INPUT = { keys: new Set(), mx: window.innerWidth / 2, my: window.innerHeight / 2, fire: false, mdown: false, dodge: false };
 
 const SETTINGS = { musicVol: 0.8, sfxVol: 0.8, shake: true, dmgNums: true };
 try {
@@ -54,9 +54,9 @@ function fmtTime(s) {
 const SCREENS = ['title', 'select', 'levelup', 'pause', 'over', 'options', 'shop'];
 function setState(s) {
   App.state = s;
-  // Held fire must survive pause/levelup round trips: no new keydown or
-  // pointerdown event fires for an input that never got released.
-  INPUT.fire = s === 'play' && (INPUT.keys.has('Space') || INPUT.mdown);
+  // Held fire must survive pause/levelup round trips: no new pointerdown
+  // event fires for a button that never got released.
+  INPUT.fire = s === 'play' && INPUT.mdown;
   for (const id of SCREENS) {
     const el = $(id);
     if (el) el.classList.toggle('hidden', id !== s);
@@ -467,7 +467,7 @@ window.addEventListener('keydown', (e) => {
       break;
     case 'play':
       if (e.code === 'Escape' || e.code === 'KeyP') showPause();
-      if (e.code === 'Space') INPUT.fire = true;
+      if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') INPUT.dodge = true;
       break;
     case 'levelup':
       if (e.code === 'Digit1') chooseLevelup(0);
@@ -489,7 +489,6 @@ window.addEventListener('keydown', (e) => {
 
 window.addEventListener('keyup', (e) => {
   INPUT.keys.delete(e.code);
-  if (e.code === 'Space') INPUT.fire = false;
 });
 
 window.addEventListener('pointermove', (e) => {
@@ -498,10 +497,12 @@ window.addEventListener('pointermove', (e) => {
 });
 cv.addEventListener('pointerdown', (e) => {
   bootAudio();
+  AudioSys.poke();
   if (e.button === 0) {
     INPUT.mdown = true;
     if (App.state === 'play') INPUT.fire = true;
   }
+  if (e.button === 2 && App.state === 'play') INPUT.dodge = true;
 });
 window.addEventListener('pointerup', (e) => {
   if (e.button === 0) { INPUT.mdown = false; INPUT.fire = false; }

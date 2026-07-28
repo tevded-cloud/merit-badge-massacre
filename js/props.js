@@ -10,4 +10,6 @@ const PROPS = {};
 
   Game.prototype.updateProps = function (dt) {};
 
+  Game.prototype.renderProp = function (ctx, prop) {};
+
 })();

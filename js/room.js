@@ -18,3 +18,7 @@ class Room {
 
   unbake(prop) {}
 }
+
+(function () {
+  Game.prototype.renderDoor = function (ctx, door) {};
+})();

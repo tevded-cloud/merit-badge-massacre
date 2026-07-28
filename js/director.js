@@ -77,6 +77,7 @@
         telegraph: null,
       },
     };
+    e.id = this.nextId++;
     this.enemies.push(e);
     this.toast(def.name);
     AudioSys.play('roar');
@@ -379,7 +380,6 @@
             ai.summonT -= dt;
             if (ai.summonT <= 0) {
               ai.summonT = 18;
-              const m = this.time / 60;
               const ids = ['raccoon', 'fox', 'boar'];
               this.summonAround(e, ids, 5);
             }

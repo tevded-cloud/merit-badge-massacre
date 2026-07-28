@@ -87,14 +87,22 @@
       });
     }
 
-    // y-sorted entities
-    this.enemies.sort((a, b) => a.y - b.y);
-    let drewPlayer = false;
-    for (const e of this.enemies) {
-      if (!drewPlayer && e.y > p.y) { this.renderPlayer(ctx); drewPlayer = true; }
-      this.renderEnemy(ctx, e);
+    // y-sorted entities: one shared draw list so props and doors interleave
+    // correctly with enemies and the player
+    const zbuf = [];
+    for (const e of this.enemies) zbuf.push({ y: e.y, t: 'enemy', o: e });
+    for (const pr of this.props) zbuf.push({ y: pr.y + (pr.r || 0), t: 'prop', o: pr });
+    if (this.room && this.room.doors) {
+      for (const d of this.room.doors) zbuf.push({ y: d.y, t: 'door', o: d });
     }
-    if (!drewPlayer) this.renderPlayer(ctx);
+    zbuf.push({ y: p.y, t: 'player', o: p });
+    zbuf.sort((a, b) => a.y - b.y);
+    for (const z of zbuf) {
+      if (z.t === 'enemy') this.renderEnemy(ctx, z.o);
+      else if (z.t === 'prop') this.renderProp(ctx, z.o);
+      else if (z.t === 'door') this.renderDoor(ctx, z.o);
+      else this.renderPlayer(ctx);
+    }
 
     // swings (hatchet arcs)
     for (const sw of this.swings) {
@@ -195,6 +203,11 @@
         ctx.strokeStyle = 'rgba(255,200,120,' + (0.8 * (1 - k)) + ')';
         ctx.lineWidth = 4 * (1 - k) + 1;
         ctx.beginPath(); ctx.arc(pa.x, pa.y, pa.size * k, 0, TAU); ctx.stroke();
+      } else if (pa.kind === 'ghost') {
+        SPR.drawScout(ctx, pa.charId, pa.x, pa.y, 34, {
+          flip: pa.face < 0, phase: 0, moving: false,
+          alpha: (pa.alpha != null ? pa.alpha : 0.4) * (1 - k),
+        });
       } else if (pa.kind === 'wisp') {
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
