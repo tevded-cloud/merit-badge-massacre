@@ -773,6 +773,7 @@ class Room {
       AudioSys.play('chest');
     }
     if (typeof g.toast === 'function') g.toast('ROOM CLEAR', '#f4c542');
+    if (typeof Hooks !== 'undefined') Hooks.emit('onRoomClear', g, this);
   }
 
   _onObjective(g) {

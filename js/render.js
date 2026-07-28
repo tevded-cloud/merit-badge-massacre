@@ -162,6 +162,12 @@
 
     // player shots
     for (const s of this.shots) {
+      // a shot with no traits has s.vis === undefined, so this whole block
+      // is one falsy check away from costing nothing: the 2.0 look stays
+      // byte for byte the same when nothing is riding the projectile.
+      const vis = s.vis;
+      if (vis) this.renderShotTrail(ctx, s, vis);
+
       if (s.kind === 'pebble') {
         ctx.fillStyle = '#cfc9b8';
         ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, TAU); ctx.fill();
@@ -182,6 +188,8 @@
       } else if (s.kind === 'boomer') {
         SPR.draw(ctx, 'boomer', s.x, s.y, s.r * 2.2, { rot: s.spin });
       }
+
+      if (vis) this.renderShotTraits(ctx, s, vis);
     }
 
     // bombs in flight
@@ -274,6 +282,19 @@
         ctx.fillStyle = grd;
         ctx.beginPath(); ctx.arc(pa.x, pa.y, pa.size * 3, 0, TAU); ctx.fill();
         ctx.restore();
+      } else if (pa.kind === 'arc') {
+        // a chain jump: a soft wide stroke under a bright thin core so it
+        // reads as a bolt of electricity rather than a ruled line
+        const alpha = 1 - k;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = 'rgba(' + (pa.color || '150,220,255') + ',' + (0.35 * alpha) + ')';
+        ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pa.x2, pa.y2); ctx.stroke();
+        ctx.strokeStyle = 'rgba(' + (pa.color || '150,220,255') + ',' + alpha + ')';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pa.x2, pa.y2); ctx.stroke();
+        ctx.restore();
       }
     }
 
@@ -333,6 +354,96 @@
 
     if (typeof Reticle !== 'undefined') Reticle.render(ctx, this, W, H);
     if (typeof Transition !== 'undefined') Transition.render(ctx, W, H);
+  };
+
+  // the sample trail: oldest sample most transparent, newest sample nearest
+  // full strength, so the ring buffer reads as motion left behind rather
+  // than a static smear. Drawn behind the shot itself.
+  Game.prototype.renderShotTrail = function (ctx, s, vis) {
+    const cap = vis.trail;
+    const n = s.trailN;
+    if (n < 2) return;
+    const buf = s.trailBuf;
+    const start = ((s.trailHead - n) % cap + cap) % cap;
+    const col = vis.hot ? '255,170,90' : (vis.cold ? '150,210,255' : '224,214,190');
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineCap = 'round';
+    for (let i = 1; i < n; i++) {
+      const ia = (start + i - 1) % cap;
+      const ib = (start + i) % cap;
+      const k = i / n;
+      ctx.strokeStyle = 'rgba(' + col + ',' + (0.35 * k) + ')';
+      ctx.lineWidth = s.r * (0.4 + k * 0.6);
+      ctx.beginPath();
+      ctx.moveTo(buf[ia * 2], buf[ia * 2 + 1]);
+      ctx.lineTo(buf[ib * 2], buf[ib * 2 + 1]);
+      ctx.stroke();
+    }
+    ctx.restore();
+  };
+
+  // the four visible trait layers, stacked on top of the shot itself. Every
+  // rule only reads vis, so a shot carrying several traits at once just
+  // draws several layers, no new art needed for a combination: that is the
+  // entire point of a derived visual descriptor.
+  Game.prototype.renderShotTraits = function (ctx, s, vis) {
+    // bulk: a heavier rim reading as extra mass, not a second scale-up
+    if (vis.bulk > 0) {
+      ctx.strokeStyle = 'rgba(224,214,190,0.55)';
+      ctx.lineWidth = 1.2 + vis.bulk * 2.2;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r * (1 + vis.bulk * 0.10), 0, TAU); ctx.stroke();
+    }
+
+    // hot: an additive warm glow, plus the occasional ember off the budget
+    if (vis.hot) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const rr = s.r * 1.7;
+      const grd = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, rr);
+      grd.addColorStop(0, 'rgba(255,190,110,0.5)');
+      grd.addColorStop(1, 'rgba(255,90,20,0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath(); ctx.arc(s.x, s.y, rr, 0, TAU); ctx.fill();
+      ctx.restore();
+      // the embers themselves are shed by the burn trait's update hook, not
+      // from here: this method draws, it does not change the world. A
+      // renderer that pushed particles would make the field depend on the
+      // frame rate, and on whether anything was on screen at all.
+    }
+
+    // cold: an additive pale blue glow and a thin frost rim. Stacked with
+    // hot the two glows mix into a strange colour, which is correct
+    if (vis.cold) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const rr = s.r * 1.6;
+      const grd = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, rr);
+      grd.addColorStop(0, 'rgba(180,225,255,0.45)');
+      grd.addColorStop(1, 'rgba(120,190,255,0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath(); ctx.arc(s.x, s.y, rr, 0, TAU); ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = 'rgba(210,240,255,0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 1.08, 0, TAU); ctx.stroke();
+    }
+
+    // rend: a dark ragged rim, with a couple of ticks so it reads torn
+    // rather than a clean stroked circle
+    if (vis.rend) {
+      ctx.strokeStyle = 'rgba(120,60,140,0.4)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 1.25, 0, TAU); ctx.stroke();
+      for (let i = 0; i < 2; i++) {
+        const a = this.t * 6 + s.x * 0.7 + i * 2.4;
+        const r0 = s.r * 1.1, r1 = s.r * 1.4;
+        ctx.beginPath();
+        ctx.moveTo(s.x + Math.cos(a) * r0, s.y + Math.sin(a) * r0);
+        ctx.lineTo(s.x + Math.cos(a) * r1, s.y + Math.sin(a) * r1);
+        ctx.stroke();
+      }
+    }
   };
 
   // ---------------- zones ----------------
