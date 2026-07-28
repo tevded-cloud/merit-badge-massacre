@@ -128,6 +128,24 @@ const BROCK = {
     { t: '"Your firefly sat on my ledger hand for an hour last night. Got nothing done. It can stay."', e: 'warm' },
     { t: '"Thirty years on this ridge and the woods finally sent us something that is not trying to eat anyone. Do not tell it I said that."', e: 'warm' },
   ],
+  // The totem at the trailhead. Brock does not approve of it, has never once
+  // said so outright, and mentions it constantly. Mixed into the idle pool
+  // only while there is at least one carving on the pole.
+  totem: [
+    { t: '"You carved the pole." He does not look at the pole. "Thirty years that log sat there with the bark on and nobody touched it. Now it has a face. Now it has several."', e: 'deadpan' },
+    { t: '"Every notch on that thing is a promise, and out there they read promises the way you read a trail sign. Loudly, and from a long way off."', e: 'alarmed' },
+    { t: '"The badges do come back heavier. I have counted. I would like the record to show I counted while disapproving."', e: 'deadpan' },
+    { t: '"You can sand it smooth, you know. Any night you like. Nobody out there has ever been told that a promise came off, but you can try."', e: 'warm' },
+    { t: '"I watched a scout carve four faces and walk out whistling. He came back. He did not whistle."', e: 'alarmed' },
+    { t: '"Old trick, that pole. Older than me, older than the camp. Somebody knew exactly what the woods pay for a bad night and left us the receipt."', e: 'deadpan' },
+  ],
+  // Spoken the first time he sees a feat land, one per visit, with {feat}
+  // swapped for whatever you just earned.
+  feats: [
+    { t: '"{feat}." He turns the tin over twice. "There is a badge for that. There is a badge for everything, it turns out, and somebody had to be the one to find out."', e: 'warm' },
+    { t: '"{feat}, is it. I stopped writing the requirements down years ago on the grounds that nobody would ever meet them. Consider me corrected."', e: 'deadpan' },
+    { t: '"So that is {feat} settled. Sew it on the left side, above the others. And do not do whatever you did again unless you are being paid."', e: 'warm' },
+  ],
   // Twelve gated story beats, delivered one at a time, oldest unseen and
   // gate-passing beat first. Each gate reads META defensively so it still
   // works if a save is missing journal, flags, or codex entirely.
@@ -278,14 +296,53 @@ function nextArcLine() {
   return null;
 }
 
-// Swap the {scout} token for the address Brock keeps for whoever is on duty.
-// Works on both line shapes and leaves everything else untouched.
-function brockAddress(line) {
+// Swap a {token} for a value on either line shape, leaving everything else
+// alone. Both {scout} and {feat} go through here.
+function brockToken(line, token, value) {
   const txt = (line && typeof line === 'object') ? line.t : line;
-  if (typeof txt !== 'string' || txt.indexOf('{scout}') < 0) return line;
-  const who = (BROCK.address && BROCK.address[META.selected]) || 'scout';
-  const out = txt.split('{scout}').join(who);
+  if (typeof txt !== 'string' || txt.indexOf(token) < 0) return line;
+  const out = txt.split(token).join(value);
   return (line && typeof line === 'object') ? { t: out, e: line.e } : out;
+}
+
+// Swap the {scout} token for the address Brock keeps for whoever is on duty.
+function brockAddress(line) {
+  const who = (BROCK.address && BROCK.address[META.selected]) || 'scout';
+  return brockToken(line, '{scout}', who);
+}
+
+// The first feat he has not commented on yet, if there is one. Every earned
+// feat is acknowledged in the same breath, so he says his piece once per batch
+// rather than once per badge. Reads the ledger defensively: a save with no
+// feats key at all simply has nothing to say here.
+function nextFeatLine() {
+  if (!META.flags || typeof META.flags !== 'object') META.flags = {};
+  const done = (META.flags.feats && typeof META.flags.feats === 'object') ? META.flags.feats : null;
+  if (!done) return null;
+  if (!META.flags.featAck || typeof META.flags.featAck !== 'object') META.flags.featAck = {};
+  const ack = META.flags.featAck;
+  let fresh = null;
+  for (const id in done) {
+    if (!done[id] || ack[id]) continue;
+    ack[id] = true;
+    if (!fresh) fresh = id;
+  }
+  if (!fresh) return null;
+  META.save();
+  let name = fresh;
+  try {
+    const def = (typeof Feats !== 'undefined' && Feats) ? Feats.byId(fresh) : null;
+    if (def && def.name) name = def.name;
+  } catch (e) {}
+  const line = BROCK.feats[(Math.random() * BROCK.feats.length) | 0];
+  return brockToken(line, '{feat}', name.toUpperCase());
+}
+
+// True while there is at least one carving on the pole.
+function brockTotemActive() {
+  try {
+    return (typeof Totem !== 'undefined' && Totem) ? Totem.active(META).length > 0 : false;
+  } catch (e) { return false; }
 }
 
 function brockLine() {
@@ -308,7 +365,11 @@ function brockLinePick() {
     const line = BROCK.died[last.killer];
     return line || BROCK.died.generic;
   }
-  const pool = arcFlag(META, 'blinkFriend') ? BROCK.idle.concat(BROCK.blink) : BROCK.idle;
+  const featLine = nextFeatLine();
+  if (featLine) return featLine;
+  let pool = BROCK.idle;
+  if (arcFlag(META, 'blinkFriend')) pool = pool.concat(BROCK.blink);
+  if (brockTotemActive()) pool = pool.concat(BROCK.totem);
   return pool[(Math.random() * pool.length) | 0];
 }
 

@@ -30,8 +30,9 @@ const META = {
   flags: {},       // one off story switches
   codex: {},       // boss id -> { seen, killed }
   // Feat counters, banked at the end of a night rather than written per frame.
-  // burned is critters set alight, lowHpTime is seconds spent under 15% HP.
-  counters: { burned: 0, lowHpTime: 0 },
+  // burned is critters set alight, lowHpTime is seconds spent under 15% HP,
+  // birdhouses is how many times you have knocked on the one in the grove.
+  counters: { burned: 0, lowHpTime: 0, birdhouses: 0 },
   camp: { banner: 0, tentPattern: 0 },
 
   load() {
@@ -67,12 +68,14 @@ const META = {
     } catch (e) {}
   },
 
-  // A counters block from any save, or from nothing at all.
+  // A counters block from any save, or from nothing at all. Every key here is
+  // additive: a save written before one of them existed loads it as zero.
   normCounters(c) {
-    const out = { burned: 0, lowHpTime: 0 };
+    const out = { burned: 0, lowHpTime: 0, birdhouses: 0 };
     if (c && typeof c === 'object') {
       if (c.burned > 0) out.burned = c.burned;
       if (c.lowHpTime > 0) out.lowHpTime = c.lowHpTime;
+      if (c.birdhouses > 0) out.birdhouses = c.birdhouses;
     }
     return out;
   },
@@ -97,8 +100,23 @@ const META = {
 
   // Bank a finished run.
   credit(g, won) {
-    this.badges += g.badges;
-    this.lifetime += g.badges;
+    // Deeper Nights: every carving on the totem is a promise that tonight is
+    // worse, and the pole pays for it here. A bare pole is 1x and all six
+    // carvings are exactly 2x. The multiplier lands on the banked number and
+    // on lifetime together, because lifetime is meant to be what you earned.
+    const base = Math.max(0, Math.round(g.badges || 0));
+    let mult = 1;
+    try {
+      if (typeof Totem !== 'undefined' && Totem && typeof Totem.badgeMult === 'function') {
+        mult = Totem.badgeMult(this) || 1;
+      }
+    } catch (e) { mult = 1; }
+    const paid = Math.round(base * mult);
+    // lastCredit is deliberately not saved: it describes the run that just
+    // ended and the over screen is the only thing that ever reads it.
+    this.lastCredit = { base, paid, mult, bonus: paid - base };
+    this.badges += paid;
+    this.lifetime += paid;
     this.runs++;
     if (won) this.dawns++; else this.deaths++;
     this.lastRun = {

@@ -71,7 +71,7 @@ DATA.weapons = {
     ],
   },
   firecracker: {
-    name: 'Firecrackers', kind: 'manual', icon: 'firecracker',
+    name: 'Firecrackers', kind: 'manual', icon: 'firecracker', locked: true,
     desc: 'Lob a banger at your cursor. Friendly to you, only you.',
     base: { cd: 1.5, dmg: 30, count: 1, radius: 78, fuse: 0.45, range: 340 },
     levels: [
@@ -82,7 +82,7 @@ DATA.weapons = {
     ],
   },
   boomerang: {
-    name: 'Compass Boomerang', kind: 'manual', icon: 'boomerang',
+    name: 'Compass Boomerang', kind: 'manual', icon: 'boomerang', locked: true,
     desc: 'Flies out along your aim and carves back through everything.',
     base: { cd: 1.1, dmg: 16, count: 1, range: 285, speed: 430, size: 12 },
     levels: [
@@ -126,7 +126,7 @@ DATA.weapons = {
     ],
   },
   bugle: {
-    name: 'Camp Bugle', kind: 'auto', icon: 'bugle',
+    name: 'Camp Bugle', kind: 'auto', icon: 'bugle', locked: true,
     desc: 'Periodic reveille blast that batters and shoves the whole horde.',
     base: { cd: 4.2, dmg: 22, radius: 175, knock: 300, stun: 0 },
     levels: [
@@ -143,10 +143,10 @@ DATA.passives = {
   trailmix:   { name: 'Trail Mix', icon: 'trailmix', max: 3, desc: 'Protein. Raisins. Violence.', per: '+12% damage' },
   boots:      { name: 'Hiking Boots', icon: 'boots', max: 3, desc: 'Broken in on lesser trails.', per: '+10% move speed' },
   lodestone:  { name: 'Lodestone', icon: 'lodestone', max: 3, desc: 'Badges want to come home.', per: '+45% pickup radius' },
-  whistle:    { name: 'Scoutmaster Whistle', icon: 'whistle', max: 3, desc: 'Everything hustles when it blows.', per: '9% faster cooldowns' },
+  whistle:    { name: 'Scoutmaster Whistle', icon: 'whistle', max: 3, locked: true, desc: 'Everything hustles when it blows.', per: '9% faster cooldowns' },
   skillet:    { name: 'Cast Iron Skillet', icon: 'skillet', max: 3, desc: 'Worn on the chest, as intended.', per: '+2 armor' },
   fieldguide: { name: 'Field Guide', icon: 'fieldguide', max: 3, desc: 'Know thy enemy. Chapter 6: squirrels.', per: '+15% badge XP' },
-  rabbitfoot: { name: 'Rabbit Foot', icon: 'rabbitfoot', max: 3, desc: 'It is not from a lucky rabbit.', per: '+8% crit chance' },
+  rabbitfoot: { name: 'Rabbit Foot', icon: 'rabbitfoot', max: 3, locked: true, desc: 'It is not from a lucky rabbit.', per: '+8% crit chance' },
 };
 
 DATA.enemies = {
@@ -451,5 +451,21 @@ DATA.COINS = {
 };
 
 // Active skills (the ones on a button, not the auto weapons) land in a later
-// wave. The key exists now so nothing downstream has to guess at its shape.
-DATA.skills = {};
+// wave. The runtime is not here yet: nothing reads this table during a run.
+// The three entries below exist because the Feat Board awards them, and a
+// reward with no name on it is not a reward. Each one is locked: true, which
+// means feats.js keeps it out of DATA.skills entirely until its feat lands.
+DATA.skills = {
+  emberdrag: {
+    name: 'Ember Drag', icon: 'roaster', locked: true,
+    desc: 'Leave a lane of fire behind you for two seconds. Yours does not burn you. Probably.',
+  },
+  reveille: {
+    name: 'Reveille', icon: 'bugle', locked: true,
+    desc: 'One blast. Everything on screen stops what it is doing and looks at you, which is both good and bad.',
+  },
+  fieldstrip: {
+    name: 'Field Strip', icon: 'knives', locked: true,
+    desc: 'Break your worst weapon down for parts, on the spot, and level the rest.',
+  },
+};

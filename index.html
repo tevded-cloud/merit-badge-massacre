@@ -150,6 +150,53 @@
   .jrow .jw { color:#4e5560; font-style:italic; letter-spacing:1px; }
   .jrow.filled .jw { color:#e8e0cc; font-style:normal; }
 
+  /* The Feat Board: one card per dare, sorted by how close you are. */
+  .featgrid { display:grid; grid-template-columns:repeat(3, 232px); gap:14px; justify-content:center; }
+  .featcard { position:relative; overflow:hidden; text-align:left; padding:12px 13px 13px;
+    background:linear-gradient(180deg,#151a22,#0e1218); border:2px solid #262d38; border-radius:12px;
+    display:flex; flex-direction:column; gap:7px; }
+  .featcard .fhead { display:flex; align-items:flex-start; gap:10px; }
+  .featcard canvas { flex:0 0 40px; width:40px; height:40px; margin-top:1px; }
+  .featcard .fname { font-size:12px; font-weight:bold; letter-spacing:1px; color:#e8e0cc; line-height:1.3; }
+  .featcard .freward { font-size:10px; color:#f4c542; margin-top:3px; letter-spacing:0.5px; }
+  .featcard .fcond { font-size:11px; color:#8d947f; line-height:1.45; min-height:46px; }
+  .featbar { height:8px; border-radius:5px; background:#1b212a; border:1px solid #262d38; overflow:hidden; }
+  .featfill { height:100%; width:0%; background:linear-gradient(90deg,#6f5a1c,#f4c542); }
+  .featfoot { display:flex; justify-content:space-between; align-items:center; font-size:10px;
+    letter-spacing:1px; color:#6d7361; }
+  .featcard.done { border-color:#f4c542; box-shadow:0 0 22px rgba(244,197,66,0.22), inset 0 0 34px rgba(244,197,66,0.06); }
+  .featcard.done .fname { color:#f4c542; }
+  /* the ribbon owns the top right corner, so the title steps out of its way */
+  .featcard.done .fhead { padding-right:30px; }
+  .featcard.done .featfill { background:linear-gradient(90deg,#f4c542,#fff0b8); }
+  .featcard.dark { border-color:#1d232c; background:linear-gradient(180deg,#0e1218,#090c11); }
+  .featcard.dark .fname { color:#4e5560; letter-spacing:4px; }
+  .featcard.dark .fcond { color:#5d6370; font-style:italic; }
+  .featcard.dark .freward { color:#4e5560; }
+  .fribbon { position:absolute; top:9px; right:-30px; width:112px; transform:rotate(38deg);
+    background:#f4c542; color:#0d1015; font-size:9px; font-weight:bold; letter-spacing:2px;
+    text-align:center; padding:3px 0; box-shadow:0 2px 8px rgba(0,0,0,0.6); }
+  @keyframes featflash { 0%,100% { box-shadow:0 0 22px rgba(244,197,66,0.22); }
+    50% { box-shadow:0 0 40px rgba(244,197,66,0.85); border-color:#fff0b8; } }
+  .featcard.flash { animation:featflash 0.9s ease-in-out 4; }
+  #featsum { font-size:12px; color:#8d947f; letter-spacing:1px; margin:6px 0 14px; }
+  #overfeats { font-size:12px; letter-spacing:2px; color:#f4c542; margin:2px 0 10px; line-height:1.7; }
+
+  /* The Totem: carvings you switch on before you walk out. */
+  .carverow { display:flex; align-items:center; gap:14px; padding:11px 8px; border-bottom:1px solid #1f242e; text-align:left; }
+  .carvenotch { flex:0 0 10px; align-self:stretch; border-radius:3px; background:#20262f; }
+  .carverow.on .carvenotch { background:linear-gradient(180deg,#f4c542,#8a6a1d); box-shadow:0 0 12px rgba(244,197,66,0.5); }
+  .carveinfo { flex:1; }
+  .carvename { font-size:13px; font-weight:bold; letter-spacing:2px; color:#6d7361; }
+  .carverow.on .carvename { color:#f4c542; }
+  .carvedesc { font-size:11px; color:#8d947f; margin-top:2px; }
+  .carvenote { font-size:11px; color:#5d6370; font-style:italic; margin-top:2px; }
+  .carvepct { flex:0 0 64px; text-align:right; font-size:13px; font-weight:bold; color:#4e5560; }
+  .carverow.on .carvepct { color:#f4c542; }
+  #totemmult { font-size:26px; font-weight:bold; letter-spacing:4px; color:#f4c542;
+    text-shadow:0 0 20px rgba(244,197,66,0.45); margin:6px 0 2px; }
+  #totemsub { font-size:11px; color:#6d7361; letter-spacing:1px; margin-bottom:12px; }
+
   /* Dialogue box */
   #dialog { position:absolute; left:50%; bottom:60px; transform:translateX(-50%); width:min(680px, 86vw);
     background:rgba(12,14,18,0.94); border:2px solid #3a4150; border-radius:12px; padding:16px 22px 12px; z-index:30;
@@ -290,6 +337,30 @@
     </div>
   </div>
 
+  <div id="feats" class="screen solid hidden">
+    <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:22px 28px;max-height:88vh;overflow-y:auto;">
+      <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;">THE FEAT BOARD</div>
+      <div id="featsum">0 of 0 claimed</div>
+      <div class="featgrid" id="featsgrid"></div>
+      <div class="hint" style="margin:14px 0 4px;">Feats are permanent, and they open things up for good. Esc back to camp.</div>
+      <div class="btnrow"><button class="btn" id="btnfeatsback">BACK TO CAMP</button></div>
+    </div>
+  </div>
+
+  <div id="totem" class="screen trans hidden">
+    <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:22px 28px;min-width:600px;max-height:86vh;overflow-y:auto;">
+      <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;">THE TOTEM</div>
+      <div id="totemmult">1.00x BADGES</div>
+      <div id="totemsub">Carve nothing and the night is the night.</div>
+      <div id="carverows"></div>
+      <div class="hint" style="margin:12px 0 4px;">Carvings hold until you change them. What you promise, the woods collect.</div>
+      <div class="btnrow">
+        <button class="btn" id="btntotemclear">SAND IT SMOOTH</button>
+        <button class="btn" id="btntotemback">BACK TO CAMP</button>
+      </div>
+    </div>
+  </div>
+
   <div id="dialog" class="hidden">
     <div id="dlgport" class="hidden">
       <div class="dlgframe"><canvas id="dlgportcv" width="330" height="390"></canvas></div>
@@ -302,7 +373,7 @@
     </div>
   </div>
 
-  <div id="camphint" class="hidden">WASD walk &nbsp;|&nbsp; E interact &nbsp;|&nbsp; J field guide &nbsp;|&nbsp; Esc leave camp</div>
+  <div id="camphint" class="hidden">WASD walk &nbsp;|&nbsp; E interact &nbsp;|&nbsp; J field guide &nbsp;|&nbsp; B feat board &nbsp;|&nbsp; Esc leave camp</div>
 
   <div id="options" class="screen solid hidden">
     <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:26px 34px;min-width:420px;">
@@ -322,6 +393,7 @@
     <div class="panel" style="text-align:center;">
       <div id="overtitle" class="lose">DEVOURED</div>
       <div id="oversub">The forest keeps your badges.</div>
+      <div id="overfeats" class="hidden"></div>
       <div class="statgrid" id="overstats"></div>
       <div class="btnrow">
         <button class="btn" id="btnretry">RETRY</button>
@@ -343,6 +415,7 @@
 <script src="js/rooms.js"></script>
 <script src="js/meta.js"></script>
 <script src="js/roster.js"></script>
+<script src="js/feats.js"></script>
 <script src="js/dialogue.js"></script>
 <script src="js/finds.js"></script>
 <script src="js/collide.js"></script>

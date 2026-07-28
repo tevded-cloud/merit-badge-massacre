@@ -65,7 +65,7 @@ function fmtTime(s) {
 }
 
 // ---------------- state machine ----------------
-const SCREENS = ['title', 'select', 'levelup', 'pause', 'over', 'options', 'shop', 'runshop', 'journal'];
+const SCREENS = ['title', 'select', 'levelup', 'pause', 'over', 'options', 'shop', 'runshop', 'journal', 'feats', 'totem'];
 const HUD_STATES = ['play', 'levelup', 'pause', 'over', 'runshop'];
 function setState(s) {
   App.state = s;
@@ -147,8 +147,33 @@ function enterCamp() {
   App.game = null;
   Run.reset();
   AudioSys.stopMusic();
+  // Walking back into camp is the moment the pools are trued up: anything a
+  // feat opened while you were out is in the level up rotation from here on.
+  refreshFeats();
   if (!App.camp) App.camp = new Camp();
   setState('camp');
+}
+
+// The one place the rest of the UI asks feats.js to reconcile DATA with the
+// save. Feature tested, because a page with feats.js missing must still play.
+function syncFeatPools() {
+  if (typeof Feats === 'undefined' || !Feats) return;
+  try { Feats.syncPools(META); } catch (e) {}
+}
+
+// Claim anything that has come true, then true up the pools. Called walking
+// into camp and opening the board, because plenty of conditions finish without
+// a run in between: buying ranks moves spent, knocking moves birdhouses. A
+// card sitting at a hundred percent with no ribbon on it would be a bug the
+// player can see. The run end ceremony in showOver does its own call so it can
+// announce what landed.
+function refreshFeats() {
+  if (typeof Feats === 'undefined' || !Feats) return [];
+  let earned = [];
+  try { earned = Feats.check(META) || []; } catch (e) { earned = []; }
+  syncFeatPools();
+  if (earned.length) flagFeatFlash(earned);
+  return earned;
 }
 
 function quitToTitle() {
@@ -459,6 +484,199 @@ function journalTroop() {
   return wrap;
 }
 
+// ---------------- the feat board ----------------
+// One card per dare. The board is sorted by nearness, so the top row is always
+// the three things you are closest to, and the cards you have claimed sit
+// under them wearing a ribbon. The three hidden ones stay dark at the bottom
+// and will not say what they are until the night they go gold.
+//
+// featFlash carries the ids earned by the run that just ended, so the first
+// time you open the board afterwards those cards pulse and then stop.
+let featFlash = [];
+const TAU_UI = Math.PI * 2;
+
+// A padlock, drawn the way every other icon in this UI is drawn. Rewards that
+// are not a weapon or a patch get this instead of a silhouette: open once the
+// feat is claimed, shut while it is not.
+function drawLockGlyph(g, x, y, size, open) {
+  const u = size / 28;
+  g.save();
+  g.translate(x, y);
+  g.scale(u, u);
+  g.lineJoin = 'round'; g.lineCap = 'round';
+  g.strokeStyle = open ? '#f4c542' : '#4e5560';
+  g.lineWidth = 2.6;
+  g.beginPath();
+  if (open) g.arc(-3.5, -5, 5.5, Math.PI, TAU_UI * 0.75);
+  else g.arc(0, -5, 5.5, Math.PI, 0);
+  g.stroke();
+  if (!open) {
+    g.beginPath();
+    g.moveTo(-5.5, -5); g.lineTo(-5.5, -1);
+    g.moveTo(5.5, -5); g.lineTo(5.5, -1);
+    g.stroke();
+  }
+  g.fillStyle = open ? '#f4c542' : '#2b3341';
+  g.strokeStyle = open ? '#8a6a1d' : '#4e5560';
+  g.lineWidth = 1.6;
+  g.beginPath(); g.roundRect(-9, -1, 18, 14, 3); g.fill(); g.stroke();
+  g.fillStyle = open ? '#5a4410' : '#151a22';
+  g.beginPath(); g.arc(0, 5.5, 2.2, 0, TAU_UI); g.fill();
+  g.restore();
+}
+
+function openFeats() {
+  refreshFeats();
+  buildFeats();
+  setState('feats');
+}
+
+// Anything that earns a feat outside the run flow (the camp birdhouse) tells
+// the board about it here, so it flashes the next time the board is opened.
+function flagFeatFlash(ids) {
+  if (!ids || !ids.length) return;
+  for (const id of ids) if (featFlash.indexOf(id) === -1) featFlash.push(id);
+}
+
+function featRewardIcon(row) {
+  const ic = document.createElement('canvas');
+  ic.width = 80; ic.height = 80;
+  const g = ic.getContext('2d');
+  g.scale(2, 2);
+  const rw = row.reward || {};
+  const def = (typeof Feats !== 'undefined' && Feats) ? Feats.rewardDef(rw) : null;
+  const paints = (rw.kind === 'weapon' || rw.kind === 'patch') && def && def.icon;
+  if (paints) {
+    // Unearned rewards are painted faint: you can see the shape of the thing
+    // you are working toward without it looking like you already have it.
+    g.globalAlpha = row.done ? 1 : 0.4;
+    SPR.icon(g, def.icon, 20, 20, 34);
+    g.globalAlpha = 1;
+  } else {
+    drawLockGlyph(g, 20, 20, 30, row.done);
+  }
+  return ic;
+}
+
+function buildFeats() {
+  const grid = $('featsgrid');
+  grid.innerHTML = '';
+  const rows = (typeof Feats !== 'undefined' && Feats) ? Feats.progressList(META) : [];
+  let claimed = 0;
+  for (const r of rows) if (r.done) claimed++;
+  $('featsum').textContent = claimed + ' of ' + rows.length + ' claimed';
+
+  for (const r of rows) {
+    const card = document.createElement('div');
+    card.className = 'featcard' +
+      (r.done ? ' done' : '') +
+      (r.dark ? ' dark' : '') +
+      (featFlash.indexOf(r.id) !== -1 ? ' flash' : '');
+
+    if (r.done) {
+      const rib = document.createElement('div');
+      rib.className = 'fribbon';
+      rib.textContent = 'CLAIMED';
+      card.appendChild(rib);
+    }
+
+    const head = document.createElement('div');
+    head.className = 'fhead';
+    head.appendChild(featRewardIcon(r));
+    const titles = document.createElement('div');
+    const nm = document.createElement('div');
+    nm.className = 'fname';
+    nm.textContent = r.name;
+    const rw = document.createElement('div');
+    rw.className = 'freward';
+    rw.textContent = r.dark ? 'REWARD UNKNOWN' : ((r.reward && r.reward.label) || '');
+    titles.appendChild(nm); titles.appendChild(rw);
+    head.appendChild(titles);
+    card.appendChild(head);
+
+    const cond = document.createElement('div');
+    cond.className = 'fcond';
+    cond.textContent = r.line;
+    card.appendChild(cond);
+
+    const bar = document.createElement('div');
+    bar.className = 'featbar';
+    const fill = document.createElement('div');
+    fill.className = 'featfill';
+    fill.style.width = Math.round(Math.max(0, Math.min(1, r.p)) * 100) + '%';
+    bar.appendChild(fill);
+    card.appendChild(bar);
+
+    const foot = document.createElement('div');
+    foot.className = 'featfoot';
+    const left = document.createElement('span');
+    left.textContent = r.done ? 'EARNED' : r.text;
+    const right = document.createElement('span');
+    right.textContent = Math.round(Math.max(0, Math.min(1, r.p)) * 100) + '%';
+    foot.appendChild(left); foot.appendChild(right);
+    card.appendChild(foot);
+
+    grid.appendChild(card);
+  }
+  // The flash is a one time greeting, not a permanent state.
+  featFlash = [];
+}
+
+// ---------------- the totem ----------------
+// Six carvings. Each one is a promise the night will be worse and a percentage
+// on every badge it banks. Only the ids are stored: the systems that read them
+// land in a later wave, and the badge multiplier is applied in META.credit.
+function openTotem() {
+  buildTotem();
+  setState('totem');
+}
+
+function buildTotem() {
+  const rows = $('carverows');
+  rows.innerHTML = '';
+  if (typeof Totem === 'undefined' || !Totem) return;
+  const mult = Totem.badgeMult(META);
+  const n = Totem.active(META).length;
+  $('totemmult').textContent = mult.toFixed(2) + 'x BADGES';
+  $('totemsub').textContent =
+    n === 0 ? 'Nothing carved. The night is only the night.' :
+    n >= Totem.list.length ? 'Every face carved. Whatever is out there has been fully briefed.' :
+    n + ' of ' + Totem.list.length + ' carved. The woods have been told.';
+
+  for (const c of Totem.list) {
+    const on = Totem.on(c.id, META);
+    const row = document.createElement('div');
+    row.className = 'carverow' + (on ? ' on' : '');
+    const notch = document.createElement('div');
+    notch.className = 'carvenotch';
+    const info = document.createElement('div');
+    info.className = 'carveinfo';
+    const nm = document.createElement('div');
+    nm.className = 'carvename'; nm.textContent = c.name;
+    const ds = document.createElement('div');
+    ds.className = 'carvedesc'; ds.textContent = c.desc;
+    const nt = document.createElement('div');
+    nt.className = 'carvenote'; nt.textContent = c.note;
+    info.appendChild(nm); info.appendChild(ds); info.appendChild(nt);
+    const pct = document.createElement('div');
+    pct.className = 'carvepct'; pct.textContent = '+' + c.bonus + '%';
+    const wrap = document.createElement('div');
+    wrap.className = 'shopbuy';
+    const btn = document.createElement('button');
+    btn.className = 'btn small';
+    btn.textContent = on ? 'CARVED' : 'SMOOTH';
+    btn.addEventListener('click', () => {
+      gesture();
+      Totem.toggle(c.id, META);
+      AudioSys.play(Totem.on(c.id, META) ? 'chest' : 'click');
+      buildTotem();
+    });
+    wrap.appendChild(btn);
+    row.appendChild(notch); row.appendChild(info); row.appendChild(pct); row.appendChild(wrap);
+    rows.appendChild(row);
+  }
+}
+
 // ---------------- dialogue ----------------
 // The portrait card at the dialog's left edge. Everything here is feature
 // tested: with portraits.js absent, or a speaker nobody painted, the card
@@ -547,6 +765,35 @@ function showOver(won) {
   saveBest();
   META.credit(g, won);
   if (typeof Roster !== 'undefined' && Roster && typeof Roster.checkUnlocks === 'function') Roster.checkUnlocks();
+
+  // The claim ceremony. Feats are checked once, here, after the night's
+  // numbers are banked, so a feat about lifetime badges can land on the run
+  // that earned them. Anything new is announced and flagged for the board.
+  let earned = [];
+  if (typeof Feats !== 'undefined' && Feats) {
+    try { earned = Feats.check(META) || []; } catch (e) { earned = []; }
+    syncFeatPools();
+  }
+  featFlash = earned.slice();
+  const fe = $('overfeats');
+  if (fe) {
+    if (earned.length) {
+      const names = earned.map(id => {
+        const d = Feats.byId(id);
+        return 'EARNED: ' + String((d && d.name) || id).toUpperCase();
+      });
+      fe.textContent = '';
+      names.forEach((t, i) => {
+        if (i) fe.appendChild(document.createElement('br'));
+        fe.appendChild(document.createTextNode(t));
+      });
+      fe.classList.remove('hidden');
+      AudioSys.play('levelup');
+    } else {
+      fe.textContent = '';
+      fe.classList.add('hidden');
+    }
+  }
   AudioSys.stopMusic();
 
   const t = $('overtitle');
@@ -557,15 +804,21 @@ function showOver(won) {
     : 'The forest keeps score. The camp keeps your badges.';
   const grid = $('overstats');
   grid.innerHTML = '';
-  [
+  const cr = META.lastCredit || { base: g.badges, paid: g.badges, mult: 1, bonus: 0 };
+  const lines = [
     ['Survived', fmtTime(g.time)],
     ['Reached', 'Act ' + (g.act || 1) + ', room ' + ((g.roomIdx || 0) + 1)],
     ['Rank reached', 'LV ' + g.level],
     ['Critters slain', g.kills],
     ['Cookie Money turned in', turned.coins + ' for +' + turned.paid + ' badges'],
-    ['Badges banked', '+' + g.badges],
-    ['Camp balance', META.badges],
-  ].forEach(([k, v]) => {
+  ];
+  if (cr.mult > 1) {
+    lines.push(['Badges earned', '+' + cr.base]);
+    lines.push(['Deeper Nights ' + cr.mult.toFixed(2) + 'x', '+' + cr.bonus]);
+  }
+  lines.push(['Badges banked', '+' + cr.paid]);
+  lines.push(['Camp balance', META.badges]);
+  lines.forEach(([k, v]) => {
     const ke = document.createElement('div'); ke.className = 'k'; ke.textContent = k;
     const ve = document.createElement('div'); ve.className = 'v'; ve.textContent = v;
     grid.appendChild(ke); grid.appendChild(ve);
@@ -1135,12 +1388,20 @@ window.addEventListener('keydown', (e) => {
         openJournal();
         break;
       }
+      if (e.code === 'KeyB') {
+        if (App.dialogOpen) { closeDialog(); break; }
+        AudioSys.play('click');
+        openFeats();
+        break;
+      }
       if (e.code === 'KeyE' || e.code === 'Enter' || e.code === 'Space') {
         if (App.dialogOpen) { closeDialog(); break; }
         const act = App.camp && App.camp.interact();
         if (!act) break;
         if (act.type === 'run') { AudioSys.play('click'); startRun(META.selected); }
         else if (act.type === 'shop') { AudioSys.play('click'); openShop(); }
+        else if (act.type === 'feats') { AudioSys.play('click'); openFeats(); }
+        else if (act.type === 'totem') { AudioSys.play('click'); openTotem(); }
         else if (act.type === 'talk') {
           // a line is a plain string, or { t, e } carrying an expression tag
           const ln = act.line;
@@ -1152,6 +1413,12 @@ window.addEventListener('keydown', (e) => {
       break;
     }
     case 'shop':
+      if (e.code === 'Escape' || e.code === 'KeyE') { AudioSys.play('click'); setState('camp'); }
+      break;
+    case 'feats':
+      if (e.code === 'Escape' || e.code === 'KeyB' || e.code === 'KeyE') { AudioSys.play('click'); setState('camp'); }
+      break;
+    case 'totem':
       if (e.code === 'Escape' || e.code === 'KeyE') { AudioSys.play('click'); setState('camp'); }
       break;
     case 'journal':
@@ -1227,6 +1494,13 @@ $('btnstart').addEventListener('click', () => { gesture(); AudioSys.play('click'
 $('btnshopback').addEventListener('click', () => { gesture(); AudioSys.play('click'); setState('camp'); });
 $('btnrsback').addEventListener('click', () => { gesture(); AudioSys.play('click'); setState('play'); });
 $('btnjback').addEventListener('click', () => { gesture(); AudioSys.play('click'); setState('camp'); });
+$('btnfeatsback').addEventListener('click', () => { gesture(); AudioSys.play('click'); setState('camp'); });
+$('btntotemback').addEventListener('click', () => { gesture(); AudioSys.play('click'); setState('camp'); });
+$('btntotemclear').addEventListener('click', () => {
+  gesture(); AudioSys.play('click');
+  if (typeof Totem !== 'undefined' && Totem) Totem.clear(META);
+  buildTotem();
+});
 $('jtab_cryptids').addEventListener('click', () => { gesture(); AudioSys.play('click'); showJournalTab('cryptids'); });
 $('jtab_troop').addEventListener('click', () => { gesture(); AudioSys.play('click'); showJournalTab('troop'); });
 $('btnresume').addEventListener('click', () => { gesture(); AudioSys.play('click'); setState('play'); });
@@ -1275,7 +1549,8 @@ function frame(now) {
     g.render(ctx, window.innerWidth, window.innerHeight);
     updateHUD();
     drainToasts(dt);
-  } else if (App.camp && (App.state === 'camp' || App.state === 'shop' || App.state === 'journal')) {
+  } else if (App.camp && (App.state === 'camp' || App.state === 'shop' || App.state === 'journal' ||
+    App.state === 'feats' || App.state === 'totem')) {
     if (App.state === 'camp' && !App.dialogOpen) App.camp.update(dt);
     App.camp.render(ctx, window.innerWidth, window.innerHeight);
   } else {
@@ -1298,6 +1573,9 @@ function frame(now) {
 })();
 
 Touch.init(cv);
+// The pools are reconciled once at boot, before anything can start a run, so
+// a locked weapon is never in the level up rotation on a fresh page.
+syncFeatPools();
 buildSelect();
 setState('title');
 requestAnimationFrame(frame);

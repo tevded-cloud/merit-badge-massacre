@@ -58,6 +58,40 @@ function campMeta() {
   };
 }
 
+// Feats change what stands in the camp: earned cosmetics turn up as furniture
+// and the totem grows a face per carving. Both are baked, so the bake has to
+// know when they move. This signature is compared against the baked one every
+// frame, exactly the way the growth tier already is.
+function campFeatSig() {
+  let s = '0:0';
+  try {
+    const f = (typeof Feats !== 'undefined' && Feats) ? Feats.count() : 0;
+    const t = (typeof Totem !== 'undefined' && Totem) ? Totem.active().length : 0;
+    s = f + ':' + t;
+  } catch (e) {}
+  return s;
+}
+
+function campHasCosmetic(id) {
+  try {
+    return (typeof Feats !== 'undefined' && Feats) ? Feats.hasCosmetic(id) : false;
+  } catch (e) { return false; }
+}
+
+// The totem is uncarved wood until the camp has seen a dawn, the same shape
+// the cabin and the lakeshore gates use.
+function campTotemOpen() {
+  try {
+    return (typeof Totem !== 'undefined' && Totem) ? Totem.open() : false;
+  } catch (e) { return false; }
+}
+
+function campCarvings() {
+  try {
+    return (typeof Totem !== 'undefined' && Totem) ? Totem.active() : [];
+  } catch (e) { return []; }
+}
+
 // Deterministic rng so the bake is stable between visits.
 function campRng(seed) {
   let t = seed >>> 0;
@@ -510,6 +544,7 @@ class Camp {
     };
     this.lastRuns = META.runs;
     this.bakedTier = -1;
+    this.bakedFeatSig = null;
     this._interior = null;
     this._bake();
     this.buildIdlers();
@@ -578,6 +613,9 @@ class Camp {
       [640, 58, 12],                // trailhead mailbox
       [-150, -350, 18], [152, -350, 18],  // stall barrels and crates
       [-250, -265, 16], [-285, 130, 16], [240, -200, 16], [360, 190, 16],  // lone pines
+      [-118, -300, 14],             // the feat board rack
+      [-540, -350, 11],             // the grove birdhouse
+      [330, -70, 17],               // the totem, carved or not
     ];
     if (tier >= 2) K.push([170, 430, 34]);   // moored canoe
     if (tier >= 4) K.push([95, -120, 9]);    // trophy post
@@ -690,6 +728,10 @@ class Camp {
       { id: 'qm', x: 35, y: -340, r: 38, label: 'Talk to the Quartermaster' },
       { id: 'sign', x: 600, y: -30, r: 50, label: 'Take the trail as ' + DATA.characters[META.selected].name },
     ];
+    s.push({ id: 'featboard', x: -118, y: -300, r: 36, label: 'Read the Feat Board' });
+    s.push({ id: 'birdhouse', x: -540, y: -350, r: 30, label: 'Knock on the birdhouse' });
+    if (campTotemOpen()) s.push({ id: 'totem', x: 330, y: -70, r: 42, label: 'Carve the totem' });
+    else s.push({ id: 'totemhint', x: 330, y: -70, r: 42, label: 'Look at the log' });
     if (tier >= 1) s.push({ id: 'cabindoor', x: 520, y: -292, r: 30, label: 'Step inside the cabin' });
     else s.push({ id: 'cabinhint', x: 480, y: -146, r: 40, label: 'Read the sign' });
     if (tier < 2) s.push({ id: 'lakehint', x: 0, y: 222, r: 40, label: 'Read the sign' });
@@ -756,7 +798,7 @@ class Camp {
     this.t += dt;
     if (this.sceneT > 0) this.sceneT = Math.max(0, this.sceneT - dt);
     if (this.selId !== META.selected) this.buildIdlers();
-    if (this.bakedTier !== this.tier()) this._bake();
+    this._maybeBake();
     if (!this.critter && this.codexHasKill()) this.buildCritter();
 
     const p = this.p;
@@ -1149,6 +1191,43 @@ class Camp {
     }
   }
 
+  // The one feat counter the camp owns. Knocking is free, does nothing, and
+  // is the only thing in Camp Hearthwood with a running total attached to it.
+  knockBirdhouse() {
+    const lines = [
+      'You knock. Nothing. It is a birdhouse.',
+      'Knock two. The hole is the size of a nickel and twice as dark.',
+      'Somebody has knocked here before. There is a worn spot.',
+      'You knock. Somewhere behind you, Brock decides not to ask.',
+      'Nothing. You are now the kind of person who knocks on birdhouses.',
+      'Six. The wood sounds hollow, which is correct, and disappointing.',
+      'Seven. Something inside knocks back once, politely, and then does not.',
+      'It has stopped answering. You are welcome to keep going.',
+    ];
+    let n = 0;
+    if (typeof META !== 'undefined' && META) {
+      if (!META.counters || typeof META.counters !== 'object') META.counters = { burned: 0, lowHpTime: 0, birdhouses: 0 };
+      META.counters.birdhouses = (META.counters.birdhouses || 0) + 1;
+      n = META.counters.birdhouses;
+      if (typeof META.save === 'function') META.save();
+    }
+    let earned = [];
+    try {
+      if (typeof Feats !== 'undefined' && Feats) earned = Feats.check(META) || [];
+    } catch (e) { earned = []; }
+    if (earned.length) {
+      try { if (typeof flagFeatFlash === 'function') flagFeatFlash(earned); } catch (e) {}
+      const def = (typeof Feats !== 'undefined' && Feats) ? Feats.byId(earned[0]) : null;
+      const name = (def && def.name) || earned[0];
+      this.msg = { text: lines[6] + '  EARNED: ' + String(name).toUpperCase() + '.', t: 7 };
+      try { AudioSys.play('levelup'); } catch (e) {}
+      return null;
+    }
+    this.msg = { text: lines[Math.min(n, lines.length) - 1] || lines[lines.length - 1], t: 5 };
+    try { AudioSys.play('click'); } catch (e) {}
+    return null;
+  }
+
   // ----------------------------------------------------------- interact ----
   interact() {
     if (!this.near) return null;
@@ -1188,6 +1267,13 @@ class Camp {
     }
     if (id === 'sign') return { type: 'run' };
     if (id === 'board') return { type: 'shop' };
+    if (id === 'featboard') return { type: 'feats' };
+    if (id === 'totem') return { type: 'totem' };
+    if (id === 'totemhint') {
+      this.msg = { text: 'A cedar log, upright, bark still on. Brock: "Carve it when you have seen a sunrise. Not before. Carving it before is how you get a worse sunrise."', t: 6 };
+      return null;
+    }
+    if (id === 'birdhouse') return this.knockBirdhouse();
     if (id === 'fire') return { type: 'talk', line: brockLine(), speaker: 'SCOUTMASTER BROCK' };
     if (id === 'qm') return { type: 'talk', line: quartermasterLine(), speaker: 'THE QUARTERMASTER' };
     if (id === 'critter') return { type: 'talk', line: critterLine(), speaker: 'A SMALL SQUIRREL' };
@@ -1212,8 +1298,15 @@ class Camp {
   }
 
   // =========================================================== bake =========
+  // The camp rebakes when it grows a tier, and now also when a feat lands a
+  // new cosmetic or a carving changes the totem: both are baked furniture.
+  _maybeBake() {
+    if (this.bakedTier !== this.tier() || this.bakedFeatSig !== campFeatSig()) this._bake();
+  }
+
   _bake() {
     this.bakedTier = this.tier();
+    this.bakedFeatSig = campFeatSig();
     const rngG = campRng(0x5eed + this.bakedTier);
     const rngT = campRng(0x7ee5 + this.bakedTier);
     this._bakeGround(rngG);
@@ -1808,10 +1901,35 @@ class Camp {
       SPR.drawBottom(ctx, 'basket', 186, -330, 26);
     });
 
+    // the feat rack, standing in front of the stall: a crossbar with a sash on
+    // it and one tin badge per feat claimed, so the camp says out loud how far
+    // along the board you are before you ever open it.
+    push(-300, (ctx) => {
+      shadow(ctx, -118, -300, 14);
+      this.renderFeatRack(ctx, -118, -300);
+    });
+
+    // the totem at the trailhead: bark on until the camp has seen a dawn, and
+    // one carved face per carving after that.
+    push(-70, (ctx) => {
+      shadow(ctx, 330, -70, 15);
+      this.renderTotem(ctx, 330, -70);
+    });
+
     // trail sign
     push(-6, (ctx) => {
       shadow(ctx, 600, -6, 12);
       SPR.drawBottom(ctx, 'sign', 600, -6, 40);
+      // THE TWELFTH NAME: the sanded nameplate, nailed up where people leave.
+      if (campHasCosmetic('nameplate')) {
+        ctx.fillStyle = '#b9bec6'; ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.roundRect(608, -30, 22, 9, 1.6); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,244,214,0.45)';
+        ctx.fillRect(610, -28.4, 18, 1.6);
+        ctx.fillStyle = '#5d6370';
+        ctx.beginPath(); ctx.arc(611, -25.5, 1, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(627, -25.5, 1, 0, TAU); ctx.fill();
+      }
     });
     // hint signs for the zones the camp has not grown yet
     if (tier < 1) push(-130, (ctx) => {
@@ -1879,6 +1997,50 @@ class Camp {
       ctx.fillRect(92, -158, 6, 40); ctx.strokeRect(92, -158, 6, 40);
       SPR.draw(ctx, 'skull', 95, -165, 44);
     });
+    // TROPHY WALL: the post gets two neighbours, one per named thing put down.
+    if (campHasCosmetic('trophyrow')) {
+      for (const [tx, th] of [[54, 34], [136, 30]]) {
+        push(-116, (ctx) => {
+          shadow(ctx, tx, -116, 7);
+          ctx.fillStyle = '#6e4526'; ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1.6;
+          ctx.fillRect(tx - 3, -116 - th, 6, th); ctx.strokeRect(tx - 3, -116 - th, 6, th);
+          SPR.draw(ctx, 'skull', tx, -116 - th - 8, 36);
+        });
+      }
+    }
+    // FEEDING THE CORKBOARD: bunting strung between the lantern poles.
+    if (campHasCosmetic('bunting')) {
+      push(-141, (ctx) => {
+        const cols = CAMP_BANNERS[cust.banner];
+        ctx.strokeStyle = '#3a2c18'; ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(-100, -226);
+        ctx.quadraticCurveTo(0, -196, 100, -221);
+        ctx.stroke();
+        for (let i = 0; i <= 9; i++) {
+          const t = i / 9, u = 1 - t;
+          const bx = u * u * -100 + 2 * u * t * 0 + t * t * 100;
+          const by = u * u * -226 + 2 * u * t * -196 + t * t * -221;
+          ctx.fillStyle = cols[i % cols.length];
+          ctx.beginPath();
+          ctx.moveTo(bx - 5, by); ctx.lineTo(bx + 5, by); ctx.lineTo(bx, by + 10);
+          ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1; ctx.stroke();
+        }
+      });
+    }
+    // BLINK'S FAVORITE: a jar on the picnic table with the lid off, glowing.
+    if (campHasCosmetic('blinkjar')) {
+      push(66, (ctx) => {
+        ctx.fillStyle = 'rgba(210,240,180,0.16)';
+        ctx.strokeStyle = 'rgba(220,240,200,0.55)'; ctx.lineWidth = 1.3;
+        ctx.beginPath(); ctx.roundRect(168, -1, 13, 17, 3); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = 'rgba(190,230,120,0.85)';
+        ctx.beginPath(); ctx.arc(174.5, 9, 2.2, 0, TAU); ctx.fill();
+        ctx.fillStyle = 'rgba(190,230,120,0.22)';
+        ctx.beginPath(); ctx.arc(174.5, 9, 7, 0, TAU); ctx.fill();
+      });
+    }
 
     // lone pines inside the grounds, depth the camera can walk around
     for (const [px, py, pw, ph, seed] of [[-250, -265, 74, 168, 11], [-285, 130, 66, 150, 12], [240, -200, 70, 158, 13], [360, 190, 64, 146, 14]]) {
@@ -1917,6 +2079,37 @@ class Camp {
       shadow(ctx, -540, -350, 12);
       SPR.drawBottom(ctx, 'birdhouse', -540, -350, 30);
     });
+    // BIRDHOUSE ENTHUSIAST: the grove agrees with you and builds four more.
+    if (campHasCosmetic('birdhouse_row')) {
+      for (const [bx, by, bw] of [[-578, -362, 26], [-604, -338, 22], [-500, -344, 24], [-472, -366, 20]]) {
+        push(by, (ctx) => {
+          shadow(ctx, bx, by, 9);
+          SPR.drawBottom(ctx, 'birdhouse', bx, by, bw);
+        });
+      }
+    }
+    // THE GROVE IS FULL: a line strung between the tents, old sashes drying.
+    if (campHasCosmetic('sashline')) {
+      push(-84, (ctx) => {
+        ctx.strokeStyle = '#3a2c18'; ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(-556, -196);
+        ctx.quadraticCurveTo(-500, -172, -448, -190);
+        ctx.stroke();
+        for (let i = 0; i < 4; i++) {
+          const t = 0.16 + i * 0.22, u = 1 - t;
+          const sx = u * u * -556 + 2 * u * t * -500 + t * t * -448;
+          const sy = u * u * -196 + 2 * u * t * -172 + t * t * -190;
+          ctx.fillStyle = i % 2 ? '#3f5c22' : '#5c7248';
+          ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1.1;
+          ctx.beginPath(); ctx.roundRect(sx - 4, sy, 8, 26, 2); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#f4c542';
+          for (let k = 0; k < 3; k++) {
+            ctx.beginPath(); ctx.arc(sx, sy + 6 + k * 7, 1.5, 0, TAU); ctx.fill();
+          }
+        }
+      });
+    }
     // a find pedestal keeps the grove's quiet company once its painter lands
     if (campHasSpr('findpedestal')) {
       push(-404, (ctx) => {
@@ -1950,6 +2143,125 @@ class Camp {
     }
 
     this.furn = F;
+  }
+
+  // --------------------------------------------- feat rack and the totem ---
+  // A crossbar with a hand sewn sash over it and one tin badge per claimed
+  // feat, up to the whole board. Reading the camp should tell you where you
+  // are before you open a single screen.
+  renderFeatRack(ctx, x, yB) {
+    let claimed = 0, total = 0;
+    try {
+      if (typeof Feats !== 'undefined' && Feats) { claimed = Feats.count(); total = Feats.total; }
+    } catch (e) {}
+    const top = yB - 62;
+    ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1.6;
+    ctx.fillStyle = '#6e4526';
+    for (const px of [x - 17, x + 17]) {
+      ctx.fillRect(px - 3, top, 6, 62);
+      ctx.strokeRect(px - 3, top, 6, 62);
+    }
+    ctx.fillStyle = '#7c5630';
+    ctx.beginPath(); ctx.roundRect(x - 24, top - 5, 48, 7, 2); ctx.fill(); ctx.stroke();
+    // the sash
+    ctx.fillStyle = '#3f5c22';
+    ctx.beginPath(); ctx.roundRect(x - 12, top + 2, 24, 46, 3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,244,214,0.14)';
+    ctx.fillRect(x - 10, top + 4, 6, 42);
+    // one tin badge per claimed feat, four to a row
+    const cap = Math.min(claimed, total || claimed);
+    for (let i = 0; i < cap; i++) {
+      const bx = x - 8 + (i % 3) * 8;
+      const by = top + 9 + Math.floor(i / 3) * 8;
+      ctx.fillStyle = '#f4c542';
+      ctx.beginPath(); ctx.arc(bx, by, 2.6, 0, TAU); ctx.fill();
+      ctx.strokeStyle = 'rgba(24,16,8,0.6)'; ctx.lineWidth = 0.8; ctx.stroke();
+    }
+    if (!cap) {
+      ctx.fillStyle = 'rgba(24,16,8,0.35)';
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath(); ctx.arc(x - 8 + i * 8, top + 9, 2.4, 0, TAU); ctx.fill();
+      }
+    }
+  }
+
+  // A cedar log at the trailhead. Before the first dawn it still has its bark
+  // on and reads as firewood nobody has got round to. After it, every carving
+  // you switch on is another face stacked up the pole, so the camp shows how
+  // much worse you have promised tonight will be from across the clearing.
+  renderTotem(ctx, x, yB) {
+    const open = campTotemOpen();
+    const carved = open ? campCarvings() : [];
+    const seg = 22;
+    const hw = 13;
+    // the pole is as tall as the promises on it, with a floor so a sanded
+    // pole is still a pole and not a stump.
+    const h = Math.max(54, 16 + carved.length * seg);
+    const top = yB - h;
+
+    ctx.fillStyle = open ? '#7c5630' : '#5a4327';
+    ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.roundRect(x - hw, top, hw * 2, h, 4); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,196,110,0.18)';
+    ctx.fillRect(x - hw + 2, top + 3, 5, h - 6);
+    ctx.fillStyle = 'rgba(24,16,8,0.22)';
+    ctx.fillRect(x + hw - 6, top + 3, 4, h - 6);
+
+    if (!open) {
+      // bark still on: rough vertical strokes, nothing carved into it at all
+      ctx.strokeStyle = 'rgba(24,16,8,0.5)'; ctx.lineWidth = 1.3;
+      for (let i = 0; i < 7; i++) {
+        const bx = x - 9 + i * 3.1;
+        ctx.beginPath(); ctx.moveTo(bx, top + 4); ctx.lineTo(bx + 1.6, yB - 4); ctx.stroke();
+      }
+      ctx.fillStyle = '#4a3a1f';
+      ctx.beginPath(); ctx.ellipse(x, top + 2, hw, 4, 0, 0, TAU); ctx.fill();
+      ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1.4; ctx.stroke();
+      return;
+    }
+
+    // one carved face per promise, oldest at the bottom, newest wearing the
+    // antlers so the whole stack still reads as one totem from a distance.
+    for (let i = 0; i < carved.length; i++) {
+      const fy = yB - 12 - i * seg;
+      const topFace = i === carved.length - 1;
+      // recessed panel
+      ctx.fillStyle = 'rgba(24,16,8,0.5)';
+      ctx.beginPath(); ctx.roundRect(x - hw + 2, fy - 17, hw * 2 - 4, 19, 3); ctx.fill();
+      ctx.fillStyle = 'rgba(120,78,36,0.55)';
+      ctx.beginPath(); ctx.roundRect(x - hw + 3, fy - 16, hw * 2 - 6, 8, 3); ctx.fill();
+      // a heavy carved brow over two lit sockets
+      ctx.fillStyle = '#3b2711';
+      ctx.fillRect(x - 8, fy - 13, 16, 3);
+      ctx.fillStyle = '#f4c542';
+      ctx.beginPath(); ctx.arc(x - 4.5, fy - 8, 2.3, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 4.5, fy - 8, 2.3, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(244,197,66,0.22)';
+      ctx.beginPath(); ctx.arc(x - 4.5, fy - 8, 5, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 4.5, fy - 8, 5, 0, TAU); ctx.fill();
+      // a flat tooth row for a mouth
+      ctx.fillStyle = '#241606';
+      ctx.fillRect(x - 7, fy - 3, 14, 3);
+      ctx.fillStyle = 'rgba(233,228,218,0.75)';
+      for (let k = 0; k < 4; k++) ctx.fillRect(x - 6 + k * 3.6, fy - 3, 1.6, 3);
+      if (topFace) {
+        ctx.fillStyle = '#c9ccd4'; ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1.1;
+        for (const s of [-1, 1]) {
+          ctx.beginPath();
+          ctx.moveTo(x + s * hw, fy - 14);
+          ctx.lineTo(x + s * (hw + 9), fy - 21);
+          ctx.lineTo(x + s * (hw + 10), fy - 15);
+          ctx.lineTo(x + s * (hw + 2), fy - 8);
+          ctx.closePath(); ctx.fill(); ctx.stroke();
+        }
+      }
+    }
+    // sanded cap
+    ctx.fillStyle = '#8a6138';
+    ctx.beginPath(); ctx.ellipse(x, top + 2, hw, 4, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,244,214,0.18)';
+    ctx.beginPath(); ctx.ellipse(x - 2, top + 1, hw * 0.5, 2, 0, 0, TAU); ctx.fill();
   }
 
   // ------------------------------------------------- fallback furniture ----
@@ -2234,7 +2546,7 @@ class Camp {
   // o.bare skips the prompt, message and letterhead (used by wide captures).
   render(ctx, W, H, o) {
     if (this.scene === 'cabin') { this.renderCabin(ctx, W, H); return; }
-    if (this.bakedTier !== this.tier()) this._bake();
+    this._maybeBake();
     const tier = this.bakedTier;
     ctx.fillStyle = CPAL.void;
     ctx.fillRect(0, 0, W, H);
