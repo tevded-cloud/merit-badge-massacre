@@ -185,197 +185,277 @@ const ROOMS = {
   combat: {
 
     // ------------------------------ act 1 ------------------------------
+    // THE BOWL. Entry west and three doors fan four approach corridors across
+    // the middle, so the only ground a body may stand on is the southern rim.
+    // The cover sits on that rim, the centre stays open, and the east stump has
+    // slid in off the line: cutting inside it is the short way to the lower
+    // east door and the way that runs closest to the wave.
     a1_c_needlefall: {
       id: 'a1_c_needlefall', name: 'NEEDLEFALL', type: 'combat', acts: [1],
       cast: { pineconepuffer: 3, squirrel: 1.4, ticktot: 1.2, bat: 0.6 },
       size: { w: 1000, h: 700 }, shape: 'rect', lock: 'clear',
+      archetype: 'bowl', symmetry: 'mirrorX', scatterZone: 'both',
       doors: [{ side: 'n', t: 0.55 }, { side: 'e', t: 0.35 }, { side: 'e', t: 0.72 }],
       entry: { side: 'w', t: 0.5 },
       solids: [
-        { x: 280, y: 220, w: 113, h: 40, spr: 'log' },
-        { x: 600, y: 373, w: 80, h: 80, spr: 'brock' },
-        { x: 373, y: 480, w: 133, h: 37, spr: 'log' },
+        { x: 330, y: 545, w: 64, h: 44, spr: 'log' },
+        { x: 670, y: 545, w: 64, h: 44, spr: 'log' },
       ],
       props: [
-        { id: 'stump', x: 220, y: 347 },
+        { id: 'stump', x: 290, y: 525 },
+        { id: 'stump', x: 600, y: 535 },
         { id: 'bush', x: 753, y: 200 },
-        { id: 'crate', x: 787, y: 533 },
         { id: 'basket', x: 200, y: 560 },
-        { id: 'mailbox', x: 507, y: 147 },
-        { id: 'logpile', x: 673, y: 600 },
+        { id: 'birdhouse', x: 507, y: 147 },
       ],
-      scatter: { bush: [3, 6], stump: [1, 3] },
+      lanes: [{ w: 200 }],
+      formations: [
+        {
+          type: 'mirroredPair', axis: 'roomX', anchor: 'C', step: 420,
+          members: [{ prop: 0 }, { prop: 1 }],
+          violation: { member: { prop: 1 }, slot: { x: 710, y: 525 } },
+        },
+      ],
+      scatter: { bush: [3, 6] },
       spawnMarkers: [
-        { x: 173, y: 167 }, { x: 827, y: 167 }, { x: 173, y: 533 },
-        { x: 827, y: 533 }, { x: 500, y: 347 },
+        { x: 300, y: 180 }, { x: 700, y: 180 }, { x: 860, y: 350 }, { x: 500, y: 210 },
       ],
       waves: [
         { delay: 0.8, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 16, mode: 'edge' }], elites: 0, drip: null, ref: null },
-        { delay: 1.2, nextAt: 0.30, maxT: 50, spawns: [{ id: 'auto', n: 22, mode: 'edge' }, { id: 'auto', n: 6, mode: 'ring', r: 227 }], elites: 0, drip: null, ref: null },
-        { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 18, mode: 'marker' }], elites: 0, drip: null, ref: null },
+        { delay: 1.2, nextAt: 0.30, maxT: 50, spawns: [{ id: 'auto', n: 2, mode: 'marker' }, { id: 'auto', n: 24, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 20, mode: 'ring', r: 230 }], elites: 0, drip: null, ref: null },
       ],
       dressing: [
-        { kind: 'patch', x: 320, y: 240, r: 80, role: 'needle' },
-        { kind: 'patch', x: 660, y: 410, r: 95, role: 'dirt' },
-        { kind: 'patch', x: 430, y: 500, r: 70, role: 'moss' },
-        { kind: 'cracks', x: 640, y: 413, r: 46 },
+        { kind: 'patch', x: 290, y: 525, r: 52, role: 'needle' },
+        { kind: 'patch', x: 600, y: 535, r: 52, role: 'needle' },
+        { kind: 'bowl', x: 500, y: 350, r0: 150, r1: 430 },
+        { kind: 'path', from: { x: 46, y: 350 }, to: { x: 550, y: 0 } },
+        { kind: 'path', from: { x: 46, y: 350 }, to: { x: 1000, y: 245 } },
+        { kind: 'path', from: { x: 46, y: 350 }, to: { x: 1000, y: 504 } },
       ],
       reward: { kind: 'auto' }, floor: 1,
     },
 
+    // THE BOWL. The hollow itself is the room: nothing stands in the middle,
+    // two stumps face each other across it on the rim, and the east one has
+    // slid down the slope toward the centre. RING OF THE HARE keeps its name
+    // but is now spawned inline at r 250 so the whole ring is born on screen.
     a1_c_kettlehollow: {
       id: 'a1_c_kettlehollow', name: 'KETTLE HOLLOW', type: 'combat', acts: [1],
       cast: { rabbit: 2.2, doe: 1.4, squirrel: 0.7, chipchoir: 0.6 },
       size: { w: 1080, h: 730 }, shape: 'round', lock: 'clear',
+      archetype: 'bowl', symmetry: 'mirrorX', scatterZone: 'both',
       doors: [{ side: 'n', t: 0.4 }, { side: 'e', t: 0.5 }],
       entry: { side: 's', t: 0.5 },
       solids: [
-        { x: 381, y: 267, w: 89, h: 89, spr: 'brock' },
-        { x: 635, y: 406, w: 95, h: 76, spr: 'brock' },
+        { x: 180, y: 200, w: 64, h: 44, spr: 'log' },
+        { x: 180, y: 520, w: 64, h: 44, spr: 'log' },
+        { x: 760, y: 160, w: 64, h: 44, spr: 'log' },
       ],
       props: [
-        { id: 'stump', x: 254, y: 190 },
-        { id: 'stump', x: 826, y: 540 },
-        { id: 'urn', x: 546, y: 190 },
+        { id: 'stump', x: 280, y: 400 },
+        { id: 'stump', x: 710, y: 400 },
         { id: 'bush', x: 267, y: 546 },
         { id: 'basket', x: 813, y: 216 },
-        { id: 'crate', x: 191, y: 381 },
-        { id: 'boulder', x: 889, y: 381 },
       ],
-      scatter: { bush: [4, 7], stump: [2, 4] },
+      lanes: [{ w: 200 }],
+      formations: [
+        {
+          type: 'mirroredPair', axis: 'roomX', anchor: 'C', step: 520,
+          members: [{ prop: 0 }, { prop: 1 }],
+          violation: { member: { prop: 1 }, slot: { x: 800, y: 400 } },
+        },
+      ],
+      scatter: { bush: [4, 7] },
       spawnMarkers: [
-        { x: 540, y: 146 }, { x: 540, y: 584 }, { x: 210, y: 365 },
-        { x: 870, y: 365 }, { x: 381, y: 559 }, { x: 731, y: 178 },
+        { x: 960, y: 120 }, { x: 360, y: 580 }, { x: 860, y: 600 }, { x: 480, y: 120 },
       ],
       waves: [
         { delay: 0.9, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 18, mode: 'edge' }], elites: 0, drip: null, ref: null },
-        { delay: 1.6, nextAt: 0.25, maxT: 55, spawns: [], elites: 0, drip: null, ref: 'ring_of_the_hare' },
-        { delay: 1.2, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 20, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.4, nextAt: 0.25, maxT: 55, spawns: [{ id: 'auto', n: 4, mode: 'marker' }, { id: 'auto', n: 22, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.2, nextAt: 0, maxT: 60, name: 'RING OF THE HARE', spawns: [{ id: 'rabbit', n: 20, mode: 'ring', r: 250 }], elites: 0, drip: null, ref: null },
       ],
       dressing: [
         { kind: 'bowl', x: 540, y: 365, r0: 170, r1: 470 },
-        { kind: 'patch', x: 425, y: 311, r: 60, role: 'moss' },
-        { kind: 'patch', x: 682, y: 444, r: 60, role: 'moss' },
+        { kind: 'patch', x: 280, y: 400, r: 52, role: 'moss' },
+        { kind: 'patch', x: 710, y: 400, r: 52, role: 'moss' },
+        { kind: 'path', from: { x: 540, y: 684 }, to: { x: 432, y: 0 } },
+        { kind: 'path', from: { x: 540, y: 684 }, to: { x: 1080, y: 365 } },
       ],
       reward: { kind: 'auto' }, floor: 1,
     },
 
+    // THE LANES. The road is the lane and the north treeline is its wall: two
+    // stumps and two fallen logs stand along it, one stump pushed out past the
+    // end of the line so the far end of the road has a corner to cut. The
+    // mailboxes are not solid, so they may line the road itself.
     a1_c_mailroute: {
       id: 'a1_c_mailroute', name: 'THE MAIL ROUTE', type: 'combat', acts: [1],
       cast: { chipchoir: 2.4, ticktot: 1.6, bat: 1.4, doe: 0.6, squirrel: 0.8 },
       size: { w: 1130, h: 750 }, shape: 'pillars', lock: 'clear',
+      archetype: 'lanes', symmetry: 'mirrorX', scatterZone: 'both',
       doors: [{ side: 'e', t: 0.3 }, { side: 'e', t: 0.72 }, { side: 's', t: 0.6 }],
       entry: { side: 'w', t: 0.35 },
       solids: [
-        { x: 264, y: 206, w: 69, h: 69, spr: 'slab' },
-        { x: 515, y: 206, w: 69, h: 69, spr: 'slab' },
-        { x: 766, y: 206, w: 69, h: 69, spr: 'slab' },
-        { x: 389, y: 438, w: 69, h: 69, spr: 'slab' },
-        { x: 640, y: 438, w: 69, h: 69, spr: 'slab' },
+        { x: 480, y: 152, w: 64, h: 44, spr: 'log' },
+        { x: 660, y: 152, w: 64, h: 44, spr: 'log' },
+        { x: 250, y: 580, w: 64, h: 44, spr: 'log' },
       ],
       props: [
+        { id: 'stump', x: 365, y: 150 },
+        { id: 'stump', x: 835, y: 150 },
         { id: 'mailbox', x: 176, y: 375 },
         { id: 'mailbox', x: 954, y: 375 },
-        { id: 'birdhouse', x: 565, y: 125 },
-        { id: 'crate', x: 1004, y: 625 },
+        { id: 'mailbox', x: 565, y: 405 },
+        { id: 'birdhouse', x: 565, y: 120 },
         { id: 'basket', x: 138, y: 625 },
-        { id: 'bush', x: 1036, y: 163 },
-        { id: 'stump', x: 113, y: 156 },
-        { id: 'barrel', x: 590, y: 644 },
       ],
-      scatter: { bush: [3, 6], birdhouse: [1, 2] },
+      lanes: [{ w: 200 }],
+      formations: [
+        {
+          type: 'mirroredPair', axis: 'roomX', anchor: 'C', step: 400,
+          members: [{ prop: 0 }, { prop: 1 }],
+          violation: { member: { prop: 1 }, slot: { x: 765, y: 150 } },
+        },
+      ],
+      scatter: { bush: [3, 6], mailbox: [1, 2] },
       spawnMarkers: [
-        { x: 157, y: 188 }, { x: 973, y: 188 }, { x: 157, y: 563 },
-        { x: 973, y: 563 }, { x: 565, y: 375 }, { x: 565, y: 688 },
+        { x: 1000, y: 120 }, { x: 180, y: 420 }, { x: 720, y: 620 }, { x: 520, y: 320 },
       ],
       waves: [
-        { delay: 0.8, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 20, mode: 'edge' }], elites: 0, drip: null, ref: null },
-        { delay: 1.2, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 16, mode: 'edge' }, { id: 'auto', n: 8, mode: 'door' }], elites: 0, drip: null, ref: null },
-        { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 22, mode: 'marker' }], elites: 0, drip: null, ref: null },
+        { delay: 0.8, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 12, mode: 'door' }, { id: 'auto', n: 8, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.2, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 4, mode: 'marker' }, { id: 'auto', n: 20, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 22, mode: 'edge' }], elites: 0, drip: null, ref: null },
       ],
       dressing: [
         { kind: 'road', from: { x: 100, y: 375 }, to: { x: 1030, y: 375 }, w: 64 },
+        { kind: 'patch', x: 365, y: 150, r: 50, role: 'dirt' },
+        { kind: 'patch', x: 835, y: 150, r: 50, role: 'dirt' },
         { kind: 'patch', x: 176, y: 385, r: 44, role: 'dirt' },
         { kind: 'patch', x: 954, y: 385, r: 44, role: 'dirt' },
+        { kind: 'path', from: { x: 46, y: 262 }, to: { x: 1130, y: 225 } },
+        { kind: 'path', from: { x: 46, y: 262 }, to: { x: 1130, y: 540 } },
+        { kind: 'path', from: { x: 46, y: 262 }, to: { x: 678, y: 750 } },
       ],
       reward: { kind: 'auto' }, floor: 1,
     },
 
+    // THE FUNNEL. In from the north, out through two doors on the south wall:
+    // the walls of the cut are a wide log pair and a narrower stump pair, and
+    // the rock at (500, 470) is the ambush the player commits past. It is the
+    // declared anchor, sitting on the mirror axis between the two door runs.
+    // The south stump has been pulled in off its slot, so the west half of the
+    // throat is the fast line and the one that passes the point spawn.
     a1_c_bramblecut: {
       id: 'a1_c_bramblecut', name: 'THE BRAMBLE CUT', type: 'combat', acts: [1],
       cast: { rabbit: 2, ticktot: 1.6, squirrel: 1.2, doe: 0.5, bat: 0.5 },
       size: { w: 1040, h: 720 }, shape: 'rect', lock: 'clear',
+      archetype: 'funnel', symmetry: 'mirrorX', scatterZone: 'both',
       doors: [{ side: 's', t: 0.3 }, { side: 's', t: 0.7 }],
       entry: { side: 'n', t: 0.45 },
+      anchor: { solid: 0 },
       solids: [
-        { x: 195, y: 249, w: 143, h: 39, spr: 'log' },
-        { x: 494, y: 183, w: 39, h: 131, spr: 'wall' },
-        { x: 702, y: 340, w: 104, h: 46, spr: 'log' },
-        { x: 338, y: 458, w: 117, h: 42, spr: 'log' },
+        { x: 500, y: 470, w: 46, h: 66, spr: 'brock' },
+        { x: 190, y: 200, w: 70, h: 36, spr: 'log' },
+        { x: 850, y: 200, w: 70, h: 36, spr: 'log' },
       ],
       props: [
+        { id: 'stump', x: 270, y: 400 },
+        { id: 'stump', x: 700, y: 400 },
         { id: 'bush', x: 130, y: 144 },
         { id: 'bush', x: 910, y: 164 },
-        { id: 'bush', x: 156, y: 622 },
-        { id: 'stump', x: 585, y: 589 },
-        { id: 'crate', x: 923, y: 589 },
         { id: 'basket', x: 845, y: 131 },
-        { id: 'logpile', x: 416, y: 633 },
-        { id: 'urn', x: 943, y: 367 },
-        { id: 'barrel', x: 104, y: 419 },
       ],
-      scatter: { bush: [5, 9], stump: [2, 4] },
+      lanes: [{ w: 180 }],
+      formations: [
+        {
+          type: 'mirroredPair', axis: 'roomX', anchor: 'C', step: 660,
+          members: [{ solid: 1 }, { solid: 2 }],
+        },
+        {
+          type: 'mirroredPair', axis: 'roomX', anchor: 'C', step: 500,
+          members: [{ prop: 0 }, { prop: 1 }],
+          violation: { member: { prop: 1 }, slot: { x: 770, y: 400 } },
+        },
+      ],
+      scatter: { bush: [5, 9] },
       spawnMarkers: [
-        { x: 169, y: 170 }, { x: 871, y: 170 }, { x: 169, y: 563 },
-        { x: 871, y: 563 }, { x: 520, y: 655 },
+        { x: 920, y: 400 }, { x: 380, y: 240 }, { x: 120, y: 600 }, { x: 640, y: 600 },
       ],
       waves: [
         { delay: 0.7, nextAt: 0.40, maxT: 40, spawns: [{ id: 'auto', n: 14, mode: 'edge' }], elites: 0, drip: null, ref: null },
-        { delay: 1.0, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 18, mode: 'edge' }], elites: 0, drip: null, ref: null },
-        { delay: 1.2, nextAt: 0.30, maxT: 50, spawns: [{ id: 'auto', n: 20, mode: 'ring', r: 248 }], elites: 0, drip: null, ref: null },
-        { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 16, mode: 'marker' }], elites: 0, drip: null, ref: null },
+        { delay: 1.0, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 2, mode: 'marker' }, { id: 'auto', n: 16, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.2, nextAt: 0.30, maxT: 50, spawns: [{ id: 'auto', n: 4, mode: 'point', x: 520, y: 560 }, { id: 'auto', n: 16, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 2, mode: 'marker' }, { id: 'auto', n: 14, mode: 'edge' }], elites: 0, drip: null, ref: null },
+      ],
+      dressing: [
+        { kind: 'patch', x: 190, y: 200, r: 50, role: 'moss' },
+        { kind: 'patch', x: 850, y: 200, r: 50, role: 'moss' },
+        { kind: 'patch', x: 270, y: 400, r: 50, role: 'moss' },
+        { kind: 'patch', x: 700, y: 400, r: 50, role: 'moss' },
+        { kind: 'bowl', x: 500, y: 470, r0: 90, r1: 330 },
+        { kind: 'path', from: { x: 468, y: 46 }, to: { x: 312, y: 720 } },
+        { kind: 'path', from: { x: 468, y: 46 }, to: { x: 728, y: 720 } },
       ],
       reward: { kind: 'auto' }, floor: 1,
     },
 
     // -- act 1 added variety --
+    // THE CROSSROADS. Entry west plus doors north, east and south make an X of
+    // approach corridors, so the crossing at C stays empty and every body sits
+    // in a quadrant. Base symmetry mirrorY, because the north and south doors
+    // are exact mirrors about the entry and rot180 has no legal pair here.
+    // One idea: rock. The violation is the north boulder, which has rolled off
+    // the east gate toward the crossing.
     a1_c_boulderrun: {
       id: 'a1_c_boulderrun', name: 'BOULDER RUN', type: 'combat', acts: [1],
       cast: { doe: 2, pineconepuffer: 1.5, squirrel: 1.3, bat: 0.5, chipchoir: 0.6 },
       size: { w: 1170, h: 770 }, shape: 'rect', lock: 'clear',
+      archetype: 'crossroads', symmetry: 'mirrorY', scatterZone: 'both',
       doors: [{ side: 'n', t: 0.5 }, { side: 'e', t: 0.6 }, { side: 's', t: 0.5 }],
       entry: { side: 'w', t: 0.5 },
       solids: [
-        { x: 185, y: 505, w: 135, h: 43, spr: 'log' },
-        { x: 899, y: 148, w: 135, h: 43, spr: 'log' },
-        { x: 517, y: 320, w: 92, h: 92, spr: 'brock' },
+        { x: 415, y: 252, w: 64, h: 44, spr: 'brock' },
+        { x: 415, y: 518, w: 64, h: 44, spr: 'brock' },
+        { x: 1000, y: 190, w: 66, h: 66, spr: 'brock' },
       ],
       props: [
-        { id: 'boulder', x: 216, y: 154 },
-        { id: 'boulder', x: 374, y: 265 },
-        { id: 'boulder', x: 660, y: 376 },
-        { id: 'boulder', x: 862, y: 487 },
-        { id: 'boulder', x: 1016, y: 580 },
+        { id: 'boulder', x: 720, y: 290 },
+        { id: 'boulder', x: 846, y: 565 },
         { id: 'bush', x: 111, y: 665 },
-        { id: 'stump', x: 1085, y: 685 },
+      ],
+      // The two gate mouths the composition actually cuts, west and east.
+      lanes: [{ w: 220 }, { w: 238 }],
+      formations: [
+        {
+          type: 'mirroredPair', axis: 'roomY', anchor: 'C', step: 266,
+          members: [{ solid: 0 }, { solid: 1 }],
+        },
+        {
+          type: 'mirroredPair', axis: 'roomY', anchor: 'C', step: 360,
+          members: [{ prop: 0 }, { prop: 1 }],
+          violation: { member: { prop: 0 }, slot: { x: 846, y: 205 } },
+        },
       ],
       scatter: { bush: [2, 4] },
       spawnMarkers: [
-        { x: 160, y: 160 }, { x: 1096, y: 185 }, { x: 160, y: 634 },
-        { x: 1047, y: 647 }, { x: 585, y: 185 },
+        { x: 565, y: 160 }, { x: 585, y: 600 },
+        { x: 975, y: 400 }, { x: 660, y: 690 },
       ],
       waves: [
-        { delay: 0.8, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 18, mode: 'edge' }], elites: 0, drip: null, ref: null },
-        { delay: 1.2, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 22, mode: 'edge' }], elites: 0, drip: null, ref: null },
-        { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 20, mode: 'marker' }], elites: 0, drip: null, ref: null },
+        { delay: 0.9, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 2, mode: 'marker' }, { id: 'auto', n: 12, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.2, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 2, mode: 'marker' }, { id: 'auto', n: 20, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 24, mode: 'ring', r: 240 }], elites: 0, drip: null, ref: null },
       ],
       dressing: [
-        { kind: 'scree', x0: 216, y0: 154, x1: 1016, y1: 580, w: 130 },
-        { kind: 'cracks', x: 374, y: 265, r: 52 },
-        { kind: 'cracks', x: 660, y: 376, r: 52 },
-        { kind: 'cracks', x: 862, y: 487, r: 52 },
-        { kind: 'patch', x: 216, y: 154, r: 60, role: 'scree' },
-        { kind: 'patch', x: 1016, y: 580, r: 60, role: 'scree' },
+        { kind: 'patch', x: 720, y: 290, r: 62, role: 'dirt' },
+        { kind: 'patch', x: 846, y: 565, r: 62, role: 'dirt' },
+        { kind: 'patch', x: 415, y: 252, r: 46, role: 'dirt' },
+        { kind: 'patch', x: 415, y: 518, r: 46, role: 'dirt' },
+        { kind: 'bowl', x: 585, y: 385, r0: 120, r1: 430 },
+        { kind: 'path', from: { x: 46, y: 385 }, to: { x: 585, y: 0 } },
+        { kind: 'path', from: { x: 46, y: 385 }, to: { x: 1170, y: 462 } },
+        { kind: 'path', from: { x: 46, y: 385 }, to: { x: 585, y: 770 } },
       ],
       reward: { kind: 'auto' }, floor: 1,
     },
@@ -386,76 +466,113 @@ const ROOMS = {
       // it. Raccoons are act 2 stock, so they come in here as a guest.
       cast: { raccoon: 4.5, ticktot: 1.5, squirrel: 0.7, rabbit: 0.6, doe: 0.4, bat: 0.5, pineconepuffer: 0.5, chipchoir: 0.6 },
       size: { w: 1210, h: 700 }, shape: 'rect', lock: 'clear',
+      // THE CROSSROADS. Entry west with two east doors and one north cuts the
+      // room into corridors and leaves one usable quadrant, the south verge, so
+      // the whole line stands along it and the crossing stays open. The west
+      // end of the line has been pulled out past its slot: that end is the
+      // short way back to the entry side and the one the ring wave closes on.
+      archetype: 'crossroads', symmetry: 'mirrorX', scatterZone: 'both',
       doors: [{ side: 'e', t: 0.3 }, { side: 'e', t: 0.7 }, { side: 'n', t: 0.5 }],
       entry: { side: 'w', t: 0.5 },
       solids: [
-        { x: 254, y: 165, w: 133, h: 45, spr: 'wall' },
-        { x: 254, y: 490, w: 133, h: 45, spr: 'wall' },
-        { x: 666, y: 165, w: 133, h: 45, spr: 'wall' },
-        { x: 666, y: 490, w: 133, h: 45, spr: 'wall' },
+        { x: 290, y: 550, w: 70, h: 36, spr: 'wall' },
+        { x: 865, y: 550, w: 70, h: 36, spr: 'wall' },
+        { x: 490, y: 550, w: 70, h: 36, spr: 'wall' },
+        { x: 720, y: 550, w: 70, h: 36, spr: 'wall' },
       ],
       props: [
+        { id: 'stump', x: 605, y: 550 },
         { id: 'mailbox', x: 151, y: 350 },
         { id: 'mailbox', x: 460, y: 350 },
         { id: 'mailbox', x: 762, y: 350 },
         { id: 'mailbox', x: 1059, y: 350 },
-        { id: 'crate', x: 151, y: 605 },
         { id: 'basket', x: 1059, y: 95 },
+      ],
+      lanes: [{ w: 190 }],
+      formations: [
+        {
+          type: 'line', axis: 'roomX', anchor: 'C', step: 260,
+          members: [{ solid: 0 }, { prop: 0 }, { solid: 1 }],
+          violation: { member: { solid: 0 }, slot: { x: 345, y: 550 } },
+        },
       ],
       scatter: { mailbox: [1, 3] },
       spawnMarkers: [
-        { x: 1150, y: 210 }, { x: 1150, y: 490 }, { x: 605, y: 115 },
-        { x: 151, y: 159 }, { x: 151, y: 541 },
+        { x: 120, y: 120 }, { x: 1080, y: 580 }, { x: 720, y: 120 }, { x: 420, y: 380 },
       ],
       waves: [
         { delay: 0.8, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 18, mode: 'edge' }], elites: 0, drip: null, ref: null },
-        { delay: 1.2, nextAt: 0, maxT: 55, spawns: [], elites: 0, drip: null, ref: 'foxfire_hunt' },
-        { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 30, mode: 'marker' }], elites: 0, drip: null, ref: null },
+        { delay: 1.2, nextAt: 0.30, maxT: 55, name: 'FOXFIRE HUNT', spawns: [{ id: 'fox', n: 10, mode: 'ring', r: 250 }, { id: 'auto', n: 10, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 4, mode: 'marker' }, { id: 'auto', n: 16, mode: 'edge' }], elites: 0, drip: null, ref: null },
       ],
       dressing: [
         { kind: 'road', from: { x: 50, y: 350 }, to: { x: 1160, y: 350 }, w: 74 },
+        { kind: 'patch', x: 290, y: 550, r: 50, role: 'dirt' },
+        { kind: 'patch', x: 605, y: 550, r: 50, role: 'dirt' },
+        { kind: 'patch', x: 865, y: 550, r: 50, role: 'dirt' },
         { kind: 'patch', x: 151, y: 360, r: 46, role: 'dirt' },
         { kind: 'patch', x: 1059, y: 360, r: 46, role: 'dirt' },
+        { kind: 'path', from: { x: 46, y: 350 }, to: { x: 1210, y: 210 } },
+        { kind: 'path', from: { x: 46, y: 350 }, to: { x: 1210, y: 490 } },
+        { kind: 'path', from: { x: 46, y: 350 }, to: { x: 605, y: 0 } },
       ],
       reward: { kind: 'auto' }, floor: 1,
     },
 
+    // THE BOWL. The henge circle is still marked on the ground and the middle
+    // is kept empty: the run from the entry to the north door goes straight
+    // through it. Two stumps stand opposite each other on the ring's diagonal
+    // and two stones sit inside it, the east one shouldered out of place, which
+    // is the gap the player takes when the ring wave closes.
     a1_c_stumphenge: {
       id: 'a1_c_stumphenge', name: 'STUMP HENGE', type: 'combat', acts: [1],
       cast: { chipchoir: 2.6, pineconepuffer: 1.6, squirrel: 1.2, rabbit: 0.6, bat: 0.5 },
       size: { w: 1080, h: 730 }, shape: 'round', lock: 'clear',
+      archetype: 'bowl', symmetry: 'rot180', scatterZone: 'both',
       doors: [{ side: 'n', t: 0.5 }, { side: 'e', t: 0.35 }, { side: 'e', t: 0.7 }],
       entry: { side: 's', t: 0.5 },
       solids: [
-        { x: 718, y: 222, w: 76, h: 76, spr: 'brock' },
-        { x: 718, y: 495, w: 76, h: 76, spr: 'brock' },
-        { x: 292, y: 495, w: 76, h: 76, spr: 'brock' },
-        { x: 292, y: 222, w: 76, h: 76, spr: 'brock' },
+        { x: 430, y: 360, w: 40, h: 40, spr: 'log' },
+        { x: 710, y: 430, w: 40, h: 40, spr: 'log' },
+        { x: 170, y: 200, w: 40, h: 40, spr: 'log' },
       ],
       props: [
-        { id: 'stump', x: 540, y: 190 },
-        { id: 'stump', x: 540, y: 540 },
-        { id: 'stump', x: 191, y: 365 },
-        { id: 'stump', x: 889, y: 365 },
-        { id: 'urn', x: 540, y: 365 },
+        { id: 'stump', x: 290, y: 520 },
+        { id: 'stump', x: 790, y: 210 },
+        { id: 'bush', x: 250, y: 620 },
+        { id: 'basket', x: 840, y: 620 },
+      ],
+      lanes: [{ w: 200 }],
+      formations: [
+        {
+          type: 'mirroredPair', axis: 'trueDiagonal', anchor: 'C', step: 588,
+          members: [{ prop: 0 }, { prop: 1 }],
+        },
+        {
+          type: 'mirroredPair', axis: 'trueDiagonal', anchor: 'C', step: 220,
+          members: [{ solid: 0 }, { solid: 1 }],
+          violation: { member: { solid: 1 }, slot: { x: 650, y: 370 } },
+        },
       ],
       scatter: { bush: [2, 4] },
       spawnMarkers: [
-        { x: 540, y: 146 }, { x: 540, y: 584 }, { x: 159, y: 365 },
-        { x: 921, y: 365 }, { x: 540, y: 365 },
+        { x: 960, y: 120 }, { x: 120, y: 600 }, { x: 400, y: 120 }, { x: 740, y: 600 },
       ],
       waves: [
         { delay: 0.9, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 16, mode: 'edge' }], elites: 0, drip: null, ref: null },
-        { delay: 1.2, nextAt: 0.30, maxT: 50, spawns: [{ id: 'auto', n: 22, mode: 'ring', r: 241 }], elites: 0, drip: null, ref: null },
-        { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 20, mode: 'marker' }], elites: 0, drip: null, ref: null },
+        { delay: 1.2, nextAt: 0.30, maxT: 50, spawns: [{ id: 'auto', n: 4, mode: 'marker' }, { id: 'auto', n: 18, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 20, mode: 'ring', r: 240 }], elites: 0, drip: null, ref: null },
       ],
       dressing: [
         { kind: 'ring', x: 540, y: 365, r: 178, w: 34 },
-        { kind: 'patch', x: 540, y: 190, r: 42, role: 'dirt' },
-        { kind: 'patch', x: 540, y: 540, r: 42, role: 'dirt' },
-        { kind: 'patch', x: 191, y: 365, r: 42, role: 'dirt' },
-        { kind: 'patch', x: 889, y: 365, r: 42, role: 'dirt' },
+        { kind: 'patch', x: 290, y: 520, r: 44, role: 'dirt' },
+        { kind: 'patch', x: 790, y: 210, r: 44, role: 'dirt' },
+        { kind: 'patch', x: 430, y: 360, r: 40, role: 'moss' },
+        { kind: 'patch', x: 710, y: 430, r: 40, role: 'moss' },
         { kind: 'patch', x: 540, y: 365, r: 54, role: 'moss' },
+        { kind: 'path', from: { x: 540, y: 684 }, to: { x: 540, y: 0 } },
+        { kind: 'path', from: { x: 540, y: 684 }, to: { x: 1080, y: 256 } },
+        { kind: 'path', from: { x: 540, y: 684 }, to: { x: 1080, y: 511 } },
       ],
       reward: { kind: 'auto' }, floor: 1,
     },
@@ -1022,31 +1139,59 @@ const ROOMS = {
   },
 
   elite: {
+    // THE BOWL. The court's floor is the empty middle, marked by the worn ring.
+    // Four seats stand along the south side on one interval, and two more hold
+    // the north approach. The east of that pair has been carried out of place,
+    // which is the corner the elite will chase you into.
     a1_e_stumpcourt: {
       id: 'a1_e_stumpcourt', name: 'THE STUMP COURT', type: 'elite', acts: [1],
       cast: { chipchoir: 2.2, doe: 1.6, pineconepuffer: 1.4, squirrel: 0.6, bat: 0.5 },
       size: { w: 1080, h: 730 }, shape: 'round', lock: 'clear',
+      archetype: 'bowl', symmetry: 'mirrorX', scatterZone: 'both',
       doors: [{ side: 'e', t: 0.4 }, { side: 'n', t: 0.5 }],
       entry: { side: 'w', t: 0.5 },
       solids: [
-        { x: 407, y: 305, w: 102, h: 76, spr: 'brock' },
-        { x: 648, y: 241, w: 83, h: 83, spr: 'slab' },
+        { x: 246, y: 580, w: 40, h: 40, spr: 'brock' },
+        { x: 834, y: 580, w: 40, h: 40, spr: 'brock' },
       ],
       props: [
-        { id: 'stump', x: 267, y: 203 },
-        { id: 'stump', x: 813, y: 559 },
-        { id: 'stump', x: 546, y: 571 },
-        { id: 'urn', x: 254, y: 521 },
-        { id: 'crate', x: 826, y: 165 },
-        { id: 'boulder', x: 559, y: 107 },
+        { id: 'stump', x: 442, y: 580 },
+        { id: 'stump', x: 638, y: 580 },
+        { id: 'stump', x: 370, y: 235 },
+        { id: 'stump', x: 780, y: 180 },
+        { id: 'bush', x: 220, y: 640 },
+        { id: 'basket', x: 880, y: 640 },
       ],
-      scatter: { stump: [3, 6], bush: [2, 4] },
+      lanes: [{ w: 200 }],
+      formations: [
+        {
+          type: 'line', axis: 'roomX', anchor: 'C', step: 196,
+          members: [{ solid: 0 }, { prop: 0 }, { prop: 1 }, { solid: 1 }],
+        },
+        {
+          type: 'mirroredPair', axis: 'roomX', anchor: 'C', step: 340,
+          members: [{ prop: 2 }, { prop: 3 }],
+          violation: { member: { prop: 3 }, slot: { x: 710, y: 235 } },
+        },
+      ],
+      scatter: { bush: [2, 4] },
       spawnMarkers: [
-        { x: 540, y: 159 }, { x: 540, y: 571 }, { x: 203, y: 365 }, { x: 877, y: 365 },
+        { x: 120, y: 120 }, { x: 960, y: 460 }, { x: 620, y: 120 }, { x: 360, y: 420 },
       ],
       waves: [
-        { delay: 1.0, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 14, mode: 'edge' }], elites: 1, drip: null, ref: null },
-        { delay: 1.5, nextAt: 0, maxT: 70, spawns: [{ id: 'auto', n: 18, mode: 'edge' }], elites: 1, drip: null, ref: null },
+        { delay: 1.0, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 26, mode: 'edge' }], elites: 1, drip: null, ref: null },
+        { delay: 1.5, nextAt: 0, maxT: 70, spawns: [{ id: 'auto', n: 4, mode: 'marker' }, { id: 'auto', n: 20, mode: 'edge' }], elites: 2, drip: null, ref: null },
+      ],
+      dressing: [
+        { kind: 'ring', x: 540, y: 430, r: 150, w: 30 },
+        { kind: 'patch', x: 442, y: 580, r: 46, role: 'dirt' },
+        { kind: 'patch', x: 638, y: 580, r: 46, role: 'dirt' },
+        { kind: 'patch', x: 246, y: 580, r: 40, role: 'moss' },
+        { kind: 'patch', x: 834, y: 580, r: 40, role: 'moss' },
+        { kind: 'patch', x: 370, y: 235, r: 44, role: 'dirt' },
+        { kind: 'patch', x: 780, y: 180, r: 44, role: 'dirt' },
+        { kind: 'path', from: { x: 46, y: 365 }, to: { x: 1080, y: 292 } },
+        { kind: 'path', from: { x: 46, y: 365 }, to: { x: 540, y: 0 } },
       ],
       reward: { kind: 'auto' }, floor: 1,
     },
@@ -1113,32 +1258,57 @@ const ROOMS = {
     },
 
     // -- one nastier elite per act: tight corridors that never seal a pocket --
+    // THE LANES. Entry west, doors east and north: the two approach corridors
+    // strip the middle, so the corridor of the name is the south band. Two
+    // stumps hold its ends, two stones make the inner lane, and the east stone
+    // has dropped back and inward, which turns the inner lane into the short
+    // and dangerous way through.
     a1_e_thorncorridor: {
       id: 'a1_e_thorncorridor', name: 'THE THORN CORRIDOR', type: 'elite', acts: [1],
       cast: { rabbit: 2.2, ticktot: 1.8, squirrel: 1.2, bat: 0.5, doe: 0.6 },
       size: { w: 1130, h: 750 }, shape: 'pillars', lock: 'clear',
+      archetype: 'lanes', symmetry: 'mirrorX', scatterZone: 'both',
       doors: [{ side: 'e', t: 0.4 }, { side: 'n', t: 0.5 }],
       entry: { side: 'w', t: 0.5 },
       solids: [
-        { x: 251, y: 238, w: 163, h: 44, spr: 'wall' },
-        { x: 628, y: 238, w: 163, h: 44, spr: 'wall' },
-        { x: 439, y: 475, w: 163, h: 44, spr: 'wall' },
-        { x: 816, y: 475, w: 163, h: 44, spr: 'wall' },
+        { x: 475, y: 455, w: 40, h: 40, spr: 'brock' },
+        { x: 585, y: 525, w: 40, h: 40, spr: 'brock' },
+        { x: 900, y: 590, w: 40, h: 40, spr: 'brock' },
       ],
       props: [
-        { id: 'bush', x: 157, y: 156 },
-        { id: 'bush', x: 973, y: 594 },
-        { id: 'stump', x: 565, y: 665 },
-        { id: 'urn', x: 157, y: 594 },
-        { id: 'boulder', x: 1032, y: 156 },
+        { id: 'stump', x: 285, y: 570 },
+        { id: 'stump', x: 845, y: 570 },
+        { id: 'bush', x: 200, y: 200 },
+        { id: 'basket', x: 900, y: 180 },
+      ],
+      lanes: [{ w: 200 }],
+      formations: [
+        {
+          type: 'mirroredPair', axis: 'roomX', anchor: 'C', step: 560,
+          members: [{ prop: 0 }, { prop: 1 }],
+        },
+        {
+          type: 'mirroredPair', axis: 'roomX', anchor: 'C', step: 180,
+          members: [{ solid: 0 }, { solid: 1 }],
+          violation: { member: { solid: 1 }, slot: { x: 655, y: 455 } },
+        },
       ],
       scatter: { bush: [3, 6] },
       spawnMarkers: [
-        { x: 565, y: 156 }, { x: 565, y: 594 }, { x: 176, y: 375 }, { x: 954, y: 375 },
+        { x: 120, y: 120 }, { x: 1000, y: 440 }, { x: 120, y: 620 }, { x: 620, y: 120 },
       ],
       waves: [
-        { delay: 1.0, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 16, mode: 'edge' }], elites: 1, drip: null, ref: null },
-        { delay: 1.5, nextAt: 0, maxT: 70, spawns: [{ id: 'auto', n: 20, mode: 'edge' }], elites: 2, drip: null, ref: null },
+        { delay: 1.0, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 26, mode: 'edge' }], elites: 1, drip: null, ref: null },
+        { delay: 1.5, nextAt: 0, maxT: 70, spawns: [{ id: 'auto', n: 4, mode: 'marker' }, { id: 'auto', n: 20, mode: 'edge' }], elites: 2, drip: null, ref: null },
+      ],
+      dressing: [
+        { kind: 'ring', x: 565, y: 512, r: 150, w: 30 },
+        { kind: 'patch', x: 285, y: 570, r: 46, role: 'dirt' },
+        { kind: 'patch', x: 845, y: 570, r: 46, role: 'dirt' },
+        { kind: 'patch', x: 475, y: 455, r: 40, role: 'moss' },
+        { kind: 'patch', x: 585, y: 525, r: 40, role: 'moss' },
+        { kind: 'path', from: { x: 46, y: 375 }, to: { x: 1130, y: 300 } },
+        { kind: 'path', from: { x: 46, y: 375 }, to: { x: 565, y: 0 } },
       ],
       reward: { kind: 'auto' }, floor: 1,
     },
