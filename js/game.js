@@ -1122,6 +1122,10 @@ window.MBM = {
     while ((Run.act < act || (Run.act === act && Run.roomIdx < room - 1)) && !Run.finished && guard++ < 40) {
       for (const e of g.enemies) if (!e.dead) g.killEnemy(e, true);
       g.enemies.length = 0;
+      // Warp skips the transition, so it must also do the transition's
+      // sweeping or skipped rooms pile their props into the destination.
+      g.props.length = 0; g.zones.length = 0; g.gems.length = 0;
+      g.pickups.length = 0; g.shots.length = 0; g.eshots.length = 0;
       const door = (g.room && g.room.doors && g.room.doors[0]) || null;
       Run.advance(door);
     }

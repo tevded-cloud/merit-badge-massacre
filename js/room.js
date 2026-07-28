@@ -354,7 +354,21 @@ class Room {
         this.surviveLeft = Math.max(0, (this.def.surviveT || 45) - (this.t - (this.lockT || 0)));
         if (this.surviveLeft <= 0) this.onClear(g);
       }
-      else if (this.lock === 'objective' && this.objectiveDone === true) this._onObjective(g);
+      else if (this.lock === 'objective') {
+        // A loot room's objective is its cache: a chest spawned at the room
+        // center on entry. Collecting it (the pickup magnet does the walk
+        // up work) completes the room. Without this, the doors never open.
+        if (!this._cacheSpawned && this.def && this.def.type === 'loot') {
+          this._cacheSpawned = true;
+          g.pickups.push({ type: 'chest', x: 0, y: 0, t: 0, cache: true });
+          if (typeof DATA !== 'undefined' && DATA.COINS) g.gainCoins(Math.round(DATA.COINS.cache * 0.4));
+        }
+        if (this._cacheSpawned && !this.objectiveDone) {
+          const left = g.pickups.some(pk => pk.cache);
+          if (!left) this.objectiveDone = true;
+        }
+        if (this.objectiveDone === true) this._onObjective(g);
+      }
     }
     this._tickDoors(g, dt);
   }

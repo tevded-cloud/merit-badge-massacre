@@ -564,7 +564,9 @@
     ctx.beginPath(); ctx.ellipse(p.x, p.y + p.r, p.r * 1.15, p.r * 0.42, 0, 0, TAU); ctx.fill();
 
     const flicker = p.iframe > 0 && Math.floor(this.t * 18) % 2 === 0;
-    SPR.drawScout(ctx, this.charId, p.x, p.y + p.r, 34, {
+    // Drawn at the sprite's authored width: at zoom 1.5 that puts the scout
+    // at one ninth of a 768 tall frame, the reference game bar.
+    SPR.drawScout(ctx, this.charId, p.x, p.y + p.r, 44, {
       flip: p.face < 0,
       phase: this.walkPhase || 0,
       moving: p.moving,
