@@ -3,6 +3,7 @@
   "productName": "Merit Badge Massacre",
   "version": "1.0.0",
   "description": "Troop 13 vs. the Cult of the Antlered One. A survivors-like of cute damnation.",
+  "author": "Tevded",
   "private": true,
   "main": "electron/main.cjs",
   "scripts": {
@@ -20,7 +21,11 @@
     "files": [
       "index.html",
       "js/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "assets/**/*"
+    ],
+    "asarUnpack": [
+      "assets/**/*"
     ],
     "directories": {
       "output": "dist"
