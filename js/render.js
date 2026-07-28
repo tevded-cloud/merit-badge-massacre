@@ -270,26 +270,6 @@
       ctx.fillRect(0, 0, W, H);
     }
 
-    // crosshair
-    if (this.phase === 'play') {
-      const cx = INPUT.mx, cy = INPUT.my;
-      const sc = INPUT.fire ? 0.82 : 1;
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.scale(sc, sc);
-      ctx.strokeStyle = 'rgba(244,197,66,0.9)';
-      ctx.lineWidth = 1.6;
-      ctx.beginPath(); ctx.arc(0, 0, 9, 0, TAU); ctx.stroke();
-      ctx.beginPath();
-      [[0, -14, 0, -6], [0, 14, 0, 6], [-14, 0, -6, 0], [14, 0, 6, 0]].forEach(l => {
-        ctx.moveTo(l[0], l[1]); ctx.lineTo(l[2], l[3]);
-      });
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(244,197,66,0.9)';
-      ctx.beginPath(); ctx.arc(0, 0, 1.6, 0, TAU); ctx.fill();
-      ctx.restore();
-    }
-
     if (typeof Reticle !== 'undefined') Reticle.render(ctx, this, W, H);
     if (typeof Transition !== 'undefined') Transition.render(ctx, W, H);
   };
