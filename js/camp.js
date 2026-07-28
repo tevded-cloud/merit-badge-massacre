@@ -780,7 +780,14 @@ class Camp {
         { id: 'exitdoor', x: 0, y: 116, r: 34, label: 'Step outside' },
         { id: 'locker', x: -52, y: 30, r: 26, label: 'Open the footlocker' },
         { id: 'pinboard', x: -20, y: -52, r: 32, label: 'Read the pinboard' },
-        { id: 'bunk', x: -108, y: -6, r: 30, label: 'Sit a minute' },
+        // The bunk's keep-out is 34, so 30 could never be reached by anything:
+        // the walk clamp stopped you 4 units outside your own bed. 42 leaves
+        // room to stand beside it without standing in it.
+        { id: 'bunk', x: -108, y: -6, r: 42, label: 'Sit a minute' },
+        // The field guide sits on the lamp table, which is the only surface in
+        // here you would actually read at. Before this it opened on J alone,
+        // so on a phone there was no way to open it at all.
+        { id: 'guide', x: 95, y: 22, r: 34, label: 'Open the field guide' },
         { id: 'window', x: 108, y: -50, r: 26, label: 'Look out the window' },
         { id: 'sash', x: -168, y: -50, r: 34, label: 'Look at the sash' },
       ];
@@ -1328,6 +1335,7 @@ class Camp {
         this.msg = { text: 'The blanket is scratchy in the way that means somebody cared.', t: 5 };
         return null;
       }
+      if (id === 'guide') return { type: 'guide' };
       if (id === 'window') {
         this.msg = { text: 'Fireflies stitch the dark outside the glass. The treeline watches back.', t: 5 };
         return null;

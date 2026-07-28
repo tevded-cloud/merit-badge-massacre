@@ -1890,6 +1890,7 @@ function campInteract() {
   else if (act.type === 'shop') { AudioSys.play('click'); openShop(); }
   else if (act.type === 'feats') { AudioSys.play('click'); openFeats(); }
   else if (act.type === 'totem') { AudioSys.play('click'); openTotem(); }
+  else if (act.type === 'guide') { AudioSys.play('click'); openJournal(); }
   else if (act.type === 'talk') {
     // a line is a plain string, or { t, e } carrying an expression tag
     const ln = act.line;
