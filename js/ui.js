@@ -714,8 +714,23 @@ function updateDialogPortrait(name, expression) {
   }
 }
 
+// The one question every piece of spoken text asks before it draws. Kept on
+// window so the canvas side of the game (barks, the camp's subtitle line) can
+// ask it too without reaching into the settings object itself.
+function subtitlesOn() {
+  return !(typeof SETTINGS !== 'undefined' && SETTINGS && SETTINGS.subtitles === false);
+}
+window.subtitlesOn = subtitlesOn;
+
 let dlgTimer = null;
 function showDialog(text, speaker, expression) {
+  // Subtitles off means no written lines anywhere, so the box itself never
+  // opens: an empty plaque would be worse than none. Voice, where a line has
+  // any, is untouched and still plays.
+  if (!subtitlesOn()) {
+    AudioSys.play('click');
+    return;
+  }
   App.dialogOpen = true;
   $('dialog').classList.remove('hidden');
   const name = speaker || 'SCOUTMASTER BROCK';
@@ -1379,6 +1394,15 @@ window.addEventListener('keydown', (e) => {
     case 'camp': {
       if (e.code === 'Escape') {
         if (App.dialogOpen) { closeDialog(); break; }
+        // Inside the cabin, Escape is the door. Leaving camp from in here used
+        // to drop the player at the title with the camp still set to 'cabin',
+        // so walking back in put them straight back inside a room they had
+        // just left. One step out, then the next Escape leaves camp.
+        if (App.camp && App.camp.scene === 'cabin') {
+          AudioSys.play('click');
+          App.camp.exitCabin();
+          break;
+        }
         setState('title');
         break;
       }

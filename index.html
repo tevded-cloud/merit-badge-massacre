@@ -68,6 +68,10 @@
     text-shadow:0 0 24px rgba(216,75,58,0.55), 0 4px 0 #1a0c08, 0 6px 18px #000; }
   h1.logo .red { color:#d84b3a; }
   .sub { font-size:16px; color:#9aa08c; letter-spacing:1px; }
+  /* The two screen titles that have to shrink on a phone, so they live in the
+     stylesheet where a media query can reach them. */
+  .lutitle { font-size:24px; color:#f4c542; letter-spacing:4px; }
+  .seltitle { font-size:22px; color:#e8e0cc; letter-spacing:3px; }
   .tag { font-size:13px; color:#6d7361; font-style:italic; }
   .btn { pointer-events:auto; cursor:pointer; font-family:inherit; font-size:16px; font-weight:bold; letter-spacing:2px;
     color:#e8e0cc; background:#161b23; border:2px solid #3a4150; border-radius:8px; padding:12px 34px; transition:all 0.12s; }
@@ -241,6 +245,79 @@
     .optrow input[type=checkbox] { width:26px; height:26px; }
     .shoprow { padding:14px 8px; }
   }
+
+  /* ---------- Phones ----------
+     Three fixed width cards plus their gaps need 726px, so under that they used
+     to wrap onto a second row and walk off the bottom of a screen nobody can
+     scroll. The row stops wrapping instead and the cards shrink together, so
+     rank up and scout picking always show all three, whole, on one screen. */
+  @media (max-width: 780px) {
+    .screen { gap:10px; padding:8px; }
+    .cardrow { width:100%; gap:8px; flex-wrap:nowrap; align-items:stretch; }
+    .card { width:auto; flex:1 1 0; min-width:0; max-width:250px; padding:12px 8px; gap:6px; }
+    .card .cname { font-size:13px; }
+    .card .ctitle { font-size:9px; letter-spacing:0.5px; }
+    .card .cdesc { font-size:10px; line-height:1.35; min-height:0; }
+    .card .cstats { font-size:9px; line-height:1.4; }
+    .card .key { font-size:9px; }
+    .card .newchip, .card .lvchip { font-size:9px; padding:2px 5px; }
+    .chips { gap:4px; }
+    .chip { font-size:9px; padding:2px 5px; }
+    .slothint { font-size:9px; }
+    #lucards .card canvas { width:44px; height:44px; }
+    #selcards .card canvas { width:84px; height:91px; }
+    .lutitle, .seltitle { font-size:18px; letter-spacing:2px; }
+    .hint { font-size:10px; }
+  }
+
+  /* A phone held sideways is short, not narrow: trim the vertical stack too. */
+  @media (max-height: 480px) {
+    .screen { gap:7px; padding:6px 8px; }
+    .card { padding:9px 7px; gap:5px; }
+    .card .cdesc { min-height:0; }
+    #lucards .card canvas { width:36px; height:36px; }
+    #selcards .card canvas { width:66px; height:72px; }
+    .lutitle, .seltitle { font-size:15px; letter-spacing:2px; }
+    .hint { font-size:9px; }
+  }
+
+  /* The safety net. If a card still does not fit, the screen scrolls inside
+     itself rather than hiding the card behind a page that cannot scroll. The
+     auto margins keep the stack centred whenever it does fit. */
+  @media (max-width: 780px), (max-height: 480px) {
+    #levelup, #select { justify-content:flex-start; overflow-y:auto; }
+    #levelup > :first-child, #select > :first-child { margin-top:auto; }
+    #levelup > :last-child, #select > :last-child { margin-bottom:auto; }
+  }
+
+  /* ---------- Phone portrait HUD ----------
+     Portrait is too narrow for a centred readout: the act and room line would
+     sit on top of the kill count, and a centred toast would sit on top of the
+     build column. Both move into a right hand rail, and the build column keeps
+     its own lane on the left. */
+  @media (orientation: portrait) and (max-width: 900px) {
+    #lvl { top:20px; left:12px; font-size:12px; }
+    #lupip { top:18px; left:52px; font-size:10px; }
+    #hpwrap { top:36px; left:12px; width:148px; height:14px; }
+    #hptext { top:35px; left:12px; width:148px; font-size:10px; line-height:16px; }
+    #dodgepips { top:54px; left:14px; gap:6px; }
+    #kills { top:18px; right:12px; font-size:13px; }
+    #coins { top:36px; right:12px; }
+    #coins canvas { width:16px; height:16px; }
+    #coinval { font-size:13px; }
+    #timer, #timer.room { top:56px; left:auto; right:12px; transform:none;
+      font-size:20px; letter-spacing:2px; }
+    #timer.room { font-size:14px; }
+    #buildrow { top:78px; left:12px; max-width:40vw; gap:5px; }
+    .gslots { gap:4px; }
+    .glabel { font-size:8px; letter-spacing:1px; }
+    .slot { width:28px; height:34px; }
+    .slot canvas { width:24px; height:24px; }
+    #toast { top:84px; left:auto; right:10px; transform:none; text-align:right;
+      max-width:52vw; font-size:15px; letter-spacing:1px; }
+    #shophint { bottom:120px; font-size:11px; letter-spacing:2px; }
+    #bossbar { min-width:0; width:88%; bottom:20px; }
+  }
 </style>
 </head>
 <body>
@@ -278,13 +355,13 @@
   </div>
 
   <div id="select" class="screen solid hidden">
-    <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:3px;">CHOOSE YOUR SCOUT</div>
+    <div class="sub seltitle">CHOOSE YOUR SCOUT</div>
     <div class="cardrow" id="selcards"></div>
     <div class="hint">Click a scout, or press 1 / 2 / 3. Esc to go back.</div>
   </div>
 
   <div id="levelup" class="screen trans hidden">
-    <div class="sub" style="font-size:24px;color:#f4c542;letter-spacing:4px;">RANK UP</div>
+    <div class="sub lutitle">RANK UP</div>
     <div class="cardrow" id="lucards"></div>
     <div class="hint">Click a reward, or press 1 / 2 / 3</div>
   </div>

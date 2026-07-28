@@ -613,6 +613,9 @@
 
   Game.prototype.renderBark = function (ctx) {
     if (!this.barkNow) return;
+    // Subtitles off: the bubble is the subtitle, so it does not draw. The bark
+    // itself still runs its clock and its voice line still plays.
+    if (typeof subtitlesOn === 'function' && !subtitlesOn()) return;
     const p = this.player;
     const alpha = Math.min(1, this.barkNow.t / 0.4);
     const text = this.barkNow.text;

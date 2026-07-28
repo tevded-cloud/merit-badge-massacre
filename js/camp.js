@@ -2723,6 +2723,9 @@ class Camp {
 
   renderMsg(ctx, cx, cy) {
     if (!this.msg) return;
+    // The camp's own subtitle line. Off with the rest of the written words when
+    // the player has turned subtitles off.
+    if (typeof subtitlesOn === 'function' && !subtitlesOn()) return;
     ctx.font = 'italic 13px Verdana, sans-serif';
     ctx.textAlign = 'center';
     ctx.globalAlpha = Math.min(1, this.msg.t);

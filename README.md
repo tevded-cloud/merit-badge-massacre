@@ -1,52 +1,109 @@
 # Merit Badge Massacre
 
-Troop 13 vs. the Cult of the Antlered One. A top-down survivors-like where the
-woodland critters found a religion with horns, and three scout kids did not
+Troop 13 vs. the Cult of the Antlered One. A top down action roguelite where
+the woodland critters found a religion with horns, and three scout kids did not
 sign the attendance sheet.
 
-Every sprite, sound and song is generated in code. There are no asset files.
+Every sprite, every sound effect and every note of music is generated in code
+when the page loads. There are no art files and no audio files to download.
 
 ## Play it right now
 
 Open `index.html` in any modern browser. That is the whole game.
 
-Or serve it (avoids any browser file restrictions):
+Or serve it, which avoids the file restrictions some browsers put on local
+pages:
 
 ```
 npx http-server . -p 8317
 ```
 
+## The night
+
+You walk out of camp into a night that runs three acts: THE UNDERSTORY, then
+THE SOG, then THE BURN. Each act is a chain of rooms, eight then nine then ten,
+and each one ends with a boss.
+
+Rooms come in flavours: a straight fight, an elite with a chest, a store, a
+loot room, somewhere quiet to breathe, and a lore room with something to find.
+You never get marched through them. Clear a room and its doors light up with a
+card showing what is behind each one, two or three of them, and the door you
+take is the room you get.
+
+Critters drop merit badges. Enough badges is a rank up, and a rank up deals you
+three cards: a new weapon, another level on one you carry, a patch that changes
+how you fight, or a skill that fires on its own. Manual weapons shoot where you
+aim. Attacks physically grow as your damage grows.
+
+Coins drop too. Cookie Money spends at the store rooms mid night, and whatever
+you did not spend turns into badges at dawn.
+
+The bosses, in order: BRAMBLEBUCK at the end of act one, THE TALLYMAN at the
+end of act two, and OLD NOBODY at the end of act three. Put OLD NOBODY down and
+the sun comes up.
+
+## Camp Hearthwood
+
+Between nights you walk around camp. It is small at first and it grows as your
+lifetime badge count grows.
+
+- **Scoutmaster Brock**, at the fire, who has opinions about all of this.
+- **The Badge Board**: permanent ranks bought with banked badges. More health,
+  more damage, faster legs, a revive. They never expire.
+- **The Feat Board**: standing dares. Finishing one is permanent and most of
+  them open something new up for good.
+- **The Totem**: carvings you switch on before you leave. Each one makes the
+  night harder and multiplies the badges you bring home. It opens once you have
+  seen a sunrise.
+- **The Field Guide**: what you have met and what you have killed, plus the
+  notes Troop 12 left behind.
+- **The old cabin**, which unlocks after your first night out, with a
+  footlocker, a pinboard and a window.
+- **The other two scouts**, waiting around camp. Walk up to one and you play as
+  them tonight instead.
+- **The trailhead sign**: take the trail and the night begins.
+
+Scouts: Max (slingshot, steady), Junie (marshmallow roaster, fast and fragile),
+Gus (hand axe, built like a bear box).
+
 ## Controls
 
-- WASD or arrow keys: move
+Keyboard and mouse:
+
+- WASD or the arrow keys: move
 - Mouse: aim
-- Hold left click (or Space): attack
-- 1 / 2 / 3: pick cards and scouts
-- P or Esc: pause
+- Hold left click: attack
+- Space: dodge
+- E: interact, and open the store when you are standing in one
+- 1 / 2 / 3: pick a rank up card
+- J: Field Guide, B: Feat Board (in camp)
+- P or Esc: pause. In camp, Esc backs out one step: out of the cabin first, then
+  out of camp
 - M: mute, F: fullscreen
 
-## The run
+Phone and tablet: the on screen sticks turn themselves on when the device is a
+touch device, and stay off everywhere else. Left thumb moves. Right thumb aims,
+and holding it fires. The button up and inside of the aim stick dodges, and its
+face shows the recharge. Tap once at the title to go full screen and land in
+landscape.
 
-Survive the night. Bosses arrive at 5:00 and 10:00. The Antlered One walks at
-14:00, and dawn only comes when it dies. Critters drop merit badges (XP), rank
-up to choose new gear: manual weapons fire where you aim, skills trigger
-themselves. Attacks physically grow as your damage grows. Elites drop chests
-with free upgrades. Records persist between sessions.
+## Options
 
-Scouts: Max (slingshot, balanced), Junie (marshmallow roaster, fast and
-fragile), Gus (hand axe, walking bear box).
+Music, sound and voice volume, subtitles, screen shake and damage numbers. All
+of it is remembered, along with your camp, between sessions.
 
-## Desktop build (Steam)
+## Desktop build
 
 The repo doubles as an Electron app:
 
 ```
 npm install
-npm start          # run windowed
-npm run dist       # build the Windows installer into dist/
+npm start          # run it windowed
+npm run pack       # unpacked build into dist/win-unpacked
+npm run dist       # Windows installer into dist/
 ```
 
-For a Steam depot, upload the packaged output from `npm run pack`
-(`dist/win-unpacked`) with SteamPipe as usual. Steamworks overlay and
-achievements would need the Steamworks SDK wired into the Electron shell;
-the game itself has no external dependencies and runs fully offline.
+For a Steam depot, upload `dist/win-unpacked` with SteamPipe as usual. The
+Steamworks overlay and achievements would need the Steamworks SDK wired into
+the Electron shell. The game itself has no external dependencies and runs fully
+offline.

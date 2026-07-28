@@ -15,6 +15,14 @@ const Touch = (function () {
   const DEAD = 0.12;        // inside this fraction of the radius, no input
   const AIM_PROJECT = 200;  // how far from screen center the aim cursor sits
   const BTN_R = 42;         // dodge button radius
+  const GRAB = 12;          // slack around the dodge button that still counts
+  const EDGE = 16;          // nothing draws closer than this to a screen edge
+  // Centre to centre room between the dodge button and the aim stick. WANT
+  // keeps the drawn rings from touching at all; FLOOR is the least a squeezed
+  // screen is ever allowed to give, and is still wider than the button's own
+  // capture circle, so a thumb reaching for the stick can never hit dodge.
+  const WANT_CLEAR = RADIUS + BTN_R + 12;
+  const FLOOR_CLEAR = 96;
   const TAU = Math.PI * 2;
 
   // id -> { role, ox, oy, x, y }
@@ -43,21 +51,46 @@ const Touch = (function () {
     return typeof App !== 'undefined' && App && App.state === 'play';
   }
 
-  function dodgeAnchor() {
-    return { x: W() - 92, y: H() - 236 };
+  function clampN(v, lo, hi) {
+    if (hi < lo) return (lo + hi) / 2;
+    return v < lo ? lo : (v > hi ? hi : v);
   }
 
+  // Where a stick sits when no thumb is on it. Pulled far enough in from the
+  // edge that the whole rim is on screen on a narrow phone.
   function restAnchor(role) {
-    return role === 'move'
-      ? { x: W() * 0.16, y: H() * 0.72 }
-      : { x: W() * 0.84, y: H() * 0.72 };
+    const w = W(), h = H();
+    const inset = Math.min(RADIUS + EDGE, w * 0.28);
+    const y = Math.min(h * 0.72, h - RADIUS - EDGE);
+    return role === 'move' ? { x: inset, y } : { x: w - inset, y };
+  }
+
+  // The dodge button is derived from the aim stick rather than from the corner,
+  // so it can never land under the thumb that aims. It sits up and inboard of
+  // the stick, is clamped fully on screen, and if a short screen eats the gap
+  // it buys the gap back sideways instead of giving it up.
+  function dodgeAnchor() {
+    const w = W(), h = H();
+    const a = restAnchor('aim');
+    const minX = BTN_R + EDGE, maxX = w - BTN_R - EDGE;
+    const minY = BTN_R + EDGE, maxY = h - BTN_R - EDGE;
+    // 0.6 and 0.8 are a whole 3-4-5 triangle, so the offset is exactly
+    // WANT_CLEAR long and the gap the button keeps is the gap it promises.
+    let x = clampN(a.x - WANT_CLEAR * 0.6, minX, maxX);
+    let y = clampN(a.y - WANT_CLEAR * 0.8, minY, maxY);
+    const dy = a.y - y;
+    if (Math.hypot(a.x - x, dy) < FLOOR_CLEAR) {
+      const across = Math.sqrt(Math.max(0, FLOOR_CLEAR * FLOOR_CLEAR - dy * dy));
+      x = clampN(a.x - across, minX, maxX);
+    }
+    return { x, y };
   }
 
   // Which control a fresh touch belongs to. The dodge button wins over the
   // stick zone it sits in, and a second thumb never steals a live stick.
   function roleFor(x, y) {
     const b = dodgeAnchor();
-    if (Math.hypot(x - b.x, y - b.y) <= BTN_R + 12) return 'dodge';
+    if (Math.hypot(x - b.x, y - b.y) <= BTN_R + GRAB) return 'dodge';
     const third = W() / 3;
     if (x < third) return has('move') ? null : 'move';
     if (x > W() - third) return has('aim') ? null : 'aim';
@@ -251,6 +284,19 @@ const Touch = (function () {
       installWrap();
       bind(cv);
       return true;
+    },
+
+    // Read only: where the three controls are for the current screen size, and
+    // how much room the dodge button is keeping from the aim stick.
+    layout() {
+      const move = restAnchor('move');
+      const aim = restAnchor('aim');
+      const dodge = dodgeAnchor();
+      return {
+        move, aim, dodge,
+        radius: RADIUS, buttonR: BTN_R, grab: GRAB,
+        clearance: Math.hypot(dodge.x - aim.x, dodge.y - aim.y),
+      };
     },
 
     update(dt) {

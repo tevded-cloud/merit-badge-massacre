@@ -17,11 +17,18 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
+function notFound() {
+  return new Response('Not found', {
+    status: 404,
+    headers: { 'content-type': 'text/plain; charset=utf-8' },
+  });
+}
+
 function registerGameProtocol() {
   protocol.handle('game', (request) => {
     try {
       const url = new URL(request.url);
-      if (url.hostname !== 'app') return new Response('Not found', { status: 404 });
+      if (url.hostname !== 'app') return notFound();
       let rel = decodeURIComponent(url.pathname).replace(/\\/g, '/');
       while (rel.charAt(0) === '/') rel = rel.slice(1);
       if (rel === '' || rel.charAt(rel.length - 1) === '/') rel += 'index.html';
@@ -31,7 +38,11 @@ function registerGameProtocol() {
         return new Response('Forbidden', { status: 403 });
       }
       // net.fetch understands asar archives, so this works packaged and unpacked.
-      return net.fetch(pathToFileURL(abs).toString());
+      // A file that is not there rejects rather than resolving, and an unhandled
+      // rejection here reaches the page as net::ERR_UNEXPECTED and a red console
+      // error. The optional asset pack is missing by design, so a miss answers
+      // with an honest 404 the loader can read instead.
+      return net.fetch(pathToFileURL(abs).toString()).catch(() => notFound());
     } catch (e) {
       return new Response('Bad request', { status: 400 });
     }
