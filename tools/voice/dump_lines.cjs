@@ -59,6 +59,9 @@ function hash8(spokenText) {
 }
 
 function makeEntry(speaker, category, slot, text) {
+  // Dialogue lines may be plain strings or { t, e } objects carrying a
+  // portrait expression tag; the voice only cares about the words.
+  if (text && typeof text === 'object' && typeof text.t === 'string') text = text.t;
   if (typeof text !== 'string' || !text.trim()) return null;
   const spokenText = extractSpoken(text);
   return { speaker, category, slot: String(slot), text, spokenText, hash8: hash8(spokenText) };

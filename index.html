@@ -152,10 +152,25 @@
 
   /* Dialogue box */
   #dialog { position:absolute; left:50%; bottom:60px; transform:translateX(-50%); width:min(680px, 86vw);
-    background:rgba(12,14,18,0.94); border:2px solid #3a4150; border-radius:12px; padding:16px 22px 12px; z-index:30; }
+    background:rgba(12,14,18,0.94); border:2px solid #3a4150; border-radius:12px; padding:16px 22px 12px; z-index:30;
+    display:flex; align-items:flex-start; gap:18px; }
+  #dlgbody { flex:1 1 auto; min-width:0; }
   #dlgname { font-size:11px; font-weight:bold; letter-spacing:2px; color:#f4c542; margin-bottom:6px; }
   #dlgtext { font-size:14px; line-height:1.55; color:#d9d2c0; min-height:44px; }
   #dlghint { font-size:10px; color:#5d6370; text-align:right; margin-top:6px; letter-spacing:1px; }
+  /* The portrait card: the dark plaque and gold hairline the door offers use.
+     Hidden speakers collapse the layout back to exactly the plain box. */
+  #dlgport { flex:0 0 130px; width:130px; margin-top:-38px;
+    opacity:0; transform:translateX(-26px);
+    transition:transform 220ms cubic-bezier(0.2,0.9,0.3,1), opacity 220ms ease; }
+  #dlgport.on { opacity:1; transform:translateX(0); }
+  #dlgport .dlgframe { width:130px; height:154px; border-radius:10px; overflow:hidden;
+    background:rgba(14,16,20,0.92); border:1px solid rgba(244,197,66,0.45);
+    box-shadow:0 8px 24px rgba(0,0,0,0.55); }
+  #dlgport canvas { width:100%; height:100%; display:block; }
+  #dlgportname { margin-top:7px; text-align:center; font-size:10px; font-weight:bold;
+    letter-spacing:1.6px; color:#f4c542; text-transform:uppercase; }
+  #dialog.withport #dlgname { display:none; }
 
   #camphint { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); font-size:11px; letter-spacing:1px; color:#5d6370; }
 
@@ -276,9 +291,15 @@
   </div>
 
   <div id="dialog" class="hidden">
-    <div id="dlgname">SCOUTMASTER BROCK</div>
-    <div id="dlgtext"></div>
-    <div id="dlghint">E to close</div>
+    <div id="dlgport" class="hidden">
+      <div class="dlgframe"><canvas id="dlgportcv" width="330" height="390"></canvas></div>
+      <div id="dlgportname"></div>
+    </div>
+    <div id="dlgbody">
+      <div id="dlgname">SCOUTMASTER BROCK</div>
+      <div id="dlgtext"></div>
+      <div id="dlghint">E to close</div>
+    </div>
   </div>
 
   <div id="camphint" class="hidden">WASD walk &nbsp;|&nbsp; E interact &nbsp;|&nbsp; J field guide &nbsp;|&nbsp; Esc leave camp</div>
@@ -313,6 +334,7 @@
 </div>
 
 <script src="js/sprites.js"></script>
+<script src="js/portraits.js"></script>
 <script src="js/assets.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/music.js"></script>

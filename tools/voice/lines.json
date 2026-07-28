@@ -243,9 +243,9 @@
     "speaker": "brock",
     "category": "died",
     "slot": "boar",
-    "text": "\"Boars telegraph the charge. Big exclamation of intent. Step LEFT.\"",
-    "spokenText": "Boars telegraph the charge. Big exclamation of intent. Step LEFT.",
-    "hash8": "ddadb3d1"
+    "text": "\"Boars telegraph the charge. Big exclamation of intent. Step LEFT, {scout}.\"",
+    "spokenText": "Boars telegraph the charge. Big exclamation of intent. Step LEFT, {scout}.",
+    "hash8": "8bd4033c"
   },
   {
     "speaker": "brock",
@@ -267,9 +267,9 @@
     "speaker": "brock",
     "category": "died",
     "slot": "generic",
-    "text": "\"Back again. The forest keeps score, and so do I. Spend some badges before you go back out.\"",
-    "spokenText": "Back again. The forest keeps score, and so do I. Spend some badges before you go back out.",
-    "hash8": "ea53a063"
+    "text": "\"Back again, {scout}. The forest keeps score, and so do I. Spend some badges before you go back out.\"",
+    "spokenText": "Back again, {scout}. The forest keeps score, and so do I. Spend some badges before you go back out.",
+    "hash8": "93039fab"
   },
   {
     "speaker": "brock",
@@ -291,9 +291,9 @@
     "speaker": "brock",
     "category": "died",
     "slot": "rabbit",
-    "text": "\"A rabbit got you. They hop, kid. You can see the whole attack coming from the air.\"",
-    "spokenText": "A rabbit got you. They hop, kid. You can see the whole attack coming from the air.",
-    "hash8": "e303c7d3"
+    "text": "\"A rabbit got you. They hop, {scout}. You can see the whole attack coming from the air.\"",
+    "spokenText": "A rabbit got you. They hop, {scout}. You can see the whole attack coming from the air.",
+    "hash8": "dc8ad920"
   },
   {
     "speaker": "brock",
@@ -371,9 +371,9 @@
     "speaker": "brock",
     "category": "idle",
     "slot": "6",
-    "text": "\"You aim with your eyes, not your feet. Strafe, kid. Strafe.\"",
-    "spokenText": "You aim with your eyes, not your feet. Strafe, kid. Strafe.",
-    "hash8": "890586d6"
+    "text": "\"You aim with your eyes, not your feet. Strafe, {scout}. Strafe.\"",
+    "spokenText": "You aim with your eyes, not your feet. Strafe, {scout}. Strafe.",
+    "hash8": "482c5db4"
   },
   {
     "speaker": "brock",

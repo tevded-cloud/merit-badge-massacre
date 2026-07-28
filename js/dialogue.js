@@ -82,45 +82,51 @@ const BOSS_EPITHETS = {
   antlered: 'the first story',
 };
 
+// A dialogue entry is a plain string (spoken neutral) or { t, e } where e is
+// an expression tag the dialog portrait swaps to for that line: neutral,
+// warm, alarmed, the speaker's signature (deadpan, disapproval, tilt...), or
+// the rare closeup. Lines may carry a {scout} token; brockLine swaps it for
+// BROCK.address[META.selected] so Brock addresses whoever is on duty.
 const BROCK = {
+  address: { max: 'squad leader', junie: 'the fire hazard', gus: 'big fella' },
   intro: [
-    'Scoutmaster Brock pokes the fire. "New blood. Good. Every critter out here that has truly seen one of them believes forever after, and belief like that leaves a mark, a little tin stamp pressed into the fur. We call that getting Signed. Earn badges. Come back alive. In that order, preferably."',
+    { t: 'Scoutmaster Brock pokes the fire. "New blood. Good. Every critter out here that has truly seen one of them believes forever after, and belief like that leaves a mark, a little tin stamp pressed into the fur. We call that getting Signed. Earn badges. Come back alive. In that order, preferably."', e: 'warm' },
     '"Rules of Camp Hearthwood: respect the fire, bank your badges, and if a rabbit smiles at you, it already believes in something you really do not want it to."',
   ],
   died: {
-    squirrel: '"A squirrel. You were bested by a SQUIRREL. I have led this troop thirty years and it does not get less embarrassing."',
-    rabbit: '"A rabbit got you. They hop, kid. You can see the whole attack coming from the air."',
-    doe: '"Killed by a doe. Gentle eyes, they said. Nature is healing, they said."',
+    squirrel: { t: '"A squirrel. You were bested by a SQUIRREL. I have led this troop thirty years and it does not get less embarrassing."', e: 'closeup' },
+    rabbit: { t: '"A rabbit got you. They hop, {scout}. You can see the whole attack coming from the air."', e: 'deadpan' },
+    doe: { t: '"Killed by a doe. Gentle eyes, they said. Nature is healing, they said."', e: 'deadpan' },
     bat: '"Bats. Hate the wobble. Everyone hates the wobble."',
     raccoon: '"A raccoon. It probably went through your pack afterwards. They always do."',
     owl: '"The owls spit feathers. Keep your feet moving and they cannot lead the shot."',
-    boar: '"Boars telegraph the charge. Big exclamation of intent. Step LEFT."',
+    boar: '"Boars telegraph the charge. Big exclamation of intent. Step LEFT, {scout}."',
     fox: '"Foxes weave. Stop shooting where they were and shoot where they are going."',
-    beaver: '"A beaver. Death by municipal engineering. There is a badge for irony somewhere."',
+    beaver: { t: '"A beaver. Death by municipal engineering. There is a badge for irony somewhere."', e: 'deadpan' },
     hare: '"BRAMBLEBUCK. Signed young, they say, back when the tokens were still hand stamped. Every third landing it sprays. Count the hops, kid."',
     vicar: '"THE TALLYMAN got you. Everything you own, he considers a loan. Stay off his rings and mind the raccoons he calls."',
-    antlered: '"OLD NOBODY. HOLLOWANTLER, if you want its whole name, though nobody out there wants to be caught saying it twice. You got further than most of Troop 12 ever did. Again."',
-    generic: '"Back again. The forest keeps score, and so do I. Spend some badges before you go back out."',
+    antlered: { t: '"OLD NOBODY. HOLLOWANTLER, if you want its whole name, though nobody out there wants to be caught saying it twice. You got further than most of Troop 12 ever did. Again."', e: 'warm' },
+    generic: '"Back again, {scout}. The forest keeps score, and so do I. Spend some badges before you go back out."',
   },
   dawn: [
-    '"You saw the dawn. Thirty years I have run this camp and I can count dawn-watchers on one paw." He salutes with the coffee.',
-    '"OLD NOBODY is down and the sun came up. Do not get comfortable. Antlers grow back, and so, probably, does he."',
+    { t: '"You saw the dawn. Thirty years I have run this camp and I can count dawn-watchers on one paw." He salutes with the coffee.', e: 'warm' },
+    { t: '"OLD NOBODY is down and the sun came up. Do not get comfortable. Antlers grow back, and so, probably, does he."', e: 'alarmed' },
   ],
   idle: [
     '"The Badge Board takes badges, not promises."',
-    '"Cocoa heals. That is not camp wisdom, that is medical fact out here."',
+    { t: '"Cocoa heals. That is not camp wisdom, that is medical fact out here."', e: 'warm' },
     '"Hold your ground near the fire all you want. Out there, keep moving."',
     '"Elites glow red. Chests fall out of them. Draw your own conclusions."',
-    '"I knew that stag when he was a fawn. Before he got Signed. Shame. Great rack, though."',
+    { t: '"I knew that stag when he was a fawn. Before he got Signed. Shame. Great rack, though."', e: 'deadpan' },
     '"Second Wind is not a myth. It is a purchase."',
-    '"You aim with your eyes, not your feet. Strafe, kid. Strafe."',
+    '"You aim with your eyes, not your feet. Strafe, {scout}. Strafe."',
   ],
   // Once the firefly has properly moved in, Brock pretends not to be charmed
   // about it. He fails. Mixed into the idle pool when META.flags.blinkFriend.
   blink: [
-    '"That bug follows you everywhere now. I do not name wildlife. If I did, which I do not, that one is Blink."',
-    '"Your firefly sat on my ledger hand for an hour last night. Got nothing done. It can stay."',
-    '"Thirty years on this ridge and the woods finally sent us something that is not trying to eat anyone. Do not tell it I said that."',
+    { t: '"That bug follows you everywhere now. I do not name wildlife. If I did, which I do not, that one is Blink."', e: 'warm' },
+    { t: '"Your firefly sat on my ledger hand for an hour last night. Got nothing done. It can stay."', e: 'warm' },
+    { t: '"Thirty years on this ridge and the woods finally sent us something that is not trying to eat anyone. Do not tell it I said that."', e: 'warm' },
   ],
   // Twelve gated story beats, delivered one at a time, oldest unseen and
   // gate-passing beat first. Each gate reads META defensively so it still
@@ -129,6 +135,7 @@ const BROCK = {
     {
       id: 'firstNight',
       gate: m => (m.runs || 0) >= 1,
+      e: 'warm',
       lines: [
         '"Back already." Brock does not look up from the fire. "Good. That means you are still breathing. Sit. I only tell this story once, and I am not repeating the good parts."',
         '"Thirty years ago I brought twelve kids up this ridge. I brought one down. That is a fireside talk for later. Tonight, go get badges."',
@@ -137,6 +144,7 @@ const BROCK = {
     {
       id: 'twoMarks',
       gate: m => arcCodexCount(m, 'seen') >= 2,
+      e: 'alarmed',
       lines: [
         '"You have gotten a good look at two of them now. Notice the tin? Every marked critter wears one, pressed right into the fur. Somebody out there is stamping those by hand."',
         '"Do not ask me who. I have theories. None of them let me sleep."',
@@ -161,6 +169,7 @@ const BROCK = {
     {
       id: 'fiveGraves',
       gate: m => (m.deaths || 0) >= 5,
+      e: 'deadpan',
       lines: [
         '"Five times back to this fire in a body bag, more or less. I stopped flinching around number three. Professional courtesy."',
         '"You keep coming back, though. That is either grit or a badge quota you are very committed to. I am choosing to believe grit."',
@@ -169,6 +178,7 @@ const BROCK = {
     {
       id: 'actTwo',
       gate: m => arcFlag(m, 'act2'),
+      e: 'alarmed',
       lines: [
         '"You are past the treeline proper now. Further than I go. Further than most of my old troop got." A pause. "Different makers stamp those tokens out there. Different hands, different tin. They compete. I do not know for what."',
         '"Bring me one, if you can pry it loose. I have wanted to look at one up close for thirty years. I have also, and I cannot stress this enough, been too much of a coward."',
@@ -185,6 +195,7 @@ const BROCK = {
     {
       id: 'tallymanDown',
       gate: m => arcFlag(m, 'act2boss'),
+      e: 'deadpan',
       lines: [
         '"THE TALLYMAN, finally handled. He has been walking off with badges since before you were born. Did you get any of them back?"',
         '"No? Of course not. He is very organized about it. There is probably a ledger."',
@@ -209,6 +220,7 @@ const BROCK = {
     {
       id: 'finalDown',
       gate: m => arcFlag(m, 'act3boss'),
+      e: 'warm',
       lines: [
         '"OLD NOBODY. HOLLOWANTLER, if you want its whole name, though nothing out there wants to hear it said twice. Down. Thirty years running this camp did not prepare me for how quiet that would be."',
         '"I had a whole speech ready. I am not giving it tonight. Go celebrate. And do not ask me about the twelfth name yet. Some other night."',
@@ -217,6 +229,7 @@ const BROCK = {
     {
       id: 'firstDawn',
       gate: m => (m.dawns || 0) >= 1,
+      e: 'warm',
       lines: [
         '"You saw a whole dawn out there and came back to tell me about it. Sit by the fire. The actual seat, not the log with the splinter."',
         '"Thirty years I ran this camp on the theory that somebody eventually would. Thank you for proving the theory. Cocoa is on me tonight."',
@@ -259,12 +272,27 @@ function nextArcLine() {
     if (!beat.gate(META)) continue;
     seen[beat.id] = true;
     META.save();
-    return beat.lines.join(' ');
+    const joined = beat.lines.join(' ');
+    return beat.e ? { t: joined, e: beat.e } : joined;
   }
   return null;
 }
 
+// Swap the {scout} token for the address Brock keeps for whoever is on duty.
+// Works on both line shapes and leaves everything else untouched.
+function brockAddress(line) {
+  const txt = (line && typeof line === 'object') ? line.t : line;
+  if (typeof txt !== 'string' || txt.indexOf('{scout}') < 0) return line;
+  const who = (BROCK.address && BROCK.address[META.selected]) || 'scout';
+  const out = txt.split('{scout}').join(who);
+  return (line && typeof line === 'object') ? { t: out, e: line.e } : out;
+}
+
 function brockLine() {
+  return brockAddress(brockLinePick());
+}
+
+function brockLinePick() {
   if (!META.metBrock) {
     META.metBrock = true;
     META.save();
@@ -288,14 +316,14 @@ function brockLine() {
 // THE QUARTERMASTER: a stout older scout who runs the supply stall by the
 // Badge Board. Dialogue only for now; he runs nothing yet.
 const QUARTERMASTER = {
-  intro: 'The Quartermaster looks up from a ledger thicker than you are. "Name?" You start to answer. "Not yours. The inventory has names. You are the thing that makes the inventory smaller."',
+  intro: { t: 'The Quartermaster looks up from a ledger thicker than you are. "Name?" You start to answer. "Not yours. The inventory has names. You are the thing that makes the inventory smaller."', e: 'disapproval' },
   idle: [
     '"Requisition forms are in triplicate now. The forest keeps eating the second copy."',
-    '"We are down to four tin cups. If a raccoon has the fifth, it signed nothing for it."',
+    { t: '"We are down to four tin cups. If a raccoon has the fifth, it signed nothing for it."', e: 'disapproval' },
     '"Cookie Money is not legal tender. It is cookie money. It becomes badges at my table and nowhere else, and the rate is fair because I set it."',
-    '"Do not ask what is in the barrels. They are labeled. The label says BARREL."',
-    '"I count marshmallows by the bag, not the piece. Learned that the hard way. Junie was involved."',
-    '"Lost and found out here is the whole forest, kid. Found is just the part I keep on shelves."',
+    { t: '"Do not ask what is in the barrels. They are labeled. The label says BARREL."', e: 'disapproval' },
+    { t: '"I count marshmallows by the bag, not the piece. Learned that the hard way. Junie was involved."', e: 'alarmed' },
+    { t: '"Lost and found out here is the whole forest, kid. Found is just the part I keep on shelves."', e: 'warm' },
   ],
   // Spoken once per finished night: the camp converts leftover Cookie Money
   // to badges at dawn, and he is the one holding the ledger when it happens.
@@ -325,10 +353,10 @@ function quartermasterLine() {
 const CRITTER = {
   squeaks: [
     'Squeak! (It puffs out its chest. No tin pendant. Just fur.)',
-    'Squeak squeak. (It hops onto your boot, reconsiders, hops off with dignity.)',
-    '(It holds up an acorn. It is showing you the acorn. It puts the acorn away.)',
-    'Squeak. (It glances at the treeline, then presses a little closer to the fire.)',
-    '(A small, unmarked squirrel. It is here because you kept coming back.)',
+    { t: 'Squeak squeak. (It hops onto your boot, reconsiders, hops off with dignity.)', e: 'tilt' },
+    { t: '(It holds up an acorn. It is showing you the acorn. It puts the acorn away.)', e: 'closeup' },
+    { t: 'Squeak. (It glances at the treeline, then presses a little closer to the fire.)', e: 'alarmed' },
+    { t: '(A small, unmarked squirrel. It is here because you kept coming back.)', e: 'warm' },
   ],
 };
 

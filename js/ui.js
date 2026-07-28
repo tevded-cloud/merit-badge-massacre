@@ -460,11 +460,49 @@ function journalTroop() {
 }
 
 // ---------------- dialogue ----------------
+// The portrait card at the dialog's left edge. Everything here is feature
+// tested: with portraits.js absent, or a speaker nobody painted, the card
+// stays hidden and the dialog is exactly the plain box it always was.
+let dlgPortId = null;
+function updateDialogPortrait(name, expression) {
+  const card = $('dlgport');
+  if (!card) return;
+  const have = typeof Portraits !== 'undefined' && Portraits;
+  const id = have ? Portraits.idFor(name) : null;
+  const src = id && Portraits.has(id) ? Portraits.get(id, expression || 'neutral') : null;
+  if (!src) {
+    card.classList.add('hidden');
+    card.classList.remove('on');
+    $('dialog').classList.remove('withport');
+    dlgPortId = null;
+    return;
+  }
+  const cv2 = $('dlgportcv');
+  const g = cv2.getContext('2d');
+  g.clearRect(0, 0, cv2.width, cv2.height);
+  g.drawImage(src, 0, 0, cv2.width, cv2.height);
+  $('dlgportname').textContent = name;
+  $('dialog').classList.add('withport');
+  card.classList.remove('hidden');
+  // A new speaker slides in; an expression swap on the same speaker is
+  // instant, per line, like the text.
+  if (dlgPortId !== id) {
+    dlgPortId = id;
+    card.classList.remove('on');
+    void card.offsetWidth;
+    card.classList.add('on');
+  } else {
+    card.classList.add('on');
+  }
+}
+
 let dlgTimer = null;
-function showDialog(text, speaker) {
+function showDialog(text, speaker, expression) {
   App.dialogOpen = true;
   $('dialog').classList.remove('hidden');
-  $('dlgname').textContent = speaker || 'SCOUTMASTER BROCK';
+  const name = speaker || 'SCOUTMASTER BROCK';
+  $('dlgname').textContent = name;
+  updateDialogPortrait(name, expression);
   const el = $('dlgtext');
   el.textContent = '';
   let i = 0;
@@ -481,6 +519,9 @@ function closeDialog() {
   App.dialogOpen = false;
   if (dlgTimer) { clearInterval(dlgTimer); dlgTimer = null; }
   $('dialog').classList.add('hidden');
+  dlgPortId = null;
+  const card = $('dlgport');
+  if (card) card.classList.remove('on');
 }
 
 function showOver(won) {
@@ -1100,7 +1141,12 @@ window.addEventListener('keydown', (e) => {
         if (!act) break;
         if (act.type === 'run') { AudioSys.play('click'); startRun(META.selected); }
         else if (act.type === 'shop') { AudioSys.play('click'); openShop(); }
-        else if (act.type === 'talk') showDialog(act.line, act.speaker);
+        else if (act.type === 'talk') {
+          // a line is a plain string, or { t, e } carrying an expression tag
+          const ln = act.line;
+          if (ln && typeof ln === 'object') showDialog(ln.t, act.speaker, ln.e);
+          else showDialog(ln, act.speaker);
+        }
         else if (act.type === 'select') AudioSys.play('pickup');
       }
       break;
