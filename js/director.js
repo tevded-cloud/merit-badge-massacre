@@ -394,9 +394,38 @@
       if (this.room) {
         if (Collide.blockedAt(this.room, e.x, e.y)) {
           const hitCharge = e.move === 'charge' && ai.state === 'charge';
-          if (!Collide.blockedAt(this.room, preX, e.y)) { e.x = preX; }
-          else if (!Collide.blockedAt(this.room, e.x, preY)) { e.y = preY; }
-          else { e.x = preX; e.y = preY; }
+          if (!Collide.blockedAt(this.room, preX, e.y)) {
+            e.x = preX;
+            // Chasing square into a wall face stalls without routing: bias a
+            // slide along the wall so the crowd pours around the corner.
+            if (Math.abs(uy) < 0.45) {
+              e.slideDir = e.slideDir || (e.bob > Math.PI ? 1 : -1);
+              const sy = e.y + e.spd * dt * e.slideDir;
+              if (!Collide.blockedAt(this.room, e.x, sy)) e.y = sy;
+              else e.slideDir = -e.slideDir;
+            }
+          }
+          else if (!Collide.blockedAt(this.room, e.x, preY)) {
+            e.y = preY;
+            if (Math.abs(ux) < 0.45) {
+              e.slideDir = e.slideDir || (e.bob > Math.PI ? 1 : -1);
+              const sx = e.x + e.spd * dt * e.slideDir;
+              if (!Collide.blockedAt(this.room, sx, e.y)) e.x = sx;
+              else e.slideDir = -e.slideDir;
+            }
+          }
+          else {
+            e.x = preX; e.y = preY;
+            // Born or shoved inside geometry: eject toward the room center a
+            // step per frame until free, instead of freezing forever.
+            if (Collide.blockedAt(this.room, preX, preY)) {
+              const b = this.room.bounds;
+              const cxm = (b.x0 + b.x1) / 2, cym = (b.y0 + b.y1) / 2;
+              const ed = Math.hypot(cxm - e.x, cym - e.y) || 1;
+              e.x += (cxm - e.x) / ed * Math.max(60, e.spd) * dt * 2;
+              e.y += (cym - e.y) / ed * Math.max(60, e.spd) * dt * 2;
+            }
+          }
           if (hitCharge) {
             ai.state = 'recover'; ai.t = 0.6;
             e.stunT = Math.max(e.stunT || 0, 0.6);
