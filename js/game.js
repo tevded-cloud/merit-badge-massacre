@@ -627,6 +627,11 @@ class Game {
     let dt = rawDt;
     this.t += rawDt;
 
+    // The music/voice brain: a pure observer of whatever this frame's phase,
+    // room and boss turn out to be, so it has to run every frame regardless
+    // of which branch below returns early.
+    if (typeof AudioDirector !== 'undefined' && AudioDirector) AudioDirector.update(this, rawDt);
+
     if (this.phase === 'dying') {
       this.phaseT += rawDt;
       // brief hitstop, then the world crawls while the camera pushes in
@@ -710,6 +715,10 @@ class Game {
     p.iframe = Math.max(0, p.iframe - dt);
     if (this.regen > 0) p.hp = Math.min(p.maxhp, p.hp + this.regen * dt);
 
+    // positional audio (campfire/torch/water/hazard emitters) tracks the
+    // player from here every frame
+    AudioSys.setListener(p.x, p.y);
+
     // aim at the cursor (world space)
     const dxm = p.in.aimX - p.x, dym = p.in.aimY - p.y;
     const ml = Math.hypot(dxm, dym) || 1;
@@ -732,9 +741,6 @@ class Game {
     this.updateLoot(dt);
     this.updateFx(dt);
     this.sweepDead();
-
-    // music intensity
-    AudioSys.setIntensity(Math.min(3, Math.floor(this.time / 240) + (this.activeBoss ? 1 : 0)));
 
     this.gemComboT -= dt;
     if (this.gemComboT <= 0) this.gemCombo = 0;
