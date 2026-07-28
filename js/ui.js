@@ -461,9 +461,10 @@ function journalTroop() {
 
 // ---------------- dialogue ----------------
 let dlgTimer = null;
-function showDialog(text) {
+function showDialog(text, speaker) {
   App.dialogOpen = true;
   $('dialog').classList.remove('hidden');
+  $('dlgname').textContent = speaker || 'SCOUTMASTER BROCK';
   const el = $('dlgtext');
   el.textContent = '';
   let i = 0;
@@ -1099,7 +1100,7 @@ window.addEventListener('keydown', (e) => {
         if (!act) break;
         if (act.type === 'run') { AudioSys.play('click'); startRun(META.selected); }
         else if (act.type === 'shop') { AudioSys.play('click'); openShop(); }
-        else if (act.type === 'talk') showDialog(act.line);
+        else if (act.type === 'talk') showDialog(act.line, act.speaker);
         else if (act.type === 'select') AudioSys.play('pickup');
       }
       break;

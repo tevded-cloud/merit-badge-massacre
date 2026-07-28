@@ -115,6 +115,13 @@ const BROCK = {
     '"Second Wind is not a myth. It is a purchase."',
     '"You aim with your eyes, not your feet. Strafe, kid. Strafe."',
   ],
+  // Once the firefly has properly moved in, Brock pretends not to be charmed
+  // about it. He fails. Mixed into the idle pool when META.flags.blinkFriend.
+  blink: [
+    '"That bug follows you everywhere now. I do not name wildlife. If I did, which I do not, that one is Blink."',
+    '"Your firefly sat on my ledger hand for an hour last night. Got nothing done. It can stay."',
+    '"Thirty years on this ridge and the woods finally sent us something that is not trying to eat anyone. Do not tell it I said that."',
+  ],
   // Twelve gated story beats, delivered one at a time, oldest unseen and
   // gate-passing beat first. Each gate reads META defensively so it still
   // works if a save is missing journal, flags, or codex entirely.
@@ -273,5 +280,58 @@ function brockLine() {
     const line = BROCK.died[last.killer];
     return line || BROCK.died.generic;
   }
-  return BROCK.idle[(Math.random() * BROCK.idle.length) | 0];
+  const pool = arcFlag(META, 'blinkFriend') ? BROCK.idle.concat(BROCK.blink) : BROCK.idle;
+  return pool[(Math.random() * pool.length) | 0];
+}
+
+// ---------------------------------------------------------------------------
+// THE QUARTERMASTER: a stout older scout who runs the supply stall by the
+// Badge Board. Dialogue only for now; he runs nothing yet.
+const QUARTERMASTER = {
+  intro: 'The Quartermaster looks up from a ledger thicker than you are. "Name?" You start to answer. "Not yours. The inventory has names. You are the thing that makes the inventory smaller."',
+  idle: [
+    '"Requisition forms are in triplicate now. The forest keeps eating the second copy."',
+    '"We are down to four tin cups. If a raccoon has the fifth, it signed nothing for it."',
+    '"Cookie Money is not legal tender. It is cookie money. It becomes badges at my table and nowhere else, and the rate is fair because I set it."',
+    '"Do not ask what is in the barrels. They are labeled. The label says BARREL."',
+    '"I count marshmallows by the bag, not the piece. Learned that the hard way. Junie was involved."',
+    '"Lost and found out here is the whole forest, kid. Found is just the part I keep on shelves."',
+  ],
+  // Spoken once per finished night: the camp converts leftover Cookie Money
+  // to badges at dawn, and he is the one holding the ledger when it happens.
+  coins: '"Your Cookie Money from last night cleared. Counted, converted, logged, stamped. If the badge number felt small, take it up with the ledger. The ledger does not care."',
+};
+
+// One line per ask: the intro once, then the dawn ledger beat once per run,
+// then the idle pool. Gates read META defensively like Brock's do.
+function quartermasterLine() {
+  if (!META.flags) META.flags = {};
+  if (!META.flags.metQuartermaster) {
+    META.flags.metQuartermaster = true;
+    META.save();
+    return QUARTERMASTER.intro;
+  }
+  const last = META.lastRun;
+  if (last && !last.qmAck) {
+    last.qmAck = true;
+    META.save();
+    return QUARTERMASTER.coins;
+  }
+  return QUARTERMASTER.idle[(Math.random() * QUARTERMASTER.idle.length) | 0];
+}
+
+// THE RESCUED CRITTER: an unmarked squirrel by the fire, there because you
+// put something down that would have had it. Squeaks, with subtitle flavor.
+const CRITTER = {
+  squeaks: [
+    'Squeak! (It puffs out its chest. No tin pendant. Just fur.)',
+    'Squeak squeak. (It hops onto your boot, reconsiders, hops off with dignity.)',
+    '(It holds up an acorn. It is showing you the acorn. It puts the acorn away.)',
+    'Squeak. (It glances at the treeline, then presses a little closer to the fire.)',
+    '(A small, unmarked squirrel. It is here because you kept coming back.)',
+  ],
+};
+
+function critterLine() {
+  return CRITTER.squeaks[(Math.random() * CRITTER.squeaks.length) | 0];
 }

@@ -32,11 +32,12 @@ const META = {
   // Feat counters, banked at the end of a night rather than written per frame.
   // burned is critters set alight, lowHpTime is seconds spent under 15% HP.
   counters: { burned: 0, lowHpTime: 0 },
+  camp: { banner: 0, tentPattern: 0 },
 
   load() {
     try {
       const s = JSON.parse(localStorage.getItem('mbm_meta') || '{}');
-      for (const k of ['badges', 'lifetime', 'spent', 'dawns', 'deaths', 'runs', 'upgrades', 'selected', 'lastRun', 'metBrock', 'unlocked', 'journal', 'flags', 'codex', 'counters']) {
+      for (const k of ['badges', 'lifetime', 'spent', 'dawns', 'deaths', 'runs', 'upgrades', 'selected', 'lastRun', 'metBrock', 'unlocked', 'journal', 'flags', 'codex', 'counters', 'camp']) {
         if (s[k] !== undefined) this[k] = s[k];
       }
       if (!DATA.characters[this.selected]) this.selected = 'max';
@@ -61,7 +62,7 @@ const META = {
         lastRun: this.lastRun, metBrock: this.metBrock,
         unlocked: this.unlocked, journal: this.journal,
         flags: this.flags, codex: this.codex,
-        counters: this.counters,
+        counters: this.counters, camp: this.camp,
       }));
     } catch (e) {}
   },
