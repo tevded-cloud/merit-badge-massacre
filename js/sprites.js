@@ -2173,55 +2173,543 @@ const SPR = (() => {
     g.beginPath(); g.ellipse(22, 11.6, 14, 7.4, 0, 0, TAU); g.fill();
   });
 
-  P.door = () => mk(64, 84, (g) => {
-    const outer = () => {
-      g.beginPath();
-      g.moveTo(3, 83); g.lineTo(3, 30);
-      g.arc(32, 30, 29, Math.PI, 0);
-      g.lineTo(61, 83); g.closePath();
+  // ---------------- the thorn gate ----------------
+  // A room exit is not a carpentered door standing in a treeline gap: it is
+  // the wood itself, woven shut with bramble, hauled back to the sides once
+  // the room is beaten. Both states are painted twice from the same code with
+  // the same deterministic stream: once as themselves, once as the corrupted
+  // overlay (gate_shut_mark, gate_open_mark), so the Mark red lands on exactly
+  // the thorns, leaves and canes the base pass drew. P.door stays as the
+  // legacy key: anything still asking for 'door' gets brambles.
+  const GATE_W = 64, GATE_H = 84;
+  const CANE_D = '#181006', CANE_M = '#2c1f0c';
+  const CANE_HI = 'rgba(164,114,56,0.28)';
+  const LEAF_BACK = ['#091308', '#0c180a', '#0f1d0b'];
+  const LEAF_MID = ['#122010', '#162712', '#1a2e14'];
+  const LEAF_FRONT = ['#1f3115', '#243617', '#2b4020'];
+  const LEAF_LIT = '#33512a';
+  const LEAF_HI = 'rgba(206,242,140,0.34)';
+  const THORN_L = '#e8cfa5', THORN_D = '#8a6138';
+  const GATE_MASS = {
+    lw: LW_SIL, rim: RIM_GREEN,
+    mid: 'rgba(6,10,4,0.15)', shade: 'rgba(6,10,4,0.3)',
+    bounce: 'rgba(255,166,92,0.08)', hi: 'rgba(214,255,150,0.15)',
+  };
+
+  // One deterministic stream per painter, so a leaf field can be dense
+  // without a table of a hundred positions, and so the corrupted pass walks
+  // the same leaves in the same order.
+  function gRng(seed) {
+    let t = seed >>> 0;
+    return function () {
+      t = (t + 0x6d2b79f5) >>> 0;
+      let x = Math.imul(t ^ (t >>> 15), 1 | t);
+      x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
     };
-    const inner = () => {
-      g.beginPath();
-      g.moveTo(11, 83); g.lineTo(11, 31);
-      g.arc(32, 31, 21, Math.PI, 0);
-      g.lineTo(53, 83); g.closePath();
+  }
+
+  // Point and tangent on a cane: [x0, y0, cx, cy, x1, y1].
+  function qAt(c, t) {
+    const u = 1 - t;
+    return {
+      x: u * u * c[0] + 2 * u * t * c[2] + t * t * c[4],
+      y: u * u * c[1] + 2 * u * t * c[3] + t * t * c[5],
+      a: Math.atan2(2 * (u * (c[3] - c[1]) + t * (c[5] - c[3])),
+        2 * (u * (c[2] - c[0]) + t * (c[4] - c[2]))),
     };
-    outer(); g.fillStyle = '#8a6138'; g.fill();                            // frame
-    g.save(); outer(); g.clip();
-    g.fillStyle = 'rgba(12,5,3,0.26)'; g.fillRect(34, 0, 34, 84);
-    g.fillStyle = 'rgba(255,244,214,0.16)'; g.fillRect(0, 0, 16, 62);
-    g.strokeStyle = 'rgba(70,42,18,0.55)'; g.lineWidth = 1;                // frame grain
-    for (let i = 0; i < 5; i++) { g.beginPath(); g.moveTo(2, 22 + i * 14); g.lineTo(12, 24 + i * 14); g.stroke(); }
-    for (let i = 0; i < 5; i++) { g.beginPath(); g.moveTo(52, 24 + i * 14); g.lineTo(62, 22 + i * 14); g.stroke(); }
+  }
+
+  // A length of cane, built as a tapered ribbon rather than a stroke, so it
+  // thins toward the tip and swells at its nodes the way a real whip does.
+  // Sampling by t means a partial run can be redrawn over the cane that
+  // crosses it: that overlap is what makes a weave read as woven.
+  function cane(g, c, t0, t1, w0, col, o) {
+    o = o || {};
+    const N = 18;
+    const pts = [];
+    for (let i = 0; i <= N; i++) {
+      const t = t0 + (t1 - t0) * i / N;
+      const p = qAt(c, t);
+      const taper = 1 - 0.42 * t;
+      const node = 1 + 0.16 * Math.cos(t * 17);
+      pts.push([p.x, p.y, w0 * taper * node * 0.5, p.a]);
+    }
+    const ribbon = (pad) => {
+      g.beginPath();
+      for (let i = 0; i <= N; i++) {
+        const p = pts[i], hw = p[2] + pad;
+        const x = p[0] + Math.cos(p[3] - Math.PI / 2) * hw;
+        const y = p[1] + Math.sin(p[3] - Math.PI / 2) * hw;
+        if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      for (let i = N; i >= 0; i--) {
+        const p = pts[i], hw = p[2] + pad;
+        g.lineTo(p[0] + Math.cos(p[3] + Math.PI / 2) * hw,
+          p[1] + Math.sin(p[3] + Math.PI / 2) * hw);
+      }
+      g.closePath();
+    };
+    ribbon(o.back ? 0.45 : 0.85); g.fillStyle = OUT; g.fill();
+    ribbon(0); g.fillStyle = col; g.fill();
+    g.save(); ribbon(0); g.clip();
+    // the underside darkens and the moonlit edge runs along the top
+    g.beginPath();
+    for (let i = 0; i <= N; i++) {
+      const p = pts[i], sgn = Math.sin(p[3] + Math.PI / 2) > 0 ? 1 : -1;
+      const x = p[0] + Math.cos(p[3] + sgn * Math.PI / 2) * p[2] * 0.55;
+      const y = p[1] + Math.sin(p[3] + sgn * Math.PI / 2) * p[2] * 0.55;
+      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.strokeStyle = 'rgba(6,3,1,0.45)'; g.lineWidth = w0 * 0.55; g.stroke();
+    if (!o.back) {
+      g.beginPath();
+      for (let i = 0; i <= N; i++) {
+        const p = pts[i], sgn = Math.sin(p[3] - Math.PI / 2) < 0 ? -1 : 1;
+        const x = p[0] + Math.cos(p[3] + sgn * Math.PI / 2) * p[2] * 0.5;
+        const y = p[1] + Math.sin(p[3] + sgn * Math.PI / 2) * p[2] * 0.5;
+        if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.strokeStyle = CANE_HI; g.lineWidth = Math.max(0.4, w0 * 0.28); g.stroke();
+    }
     g.restore();
-    outer(); g.lineWidth = 1.9; g.strokeStyle = OUT; g.stroke();
-    inner(); g.fillStyle = '#2b1b0d'; g.fill();                            // dark interior panel
-    g.save(); inner(); g.clip();
-    g.fillStyle = 'rgba(255,244,214,0.09)'; g.fillRect(11, 0, 11, 84);
-    g.strokeStyle = 'rgba(10,4,2,0.85)'; g.lineWidth = 1.4;                // plank seams
-    [21, 29, 37, 45].forEach(x => { g.beginPath(); g.moveTo(x, 8); g.lineTo(x, 84); g.stroke(); });
-    g.fillStyle = '#3f3a34';                                               // iron bands
-    g.fillRect(8, 34, 48, 5); g.fillRect(8, 62, 48, 5);
-    g.fillStyle = 'rgba(255,244,214,0.12)';
-    g.fillRect(8, 34, 48, 1.6); g.fillRect(8, 62, 48, 1.6);
+  }
+
+  // A thorn: a narrow spike standing off the cane and hooked back along it.
+  // Lit ones carry the wet tip every sharp thing in this game wears.
+  function thorn(g, c, t, side, len, col, lit) {
+    const p = qAt(c, t);
+    const nrm = p.a - side * Math.PI / 2;
+    g.save();
+    g.translate(p.x + Math.cos(nrm) * 0.4, p.y + Math.sin(nrm) * 0.4);
+    g.rotate(nrm - Math.PI / 2 - side * 0.5);
+    g.beginPath();
+    g.moveTo(-len * 0.3, 0);
+    g.quadraticCurveTo(-len * 0.05, len * 0.5, 0, len);
+    g.quadraticCurveTo(len * 0.12, len * 0.5, len * 0.3, 0);
+    g.closePath();
+    g.fillStyle = col; g.fill();
+    g.lineWidth = 0.55; g.strokeStyle = OUT; g.stroke();
+    if (lit) {
+      g.fillStyle = 'rgba(255,242,208,0.8)';
+      g.beginPath(); g.arc(-len * 0.04, len * 0.6, len * 0.11, 0, TAU); g.fill();
+    }
     g.restore();
-    inner(); g.lineWidth = 1.7; g.strokeStyle = OUT; g.stroke();
-    g.strokeStyle = '#e3b341'; g.lineWidth = 2.2;                          // ring handle
-    g.beginPath(); g.arc(45, 52, 4.4, 0, TAU); g.stroke();
-    g.strokeStyle = 'rgba(110,72,10,0.6)'; g.lineWidth = 0.9;
-    g.beginPath(); g.arc(45, 53.2, 4.4, 0.35, Math.PI - 0.35); g.stroke();
-    g.fillStyle = '#c9a24a'; g.strokeStyle = OUT; g.lineWidth = 0.9;
-    g.beginPath(); g.arc(45, 46.6, 2, 0, TAU); g.fill(); g.stroke();
-    g.strokeStyle = '#3f6b35'; g.lineWidth = 2;                            // vines
-    g.beginPath(); g.moveTo(2, 82); g.quadraticCurveTo(7.4, 60, 2.4, 40);
-    g.quadraticCurveTo(0.4, 26, 9.4, 14); g.stroke();
-    g.beginPath(); g.moveTo(62, 83); g.quadraticCurveTo(56.6, 64, 61.6, 46);
-    g.quadraticCurveTo(63, 36, 58, 28); g.stroke();
-    [[5.4, 70, -0.5], [4.8, 50, 0.42], [4.4, 32, -0.6], [10, 15, 0.5],
-     [59, 72, 0.5], [59.8, 54, -0.42], [57.4, 34, 0.55]].forEach(v => {
-      blob(g, v[0], v[1], 3.6, 2, '#4a7c3a', { rot: v[2], lw: 1 });
+  }
+
+  // The corrupted pass: the point of a thorn gone Mark red, hot at the tip.
+  function thornTip(g, c, t, side, len) {
+    const p = qAt(c, t);
+    const nrm = p.a - side * Math.PI / 2;
+    g.save();
+    g.translate(p.x + Math.cos(nrm) * 0.4, p.y + Math.sin(nrm) * 0.4);
+    g.rotate(nrm - Math.PI / 2 - side * 0.5);
+    g.beginPath();
+    g.moveTo(-len * 0.16, len * 0.44);
+    g.quadraticCurveTo(-len * 0.04, len * 0.76, 0, len);
+    g.quadraticCurveTo(len * 0.07, len * 0.76, len * 0.16, len * 0.44);
+    g.closePath();
+    g.fillStyle = MARK; g.fill();
+    g.fillStyle = 'rgba(255,74,32,0.5)';
+    g.beginPath(); g.arc(0, len * 0.9, len * 0.3, 0, TAU); g.fill();
+    g.restore();
+  }
+
+  // A bramble leaflet: the clump petal with a midrib and two veins.
+  function gleaf(g, x, y, ang, w2, len, col, o) {
+    o = o || {};
+    if (o.drop) clump(g, x + 0.7, y + 0.9, w2, len, ang, 'rgba(4,8,3,0.4)', null);
+    clump(g, x, y, w2, len, ang, col, { line: o.line, lw: o.lw || 0.8, hi: o.hi });
+    if (!o.vein) return;
+    g.save(); g.translate(x, y); g.rotate(ang);
+    g.strokeStyle = o.vein; g.lineWidth = 0.6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(0, len * 0.04); g.lineTo(0, -len * 0.82); g.stroke();
+    g.beginPath(); g.moveTo(0, -len * 0.28); g.lineTo(-w2 * 0.4, -len * 0.5); g.stroke();
+    g.beginPath(); g.moveTo(0, -len * 0.46); g.lineTo(w2 * 0.38, -len * 0.66); g.stroke();
+    g.restore();
+  }
+
+  // Pale unripe berries in a knot of three, each with its wet dot.
+  function gberry(g, x, y, s) {
+    g.strokeStyle = '#3a2a14'; g.lineWidth = 0.7; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(x, y - s * 2.6); g.lineTo(x, y - s * 0.7); g.stroke();
+    const one = (bx, by, br, col) => {
+      blob(g, bx, by, br, br * 0.94, col, {
+        lw: 0.75, mid: 'rgba(40,44,28,0.16)', shade: 'rgba(40,44,28,0.32)',
+        hi: 'rgba(255,255,240,0.4)',
+      });
+      g.fillStyle = 'rgba(255,255,240,0.55)';
+      g.beginPath(); g.arc(bx - br * 0.3, by - br * 0.34, br * 0.26, 0, TAU); g.fill();
+    };
+    one(x - s * 0.9, y + s * 0.28, s, '#9aa27e');
+    one(x + s * 0.86, y + s * 0.48, s * 0.84, '#828a68');
+    one(x, y - s * 0.5, s * 0.92, '#aeb490');
+  }
+
+  // A young tendril curling off a cane: the one soft line in a hostile plant.
+  function gtendril(g, x, y, a, len, col) {
+    g.save(); g.translate(x, y); g.rotate(a);
+    g.strokeStyle = col; g.lineWidth = 1; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(0, 0);
+    g.quadraticCurveTo(len * 0.34, -len * 0.55, len * 0.1, -len);
+    g.stroke();
+    g.beginPath(); g.arc(len * 0.1 - 1.5, -len - 0.3, 1.6, -0.6, Math.PI * 1.35); g.stroke();
+    g.restore();
+  }
+
+  // The Sign, scratched into a cane by something carrying an axe.
+  function gscratch(g, c, t, s) {
+    const p = qAt(c, t);
+    g.save(); g.translate(p.x, p.y); g.rotate(p.a);
+    g.strokeStyle = 'rgba(212,64,44,0.55)'; g.lineWidth = 1; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(-s, -s * 0.55); g.lineTo(s, s * 0.55); g.stroke();
+    g.beginPath(); g.moveTo(-s * 0.75, s * 0.55); g.lineTo(s * 0.75, -s * 0.55); g.stroke();
+    g.fillStyle = 'rgba(255,74,32,0.4)';
+    g.beginPath(); g.arc(0, 0, 0.85, 0, TAU); g.fill();
+    g.restore();
+  }
+
+  // The gap in the treeline both states are painted into.
+  function gateGap(g) {
+    g.beginPath();
+    g.moveTo(4, 84);
+    g.lineTo(4.4, 40);
+    g.quadraticCurveTo(7, 14, 32, 9);
+    g.quadraticCurveTo(57, 14, 59.6, 40);
+    g.lineTo(60, 84);
+    g.closePath();
+  }
+
+  // Inside the gap, inset from its edge: the test every leaf of the shut
+  // weave has to pass.
+  function gateInArch(x, y, inset) {
+    if (y < 11 + inset || y > 85) return false;
+    const hw = y >= 42 ? 27.6
+      : 27.6 * Math.sqrt(Math.max(0, 1 - ((42 - y) / 33) * ((42 - y) / 33)));
+    return Math.abs(x - 32) <= hw - inset;
+  }
+
+  // A tier of leaves on a jittered grid: the whole reason the weave looks
+  // grown rather than placed. The callback does the drawing so the corrupted
+  // pass can walk the identical field and paint only what it wants.
+  function gateLeafField(rng, o, each) {
+    for (let r = 0; r < o.ny; r++) {
+      for (let ci = 0; ci < o.nx; ci++) {
+        const x = o.x0 + (ci + 0.5) * ((o.x1 - o.x0) / o.nx) + (rng() - 0.5) * o.jx;
+        const y = o.y0 + (r + 0.5) * ((o.y1 - o.y0) / o.ny) + (rng() - 0.5) * o.jy;
+        const ang = (rng() - 0.5) * o.spread + (x - 32) * (o.fan || 0);
+        const len = o.len * (0.76 + rng() * 0.46);
+        const pick = rng();
+        const hot = rng();
+        if (!o.test(x, y)) continue;
+        each(x, y, ang, len, pick, hot);
+      }
+    }
+  }
+
+  // Shut: canes 0 to 4 lie behind the leaf mass, 5 to 8 in front of it.
+  const GATE_CANES = [
+    [1, 79, 15, 41, 45, 12],
+    [63, 81, 49, 43, 19, 11],
+    [0, 57, 21, 29, 57, 23],
+    [64, 61, 43, 27, 7, 21],
+    [10, 84, 30, 56, 52, 18],
+    [3, 84, 25, 63, 60, 45],
+    [61, 84, 37, 59, 4, 43],
+    [29, 84, 38, 48, 24, 12],
+    [54, 84, 44, 50, 12, 30],
+    [5, 47, 30, 21, 59, 35],
+    [59, 53, 34, 17, 7, 31],
+  ];
+  const GATE_TH = [0.12, 0.24, 0.36, 0.48, 0.6, 0.72, 0.84];
+  function gateThorns(front, fn) {
+    for (let ci = 0; ci < GATE_CANES.length; ci++) {
+      if ((ci >= 5) !== front) continue;
+      for (let i = 0; i < GATE_TH.length; i++) {
+        fn(GATE_CANES[ci], GATE_TH[i], i % 2 ? 1 : -1, ci, i);
+      }
+    }
+  }
+
+  function gateShut(g, mark) {
+    const rng = gRng(0x51ed2701);
+    if (!mark) {
+      // the wood behind the weave: what little of it you are allowed to see
+      gateGap(g); g.fillStyle = '#080e06'; g.fill();
+      g.save(); gateGap(g); g.clip();
+      const gr = g.createLinearGradient(0, 8, 0, 84);
+      gr.addColorStop(0, '#16220e'); gr.addColorStop(0.5, '#0b1307'); gr.addColorStop(1, '#050a04');
+      g.fillStyle = gr; g.fillRect(0, 0, 64, 84);
+      g.fillStyle = '#0d1509';
+      g.fillRect(14, 8, 5.5, 76); g.fillRect(43, 10, 4.5, 74);
+      g.strokeStyle = 'rgba(168,206,140,0.12)'; g.lineWidth = 1.3; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(26, 14); g.lineTo(24, 44); g.stroke();
+      g.beginPath(); g.moveTo(38, 16); g.lineTo(40, 38); g.stroke();
+      g.restore();
+
+      // the weave as one carrying mass: the five level lighting lives here,
+      // the canes and clumps above only break its edges. Notch vertices at
+      // the shoulders leave the slivers of wood that sell the depth.
+      apoly(g, [
+        [6, 84, 2], [5, 54, 4], [11, 42, 3], [6, 27, 3], [15, 15, 4],
+        [25, 22, 3], [32, 10, 4], [40, 21, 3], [50, 14, 4], [58, 28, 3],
+        [53, 42, 3], [59, 55, 4], [58, 84, 2],
+      ], '#152410', GATE_MASS);
+      // two holes punched clean through, half grown over again further up
+      blob(g, 21, 33, 3.6, 2.8, '#080e06', { flat: true, noline: true });
+      blob(g, 45, 59, 3, 2.4, '#080e06', { flat: true, noline: true });
+    }
+
+    // tier one: the dark behind everything
+    gateLeafField(rng, {
+      nx: 10, ny: 10, x0: 4, x1: 60, y0: 10, y1: 85, jx: 5, jy: 5,
+      spread: 2.4, len: 5.2, test: (x, y) => gateInArch(x, y, 1),
+    }, (x, y, a, len, pick) => {
+      if (mark) return;
+      gleaf(g, x, y, a, len * 0.6, len, LEAF_BACK[(pick * 3) | 0], {});
     });
-  });
+    if (!mark) {
+      for (let i = 0; i < 5; i++) cane(g, GATE_CANES[i], 0, 1, 1.6, CANE_D, { back: true });
+    }
+    gateThorns(false, (c, t, s, ci, i) => {
+      const lit = ((ci * 7 + i) % 9) === 0;
+      if (!mark) thorn(g, c, t, s, 1.8, THORN_D, lit);
+    });
+
+    // tier two: the body of the weave
+    gateLeafField(rng, {
+      nx: 9, ny: 9, x0: 5, x1: 59, y0: 11, y1: 85, jx: 5.5, jy: 5.5,
+      spread: 2.6, len: 5.6, test: (x, y) => gateInArch(x, y, 1.5),
+    }, (x, y, a, len, pick, hot) => {
+      if (mark) return;
+      gleaf(g, x, y, a, len * 0.6, len, LEAF_MID[(pick * 3) | 0], {
+        drop: true, hi: hot < 0.14 ? LEAF_HI : null,
+      });
+    });
+
+    if (!mark) {
+      // front canes over the body, then three back canes crossing back over
+      // the front ones: the overlap is the weave
+      for (let i = 5; i < GATE_CANES.length; i++) cane(g, GATE_CANES[i], 0, 1, 2.3, CANE_M, {});
+      cane(g, GATE_CANES[0], 0.42, 0.58, 1.6, CANE_D, { back: true });
+      cane(g, GATE_CANES[1], 0.4, 0.56, 1.6, CANE_D, { back: true });
+      cane(g, GATE_CANES[2], 0.5, 0.64, 1.9, CANE_D, { back: true });
+      cane(g, GATE_CANES[4], 0.24, 0.4, 1.6, CANE_D, { back: true });
+    }
+
+    if (!mark) {
+      // moonlight along the top shoulder, the note the crowns carry, laid in
+      // before the lit tier so the leaves break it up
+      g.strokeStyle = 'rgba(190,224,130,0.14)'; g.lineWidth = 1.7; g.lineCap = 'round';
+      g.beginPath(); g.arc(32, 36, 24, Math.PI * 1.1, Math.PI * 1.56); g.stroke();
+    }
+    // tier three: the lit leaves, veined, outlined where they cut the edge
+    gateLeafField(rng, {
+      nx: 7, ny: 7, x0: 6, x1: 58, y0: 12, y1: 84, jx: 6, jy: 6,
+      spread: 2.8, len: 6, test: (x, y) => gateInArch(x, y, 0.5),
+    }, (x, y, a, len, pick, hot) => {
+      const edge = !gateInArch(x, y, 5);
+      const lit = x + y < 62;
+      if (!mark) {
+        gleaf(g, x, y, a, len * 0.62, len, lit && hot < 0.5 ? LEAF_LIT : LEAF_FRONT[(pick * 3) | 0], {
+          drop: true, line: OUT, lw: edge ? 1 : 0.8,
+          vein: 'rgba(10,22,7,0.5)',
+          hi: hot < 0.3 ? LEAF_HI : null,
+        });
+      } else if (hot > 0.88) {
+        // corruption creeping up the veins of a few leaves
+        clump(g, x, y, len * 0.62, len, a, 'rgba(178,44,30,0.34)', null);
+        g.save(); g.translate(x, y); g.rotate(a);
+        g.strokeStyle = 'rgba(255,74,32,0.65)'; g.lineWidth = 0.7; g.lineCap = 'round';
+        g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -len * 0.82); g.stroke();
+        g.restore();
+      }
+    });
+
+    if (!mark) {
+      gberry(g, 17, 50, 1.15); gberry(g, 44, 28, 1.05);
+      gtendril(g, 24, 45, -0.35, 8, '#4c6c34');
+      gtendril(g, 48, 57, 0.4, 7, '#3c5a28');
+    }
+    // thorns last: they bristle through the foliage, not under it
+    gateThorns(true, (c, t, s, ci, i) => {
+      const lit = ((ci * 3 + i) % 5) === 0;
+      if (!mark) thorn(g, c, t, s, 2.1, lit ? THORN_L : THORN_D, lit);
+      else if ((ci + i) % 4 === 0) thornTip(g, c, t, s, 2.1);
+    });
+    if (mark) {
+      gscratch(g, GATE_CANES[5], 0.36, 3.2);
+      gscratch(g, GATE_CANES[6], 0.54, 2.8);
+      gscratch(g, GATE_CANES[7], 0.6, 2.6);
+    }
+  }
+
+  // Open: the canes hauled back into two bunches, a lintel still spanning the
+  // top, and the trodden gap lit between them.
+  const GATE_OPEN_CANES = [
+    [9, 84, 1, 48, 13, 12],
+    [19, 84, 13, 45, 5, 17],
+    [15, 84, 6, 40, 17, 22],
+    [55, 84, 63, 46, 51, 11],
+    [45, 84, 52, 42, 59, 18],
+    [49, 84, 58, 38, 47, 24],
+    [2, 27, 32, 3, 62, 25],
+    [5, 36, 32, 13, 59, 33],
+  ];
+  const GATE_OPEN_TH = [0.14, 0.28, 0.42, 0.56, 0.7, 0.84];
+  function gateOpenThorns(fn) {
+    for (let ci = 0; ci < GATE_OPEN_CANES.length; ci++) {
+      for (let i = 0; i < GATE_OPEN_TH.length; i++) {
+        fn(GATE_OPEN_CANES[ci], GATE_OPEN_TH[i], i % 2 ? 1 : -1, ci, i);
+      }
+    }
+  }
+  // The bunched masses: the inner edge slides inward as it comes down, so the
+  // gap is a wedge and the mass is heaviest against the outer edge.
+  function gateInBunch(x, y, side, inset) {
+    if (y < 10 || y > 85) return false;
+    const inner = side < 0 ? 11 + (y / 84) * 13 : 53 - (y / 84) * 13;
+    return side < 0 ? x < inner - inset && x > -2 : x > inner + inset && x < 66;
+  }
+  function gateUnderLintel(x, y) {
+    if (y > 30 || y < 6) return false;
+    return gateInArch(x, y, 0) && !gateInBunch(x, y, -1, 0) && !gateInBunch(x, y, 1, 0);
+  }
+
+  function gateOpen(g, mark) {
+    const rng = gRng(0x2f6d1a95);
+    if (!mark) {
+      // the path the woods just handed you
+      gateGap(g); g.fillStyle = '#070d05'; g.fill();
+      g.save(); gateGap(g); g.clip();
+      let gr = g.createLinearGradient(0, 8, 0, 84);
+      gr.addColorStop(0, '#0a1207'); gr.addColorStop(0.6, '#101809'); gr.addColorStop(1, '#241d10');
+      g.fillStyle = gr; g.fillRect(0, 0, 64, 84);
+      g.fillStyle = '#0a1006';
+      g.fillRect(12, 8, 6, 58); g.fillRect(46, 9, 5, 54);
+      // trodden earth, widening toward the camera
+      poly(g, [[27, 36], [37, 36], [50, 84], [14, 84]], '#2e2410', { noline: true });
+      poly(g, [[29, 42], [35, 42], [45, 84], [19, 84]], '#453619', { noline: true });
+      poly(g, [[30, 50], [34, 50], [40, 84], [24, 84]], '#5a4724', { noline: true });
+      // warm light spilling over the threshold
+      gr = g.createRadialGradient(32, 76, 2, 32, 76, 44);
+      gr.addColorStop(0, 'rgba(255,232,172,0.5)');
+      gr.addColorStop(0.4, 'rgba(244,197,66,0.2)');
+      gr.addColorStop(1, 'rgba(244,197,66,0)');
+      g.fillStyle = gr; g.fillRect(0, 0, 64, 84);
+      // pebbles pressed into the path, and two blades that survived the boots
+      [[28, 64, 1.5], [36, 71, 1.7], [30, 78, 1.9], [38, 58, 1.2]].forEach(s => {
+        blob(g, s[0], s[1], s[2], s[2] * 0.6, '#6b5a34', { lw: 0.7, line: 'rgba(20,14,6,0.7)' });
+        g.fillStyle = 'rgba(255,236,190,0.4)';
+        g.beginPath(); g.arc(s[0] - s[2] * 0.3, s[1] - s[2] * 0.3, s[2] * 0.24, 0, TAU); g.fill();
+      });
+      g.strokeStyle = '#3d4d2e'; g.lineWidth = 1; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(24, 81); g.quadraticCurveTo(22, 75, 23, 71); g.stroke();
+      g.beginPath(); g.moveTo(42, 79); g.quadraticCurveTo(44, 74, 43, 70); g.stroke();
+      g.restore();
+
+      // the lintel still spans the top, so the gap stays framed by wood
+      cane(g, GATE_OPEN_CANES[6], 0, 1, 1.9, CANE_D, { back: true });
+      cane(g, GATE_OPEN_CANES[7], 0, 1, 1.6, CANE_D, { back: true });
+    }
+    // leaves hanging off the lintel into the top of the gap
+    gateLeafField(rng, {
+      nx: 10, ny: 4, x0: 5, x1: 59, y0: 7, y1: 30, jx: 4.5, jy: 4,
+      spread: 0.9, len: 5.4, test: gateUnderLintel,
+    }, (x, y, a, len, pick, hot) => {
+      if (mark) return;
+      gleaf(g, x, y, a + Math.PI, len * 0.6, len,
+        hot < 0.45 ? LEAF_MID[(pick * 3) | 0] : LEAF_FRONT[(pick * 3) | 0],
+        { drop: true, vein: hot > 0.7 ? 'rgba(10,22,7,0.5)' : null, hi: hot < 0.12 ? LEAF_HI : null });
+    });
+    if (!mark) {
+      gtendril(g, 27, 22, -0.2, 8, '#4c6c34');
+      gtendril(g, 41, 24, 0.25, 7, '#3c5a28');
+      // the two bunches: heaviest against the outer edge where they gather
+      apoly(g, [
+        [0, 84, 2], [0, 16, 3], [7, 8, 4], [15, 15, 3], [12, 26, 3],
+        [20, 38, 4], [15, 50, 3], [23, 62, 4], [17, 72, 3], [24, 84, 2],
+      ], '#152410', GATE_MASS);
+      apoly(g, [
+        [64, 84, 2], [64, 14, 3], [56, 7, 4], [49, 14, 3], [52, 25, 3],
+        [44, 36, 4], [49, 49, 3], [41, 60, 4], [47, 71, 3], [40, 84, 2],
+      ], '#152410', GATE_MASS);
+    }
+    // the dark tier inside each bunch
+    for (const side of [-1, 1]) {
+      gateLeafField(rng, {
+        nx: 5, ny: 11, x0: side < 0 ? 0 : 40, x1: side < 0 ? 24 : 64,
+        y0: 10, y1: 85, jx: 4.5, jy: 5, spread: 1.6, len: 5.2,
+        test: (x, y) => gateInBunch(x, y, side, 1.5),
+      }, (x, y, a, len, pick) => {
+        if (mark) return;
+        gleaf(g, x, y, a + side * 0.4, len * 0.6, len, LEAF_BACK[(pick * 3) | 0], {});
+      });
+    }
+    if (!mark) {
+      for (let i = 0; i < 6; i++) cane(g, GATE_OPEN_CANES[i], 0, 1, 2.3, CANE_M, {});
+      // the lintel crossing back over the bunches it is tied into
+      cane(g, GATE_OPEN_CANES[6], 0.05, 0.19, 1.9, CANE_D, { back: true });
+      cane(g, GATE_OPEN_CANES[6], 0.81, 0.95, 1.9, CANE_D, { back: true });
+    }
+    // the lit tier: brightest along the inner edges where the gap light lands
+    for (const side of [-1, 1]) {
+      gateLeafField(rng, {
+        nx: 5, ny: 9, x0: side < 0 ? 0 : 40, x1: side < 0 ? 24 : 64,
+        y0: 11, y1: 84, jx: 5, jy: 6, spread: 2, len: 5.8,
+        test: (x, y) => gateInBunch(x, y, side, 0),
+      }, (x, y, a, len, pick, hot) => {
+        const edge = !gateInBunch(x, y, side, 4.5);
+        if (!mark) {
+          gleaf(g, x, y, a + side * 0.5, len * 0.62, len,
+            edge && hot < 0.6 ? LEAF_LIT : LEAF_FRONT[(pick * 3) | 0], {
+              drop: true, line: OUT, lw: edge ? 1 : 0.8,
+              vein: 'rgba(10,22,7,0.5)', hi: hot < 0.28 ? LEAF_HI : null,
+            });
+        } else if (hot > 0.9) {
+          clump(g, x, y, len * 0.62, len, a + side * 0.5, 'rgba(178,44,30,0.34)', null);
+        }
+      });
+    }
+    gateOpenThorns((c, t, s, ci, i) => {
+      const len = ci < 6 ? 2.1 : 1.9;
+      const lit = ((ci * 3 + i) % 5) === 0;
+      if (!mark) thorn(g, c, t, s, len, lit ? THORN_L : THORN_D, lit);
+      else if ((ci + i) % 4 === 0) thornTip(g, c, t, s, len);
+    });
+    if (!mark) {
+      gberry(g, 11, 47, 1.1); gberry(g, 53, 36, 1.05); gberry(g, 19, 70, 1);
+      // the inner edges catch the light coming through the gap, in the short
+      // broken catches a leaf edge actually makes
+      g.lineCap = 'round';
+      for (const side of [-1, 1]) {
+        for (let i = 0; i < 7; i++) {
+          const y0 = 16 + i * 9.5 + (i % 2) * 2.5;
+          const len = 4 + (i % 3) * 2;
+          const x0 = side < 0 ? 12.5 + (y0 / 84) * 8 : 51.5 - (y0 / 84) * 8;
+          g.strokeStyle = 'rgba(255,214,146,' + (i % 2 ? 0.34 : 0.24) + ')';
+          g.lineWidth = i % 2 ? 1.4 : 1;
+          g.beginPath();
+          g.moveTo(x0, y0);
+          g.quadraticCurveTo(x0 + side * 0.9, y0 + len * 0.5, x0 + side * 0.4, y0 + len);
+          g.stroke();
+        }
+      }
+      g.strokeStyle = 'rgba(190,224,130,0.13)'; g.lineWidth = 1.4;
+      g.beginPath(); g.arc(10, 46, 12, Math.PI * 1.05, Math.PI * 1.7); g.stroke();
+    } else {
+      gscratch(g, GATE_OPEN_CANES[0], 0.55, 3);
+      gscratch(g, GATE_OPEN_CANES[3], 0.48, 2.8);
+      gscratch(g, GATE_OPEN_CANES[6], 0.5, 2.6);
+    }
+  }
+
+  P.gate_shut = () => mk(GATE_W, GATE_H, (g) => gateShut(g, false));
+  P.gate_shut_mark = () => mk(GATE_W, GATE_H, (g) => gateShut(g, true));
+  P.gate_open = () => mk(GATE_W, GATE_H, (g) => gateOpen(g, false));
+  P.gate_open_mark = () => mk(GATE_W, GATE_H, (g) => gateOpen(g, true));
+  // legacy key: props and layouts that still ask for 'door' get the gate
+  P.door = () => mk(GATE_W, GATE_H, (g) => gateShut(g, false));
 
   // ---------------- ground decorations ----------------
   P.grass1 = () => mk(24, 18, (g) => {

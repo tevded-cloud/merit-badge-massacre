@@ -799,18 +799,35 @@ class Room {
 }
 
 (function () {
-  // The door painter is shut by default. Open reads as the same frame with a
-  // lit interior: a warm glow laid down first, then the sprite at partial
-  // alpha so the glow burns through the dark panel.
+  // The exit is a living gate of bramble. Shut, the weave fills the treeline
+  // gap; opening, the weave parts from the middle and gathers at the sides
+  // over the already lit gap; open, the woods are letting you through. The
+  // shadow, the dwell arc and the offer plaque are untouched.
   Game.prototype.renderDoor = function (ctx, door) {
     if (!ctx || !door) return;
     if (typeof SPR === 'undefined' || !SPR) return;
 
     const open = door.state === 'open';
     const yB = door.y + 6;
-    const h = typeof SPR.height === 'function' ? SPR.height('door', ROOM_DOOR_W) : 84;
+    const W = ROOM_DOOR_W;
+    const h = typeof SPR.height === 'function' ? SPR.height('gate_shut', W) : 84;
     // 0 while shut, easing to 1 as the opening animation runs out
     const k = open ? 1 - Math.max(0, Math.min(1, (door.openT || 0) / ROOM_OPEN_T)) : 0;
+    const e = k * k * (3 - 2 * k);
+    const t = this.t || 0;
+
+    // corruption is the render side's call: read the same field it does, so a
+    // marked room gets red thorn tips and scratched canes without a second
+    // opinion about which rooms are marked
+    let mark = false;
+    if (this.room && typeof this._roomDress === 'function') {
+      const rd = this._roomDress();
+      mark = !!(rd && rd.corrupt);
+    }
+    const gate = (name, x, w, o) => {
+      SPR.drawBottom(ctx, name, x, yB, w, o);
+      if (mark) SPR.drawBottom(ctx, name + '_mark', x, yB, w, o);
+    };
 
     ctx.save();
 
@@ -819,18 +836,93 @@ class Room {
     ctx.ellipse(door.x, yB, ROOM_DOOR_W * 0.46, ROOM_DOOR_W * 0.16, 0, 0, ROOM_TAU);
     ctx.fill();
 
+    if (open && e > 0) {
+      // the light pool the open gap throws on the ground in front of it
+      const pr = W * 0.56 * (0.72 + 0.28 * e);
+      const pg = ctx.createRadialGradient(door.x, yB + 4, 1, door.x, yB + 4, pr);
+      pg.addColorStop(0, 'rgba(255,226,158,' + (0.3 * e).toFixed(3) + ')');
+      pg.addColorStop(0.5, 'rgba(244,197,66,' + (0.12 * e).toFixed(3) + ')');
+      pg.addColorStop(1, 'rgba(244,197,66,0)');
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.translate(door.x, yB + 4);
+      ctx.scale(1, 0.42);
+      ctx.fillStyle = pg;
+      ctx.translate(-door.x, -(yB + 4));
+      ctx.beginPath(); ctx.arc(door.x, yB + 4, pr, 0, ROOM_TAU); ctx.fill();
+      ctx.restore();
+    }
+
     if (open && k > 0) {
+      // the halo the open gap throws back into the treeline around it
       const cx = door.x, cy = yB - h * 0.52;
       const rad = h * 0.75;
       const gr = ctx.createRadialGradient(cx, cy, 2, cx, cy, rad);
-      gr.addColorStop(0, 'rgba(255,238,190,' + (0.6 * k).toFixed(3) + ')');
-      gr.addColorStop(0.45, 'rgba(244,197,66,' + (0.28 * k).toFixed(3) + ')');
+      gr.addColorStop(0, 'rgba(255,238,190,' + (0.34 * e).toFixed(3) + ')');
+      gr.addColorStop(0.45, 'rgba(244,197,66,' + (0.18 * e).toFixed(3) + ')');
       gr.addColorStop(1, 'rgba(244,197,66,0)');
       ctx.fillStyle = gr;
       ctx.fillRect(cx - rad, cy - rad, rad * 2, rad * 2);
     }
 
-    SPR.drawBottom(ctx, 'door', door.x, yB, ROOM_DOOR_W, open ? { alpha: 0.85 } : null);
+    if (!open) {
+      gate('gate_shut', door.x, W, null);
+    } else {
+      // the parted gate is laid down first and the shut weave rides over it in
+      // two halves, each squeezed toward its own edge of the gap: the curtain
+      // gathers where it is pinned instead of sliding out of the treeline, and
+      // the same art crushed into half the width is what thickens the bunches
+      gate('gate_open', door.x, W, e < 0.22 ? { alpha: e / 0.22 } : null);
+      if (e < 1) {
+        const sx = 1 - 0.56 * e;
+        const fade = e < 0.55 ? 1 : 1 - (e - 0.55) / 0.45;
+        for (const side of [-1, 1]) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(side < 0 ? door.x - W : door.x, yB - h - 34, W, h + 44);
+          ctx.clip();
+          const pivot = door.x + side * W * 0.5;
+          ctx.translate(pivot, 0);
+          ctx.scale(sx, 1);
+          ctx.translate(-pivot, 0);
+          gate('gate_shut', door.x, W, { alpha: fade });
+          ctx.restore();
+        }
+      }
+      // the light coming through, laid over the weave rather than behind it:
+      // a hot slit where the canes first part, widening into the whole gap
+      const lx = door.x, ly = yB - h * 0.46;
+      const lrx = W * (0.1 + 0.32 * e), lry = h * 0.5;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.translate(lx, ly);
+      ctx.scale(lrx / lry, 1);
+      ctx.translate(-lx, -ly);
+      const lg = ctx.createRadialGradient(lx, ly, 1, lx, ly, lry);
+      lg.addColorStop(0, 'rgba(255,232,176,' + (0.24 + 0.14 * e).toFixed(3) + ')');
+      lg.addColorStop(0.42, 'rgba(244,197,66,' + (0.08 + 0.08 * e).toFixed(3) + ')');
+      lg.addColorStop(1, 'rgba(244,197,66,0)');
+      ctx.fillStyle = lg;
+      ctx.beginPath(); ctx.arc(lx, ly, lry, 0, ROOM_TAU); ctx.fill();
+      ctx.restore();
+
+      // motes drifting up out of the lit gap
+      if (e > 0.25) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 5; i++) {
+          const ph = i * 1.7 + door.x * 0.05;
+          const my = (t * 9 + i * 11) % 44;
+          const mx = door.x + (i - 2) * 4 + Math.sin(t * 0.9 + ph) * (5 + i * 1.4);
+          const a = (1 - my / 44) * 0.5 * e;
+          ctx.fillStyle = 'rgba(255,226,158,' + a.toFixed(3) + ')';
+          ctx.beginPath();
+          ctx.arc(mx, yB - 8 - my, 1 + (i % 2) * 0.6, 0, ROOM_TAU);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
 
     if (open && door.offer) {
       this.renderDoorOffer(ctx, door, yB - h - 10);
