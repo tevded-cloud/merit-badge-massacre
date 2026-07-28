@@ -42,7 +42,16 @@ const Run = (function () {
   // sight rather than half understood. Nothing else in the game reads or
   // writes this key, and a page with no snapshot behaves exactly as before.
   const SAVE_KEY = 'mbm_run';
-  const SAVE_VERSION = 1;
+  const SAVE_VERSION = 2;
+
+  // Every night carries an id, minted when it begins and kept through every
+  // save and every continue, and the id of the last night to END is kept here.
+  // That is the whole guard against the same saved night being cashed in
+  // twice: two tabs opened on one snapshot share its id, so the moment either
+  // of them finishes the night, the other one's copy is a night that is over,
+  // and it is neither written back nor offered again. One id is enough for
+  // that, and one id is all this ever holds, so it stays a few bytes forever.
+  const DONE_KEY = 'mbm_rundone';
 
   // THE HOLLOW is authored as the room after act 3, not as act 3's boss arena,
   // so the generic boss arena pick skips it until the epilogue lands.
@@ -190,6 +199,49 @@ const Run = (function () {
     try { st.removeItem(SAVE_KEY); } catch (e) {}
   }
 
+  // A name for one night. Nothing in the simulation reads it, so it is allowed
+  // the clock and a counter: it only has to be different from the night before
+  // it and from a night begun in another tab at the same moment.
+  let idTick = 0;
+  function newRunId() {
+    idTick = (idTick + 1) >>> 0;
+    const a = entropySeed() >>> 0;
+    const b = ((Date.now() >>> 0) ^ Math.imul(idTick, 2654435761)) >>> 0;
+    return a.toString(36) + '-' + b.toString(36);
+  }
+
+  function markDone(id) {
+    if (!id) return;
+    const st = store();
+    if (!st) return;
+    try { st.setItem(DONE_KEY, String(id)); } catch (e) {}
+  }
+
+  // The id on the snapshot as it lies in storage, read without validating any
+  // of the rest of it. Wanted only when a night is being thrown away by a page
+  // that is not the one playing it: the title screen starting a fresh night,
+  // or a camp arriving from another device.
+  function storedId() {
+    const st = store();
+    if (!st) return null;
+    let raw = null;
+    try { raw = st.getItem(SAVE_KEY); } catch (e) { return null; }
+    if (!raw) return null;
+    try {
+      const s = JSON.parse(raw);
+      return (s && typeof s.id === 'string' && s.id) ? s.id : null;
+    } catch (e) { return null; }
+  }
+
+  function isDone(id) {
+    if (!id) return false;
+    const st = store();
+    if (!st) return false;
+    let v = null;
+    try { v = st.getItem(DONE_KEY); } catch (e) { return false; }
+    return !!v && v === String(id);
+  }
+
   // Every reason to refuse a snapshot lives here, and refusing is silent: a
   // bad save is a save that never existed, and the title screen never learns
   // there was one. Anything the build no longer has a definition for (a
@@ -199,11 +251,27 @@ const Run = (function () {
     if (!st) return null;
     let raw = null;
     try { raw = st.getItem(SAVE_KEY); } catch (e) { return null; }
-    if (!raw) return null;
+    if (raw === null || raw === undefined) return null;
+    // A key holding nothing at all is not a snapshot, it is litter.
+    if (!raw) { dropSave(); return null; }
+    const s = parseSave(raw);
+    // A snapshot that was refused is a snapshot that is never coming back, so
+    // it does not sit in storage waiting for the next fresh night to sweep it
+    // up. The offer is already hidden; this is the key going with it.
+    if (!s) dropSave();
+    return s;
+  }
+
+  function parseSave(raw) {
     let s = null;
     try { s = JSON.parse(raw); } catch (e) { return null; }
     if (!s || typeof s !== 'object') return null;
     if (s.v !== SAVE_VERSION) return null;
+    // The night this snapshot belongs to. A night that has already ended, in
+    // this tab or another one, is not continued: it was banked or abandoned
+    // and cashing it in again would pay for it twice.
+    if (typeof s.id !== 'string' || !s.id) return null;
+    if (isDone(s.id)) return null;
     if (!isNum(s.seed) || !isNum(s.rng)) return null;
     if (!isNum(s.act) || !isNum(s.roomIdx) || s.act < 1 || s.roomIdx < 0) return null;
     if (typeof s.charId !== 'string') return null;
@@ -727,6 +795,7 @@ const Run = (function () {
     plan: null,
     doors: [],
     carvings: [],
+    runId: null,
     lastResume: null,
     _entered: false,
     _recent: [],
@@ -738,6 +807,10 @@ const Run = (function () {
       this.charId = charId || ((typeof META !== 'undefined' && META && META.selected) || 'max');
       this.seed = s;
       this.rng = mulberry32(s);
+      // A fresh night is a new night, whatever it was dealt from. resume puts
+      // the saved id back over this one, because a continued night is the same
+      // night and has to end as the same night.
+      this.runId = newRunId();
       this.active = true;
       this.finished = false;
       this.act = 1;
@@ -764,6 +837,7 @@ const Run = (function () {
       this._entered = false;
       this._recent = [];
       this.carvings = [];
+      this.runId = null;
       thawNight();
     },
 
@@ -918,11 +992,18 @@ const Run = (function () {
     // and whatever the game says its own state is.
     _write(g, cur, pre) {
       if (!this.active || !g || typeof g.snapshot !== 'function') return false;
+      // This night has already ended somewhere else: another tab was playing
+      // the same saved night and finished it, or the player started a fresh
+      // one from the title screen. Writing here would put a night that is over
+      // back on the shelf. Refuse, and leave the shelf alone: whatever is on
+      // it now belongs to whichever night is still being played.
+      if (isDone(this.runId)) return false;
       let mine = null;
       try { mine = g.snapshot(); } catch (e) { return false; }
       if (!mine) return false;
       return writeSave({
         v: SAVE_VERSION,
+        id: this.runId,
         at: Date.now(),
         seed: this.seed >>> 0,
         rng: pre.rng >>> 0,
@@ -936,8 +1017,9 @@ const Run = (function () {
       });
     },
 
-    // The one snapshot on disk, fully validated, or null. Reads only: asking
-    // twice costs nothing and changes nothing.
+    // The one snapshot on disk, fully validated, or null. Asking twice costs
+    // nothing: the only thing a read ever writes is the removal of a snapshot
+    // it has just refused, and a refused snapshot is gone the first time.
     peek() { return readSave(); },
 
     // A line for the title screen, in the player's words rather than the
@@ -954,7 +1036,17 @@ const Run = (function () {
       return bits.join('  |  ');
     },
 
-    clearSave() { dropSave(); },
+    // Called wherever a night stops being continuable: death, dawn, abandoning
+    // it, the results screen, a fresh night, an imported camp. The night's id
+    // is retired here as well as the snapshot, so any other copy of it (the
+    // second tab) is a night that is over the next time anything looks.
+    clearSave() {
+      // The night being ended is this page's night, or, when this page is not
+      // playing one (the title screen starting a fresh one, an imported camp),
+      // the night lying in storage that is about to be thrown away.
+      markDone(this.runId || storedId());
+      dropSave();
+    },
 
     // Put a night back. The game is already rebuilt and handed in; this puts
     // the plan, the cursor and the dice back, then walks the player into the
@@ -968,6 +1060,9 @@ const Run = (function () {
       // themselves read the pole: a night carved for THE LONG WALK is one
       // room longer and has to stay that way whatever the pole says now.
       this.begin(s.charId, s.seed, s.carvings);
+      // A continued night is the same night, so it keeps the name it was saved
+      // under and ending it retires that name for every copy of the snapshot.
+      if (typeof s.id === 'string' && s.id) this.runId = s.id;
       this.lastResume = comparePlans(this.plan, stored);
       this.plan = stored;
       syncBeats(stored);
@@ -984,7 +1079,14 @@ const Run = (function () {
       this._entered = false;
       this.finished = false;
       this.doors = [];
-      return this.advance(null);
+      // advance answers null when it cannot build the room (no game attached
+      // to the page, for one), and by then begin has already run: the run is
+      // live, a plan is built, the pole is frozen. Put all of it back, so the
+      // claim above is true for the caller rather than true for the one caller
+      // that happens to clean up afterwards.
+      const room = this.advance(null);
+      if (!room) { this.reset(); return null; }
+      return room;
     },
   };
 

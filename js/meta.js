@@ -54,6 +54,10 @@ const META = {
       if (this.runs > 0 && this.unlocked.length === 0) this.unlocked.push('junie', 'gus');
     } catch (e) {}
   },
+  // Answers whether the camp actually reached the disk. Everything that banks
+  // a night ignores that answer, because a refused write there costs one run.
+  // The transfer code cannot ignore it: an import that did not persist is an
+  // import that did not happen, and saying otherwise loses the camp.
   save() {
     try {
       localStorage.setItem('mbm_meta', JSON.stringify({
@@ -65,7 +69,8 @@ const META = {
         flags: this.flags, codex: this.codex,
         counters: this.counters, camp: this.camp,
       }));
-    } catch (e) {}
+      return true;
+    } catch (e) { return false; }
   },
 
   // A counters block from any save, or from nothing at all. Every key here is
@@ -156,18 +161,26 @@ META.load();
 // It carries the camp, never the night: a run in progress belongs to the
 // machine it is being played on, and mbm_run is deliberately not in here.
 //
-// SHAPE. A byte string, then a two byte checksum, then Crockford base 32,
-// then groups of five with hyphens. The first group is the literal stamp
-// MBM1, so a wrong code says what it is before anything is decoded.
+// SHAPE. A two byte fingerprint of the game's own id tables, then the camp as
+// a byte string, then a two byte checksum, then Crockford base 32, then groups
+// of five with hyphens. The first group is the literal stamp MBM2, so a wrong
+// code says what it is before anything is decoded.
 //
 // THE LISTS. Everything set shaped (merit badges, journal entries, carvings,
 // scouts) travels as one bit per entry, counted against the game's own
 // tables. Those tables must only ever be appended to: a code stores how many
 // bits it wrote, so a shorter list from an older build reads fine (the tail
 // is simply unearned) and a longer one is refused as newer than this build.
+//
+// THE FINGERPRINT is what makes that rule enforceable instead of hopeful. It
+// covers the first N ids of every table in order, N being the count the code
+// itself stores, so APPENDING to a table leaves it alone and old codes go on
+// reading. A reorder, an insertion at the front, a rename or a deletion inside
+// those first N moves it, and the code is refused in plain words rather than
+// quietly decoding as somebody else's badges.
 const Transfer = (function () {
   const STAMP = 'MBM';
-  const VERSION = 1;
+  const VERSION = 2;
   // Crockford's alphabet: no I, L, O or U, so nothing reads as something else
   // in handwriting. Decoding is forgiving in the same spirit.
   const ALPHA = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
@@ -187,6 +200,60 @@ const Transfer = (function () {
   function n0(v) { return (typeof v === 'number' && isFinite(v) && v > 0) ? Math.floor(v) : 0; }
   // The same, for the one counter that is measured in tenths of a second.
   function f0(v) { return (typeof v === 'number' && isFinite(v) && v > 0) ? v : 0; }
+
+  // The writer clamps every number at a 32 bit count, so nothing this game can
+  // write goes past it. The reader refuses anything past it, and apply clamps
+  // as well, so a hand built joke code cannot land a camp with a trillion
+  // badges in it whichever way it arrives.
+  const CAP = 0xffffffff;
+  function cap(v, max) {
+    const n = n0(v);
+    const m = (max === undefined) ? CAP : max;
+    return n > m ? m : n;
+  }
+
+  // -------------------------------------------------------- the table mark --
+  // FNV 1a again, folded to sixteen bits, over a string. Never answers zero, so
+  // a fingerprint is always a mark rather than an absence.
+  function hash16(str) {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i) & 0xff;
+      h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+    }
+    const v = ((h >>> 16) ^ (h & 0xffff)) & 0xffff;
+    return v || 1;
+  }
+
+  // The first n ids of every table, in order, as one line. n comes from the
+  // code being read, because each list stores its own length, so a build that
+  // has APPENDED entries fingerprints the same prefix and every old code still
+  // reads. Anything else moves the line: a swap, an insert at the front, a
+  // rename, a deletion. DATA.characters and METADEFS are Object.keys ordered
+  // and so the fragile ones, and a new scout with an integer shaped id would
+  // jump to the front of Object.keys on its own, which is exactly the accident
+  // this catches.
+  function fingerprint(t, ns) {
+    const part = (list, n) => list.slice(0, Math.max(0, Math.min(list.length, n | 0))).join('|');
+    return hash16([
+      'v' + VERSION,
+      'c' + part(t.chars, ns.chars),
+      'u' + part(t.ups, ns.ups),
+      'j' + part(t.finds, ns.finds),
+      'f' + part(t.feats, ns.feats),
+      'a' + part(t.arcs, ns.arcs),
+      'n' + part(t.carvings, ns.carvings),
+      'b' + part(t.bosses, ns.bosses),
+    ].join('#'));
+  }
+
+  function fullCounts(t) {
+    return {
+      chars: t.chars.length, ups: t.ups.length, finds: t.finds.length,
+      feats: t.feats.length, arcs: t.arcs.length, carvings: t.carvings.length,
+      bosses: t.bosses.length,
+    };
+  }
 
   // ------------------------------------------------------------- the bytes --
   function Writer() { this.b = []; }
@@ -218,27 +285,36 @@ const Transfer = (function () {
   // Reading past the end answers zero rather than failing, because the writer
   // trims trailing zero bytes: a camp with nothing in its tail simply stops
   // early. Damage is caught by the checksum, which is what a checksum is for.
-  function Reader(bytes) { this.b = bytes; this.i = 0; this.bad = false; }
+  function Reader(bytes) { this.b = bytes; this.i = 0; this.bad = false; this.lastN = 0; }
   Reader.prototype.byte = function () {
     if (this.i >= this.b.length) { this.i++; return 0; }
     return this.b[this.i++];
   };
   Reader.prototype.varint = function () {
     let n = 0, shift = 1, guard = 0;
-    while (guard++ < 6) {
+    // Five bytes is the whole range the writer can emit, because it clamps at
+    // a 32 bit count first. A sixth byte, or a number past that ceiling, is
+    // not something this game ever wrote: refuse it rather than invent a camp.
+    while (guard++ < 5) {
       const v = this.byte();
       if (this.bad) return 0;
       n += (v & 0x7f) * shift;
-      if (!(v & 0x80)) return n;
+      if (!(v & 0x80)) {
+        if (n > CAP) { this.bad = true; return 0; }
+        return n;
+      }
       shift *= 128;
     }
     this.bad = true;
     return 0;
   };
   // Returns the ids whose bit is set. A count longer than the table means the
-  // code knows about content this build does not: that is a newer game.
+  // code knows about content this build does not: that is a newer game. The
+  // count is kept in lastN, because the fingerprint is taken over exactly that
+  // many ids.
   Reader.prototype.bits = function (list) {
     const n = this.varint();
+    this.lastN = n;
     if (this.bad) return null;
     if (n > list.length) { this.newer = true; this.bad = true; return null; }
     const out = [];
@@ -251,6 +327,7 @@ const Transfer = (function () {
   };
   Reader.prototype.nibbles = function (list) {
     const n = this.varint();
+    this.lastN = n;
     if (this.bad) return null;
     if (n > list.length) { this.newer = true; this.bad = true; return null; }
     const out = {};
@@ -298,6 +375,12 @@ const Transfer = (function () {
       bits += 5;
       if (bits >= 8) { bits -= 8; out.push(Math.floor(acc / Math.pow(2, bits)) & 0xff); acc = acc % Math.pow(2, bits); }
     }
+    // Whatever is left over has to be the writer's own padding: fewer than five
+    // bits, every one of them zero. A whole spare character on the end (the
+    // classic fat fingered paste) leaves five or more, and a damaged last
+    // character leaves something other than zero. Both are refused rather than
+    // quietly dropped, which is what used to happen.
+    if (bits >= 5 || acc !== 0) return null;
     return out;
   }
 
@@ -350,6 +433,12 @@ const Transfer = (function () {
       const ups = meta.upgrades || {};
 
       const w = new Writer();
+      // The mark of the tables this code is counted against goes first, so a
+      // code from a build with different lists is refused before a single
+      // badge of it is believed.
+      const fp = fingerprint(t, fullCounts(t));
+      w.byte((fp >> 8) & 0xff);
+      w.byte(fp & 0xff);
       w.varint(n0(meta.badges));
       w.varint(n0(meta.lifetime));
       w.varint(n0(meta.spent));
@@ -381,9 +470,16 @@ const Transfer = (function () {
       for (const id of t.bosses) {
         const e = codex[id];
         let seen = 0, killed = 0;
-        if (e && typeof e === 'object') { seen = n0(e.seen); killed = n0(e.killed) || n0(e.kills); }
-        else if (e === 'killed') { seen = 1; killed = 1; }
+        // Every shape the codex has ever been written in, read the same way
+        // the other five readers of it read: counts, plain true, and the bare
+        // strings. A field guide written by an older hand travels whole.
+        if (e && typeof e === 'object') {
+          seen = n0(e.seen) || (e.seen === true ? 1 : 0);
+          killed = n0(e.killed) || n0(e.kills) || (e.killed === true ? 1 : 0);
+        } else if (e === 'killed') { seen = 1; killed = 1; }
         else if (e) seen = 1;
+        // Nothing was ever killed that was never seen.
+        if (killed > seen) seen = killed;
         w.varint(seen);
         w.varint(killed);
       }
@@ -423,6 +519,10 @@ const Transfer = (function () {
 
       const t = tables();
       const r = new Reader(payload);
+      const ns = {};
+      // The table mark, read first, checked last: the counts it is taken over
+      // are stored further in.
+      const fpGot = ((r.byte() << 8) | r.byte()) & 0xffff;
       const d = {};
       d.badges = r.varint(); d.lifetime = r.varint(); d.spent = r.varint();
       d.dawns = r.varint(); d.deaths = r.varint(); d.runs = r.varint();
@@ -439,15 +539,16 @@ const Transfer = (function () {
       d.act3 = !!(bits & 32);
       const sel = r.byte();
       d.selected = (sel === 0xff || sel >= t.chars.length) ? null : t.chars[sel];
-      d.unlocked = r.bits(t.chars);
-      d.upgrades = r.nibbles(t.ups);
-      d.journal = r.bits(t.finds);
-      d.feats = r.bits(t.feats);
-      d.featAck = r.bits(t.feats);
-      d.arcSeen = r.bits(t.arcs);
-      d.carvings = r.bits(t.carvings);
+      d.unlocked = r.bits(t.chars); ns.chars = r.lastN;
+      d.upgrades = r.nibbles(t.ups); ns.ups = r.lastN;
+      d.journal = r.bits(t.finds); ns.finds = r.lastN;
+      d.feats = r.bits(t.feats); ns.feats = r.lastN;
+      d.featAck = r.bits(t.feats); ns.feats = Math.max(ns.feats, r.lastN);
+      d.arcSeen = r.bits(t.arcs); ns.arcs = r.lastN;
+      d.carvings = r.bits(t.carvings); ns.carvings = r.lastN;
       d.codex = {};
       const nb = r.varint();
+      ns.bosses = nb;
       if (!r.bad) {
         if (nb > t.bosses.length) { r.newer = true; r.bad = true; }
         else {
@@ -466,10 +567,21 @@ const Transfer = (function () {
             : 'That code is damaged or incomplete. Copy the whole thing and try again.',
         };
       }
+      // The tables the code was counted against, against the ones this build
+      // has. Appending to a table leaves this alone; anything else does not,
+      // and a camp that would land as the wrong badges is refused instead.
+      if (fingerprint(t, ns) !== fpGot) {
+        return {
+          ok: false,
+          why: 'That code counts against a different list of scouts, badges and cryptids than this game has. Put both devices on the same version of the game.',
+        };
+      }
       return { ok: true, data: d, lines: this.describe(d) };
     },
 
-    // What the player is agreeing to, in words rather than fields.
+    // What the player is agreeing to, in words rather than fields. Everything
+    // apply writes has to show up here: a camp that lands carrying a surprise
+    // was not agreed to. Grouped, because forty lines is not a summary.
     describe(d) {
       const n = v => String(n0(v));
       const plural = (v, one, many) => n0(v) === 1 ? (n(v) + ' ' + one) : (n(v) + ' ' + (many || one + 's'));
@@ -480,44 +592,111 @@ const Transfer = (function () {
       let ranks = 0;
       for (const id in (d.upgrades || {})) ranks += n0(d.upgrades[id]);
       lines.push(plural(ranks, 'badge board rank', 'badge board ranks'));
-      lines.push(plural((d.feats || []).length, 'merit badge', 'merit badges'));
+      // The merit badges, and the tallies the unearned ones are counted on.
+      const c = d.counters || {};
+      const tallies = n0(c.burned) + n0(c.birdhouses) + (f0(c.lowHpTime) > 0 ? 1 : 0);
+      lines.push(plural((d.feats || []).length, 'merit badge', 'merit badges')
+        + (tallies > 0 ? ', and the tallies behind the ones still open' : ''));
       lines.push(plural(((d.unlocked || []).length + 1), 'scout', 'scouts'));
-      lines.push(plural((d.journal || []).length, 'field guide entry', 'field guide entries'));
+      // The field guide is two things: what the troop has read, and what it
+      // has written up about the things in the woods.
+      let bosses = 0;
+      for (const id in (d.codex || {})) bosses++;
+      lines.push(plural((d.journal || []).length, 'field guide entry', 'field guide entries')
+        + ' and ' + plural(bosses, 'cryptid written up', 'cryptids written up'));
       if ((d.carvings || []).length) lines.push(plural(d.carvings.length, 'carving on the totem', 'carvings on the totem'));
+      // Brock, Blink, and the switches the fire remembers.
+      const story = [];
+      if (d.metBrock) story.push('Brock knows you');
+      const arcs = (d.arcSeen || []).length;
+      if (arcs) story.push(plural(arcs, 'talk remembered', 'talks remembered'));
+      if (d.act3) story.push('the story stands at act three');
+      else if (d.act2) story.push('the story stands at act two');
+      if (n0(d.blink) > 0) story.push('Blink has come by ' + plural(d.blink, 'time', 'times'));
+      else if (d.blinkFriend) story.push('Blink knows you');
+      if (d.metQuartermaster) story.push('you have met the quartermaster');
+      lines.push(story.length ? ('the story so far: ' + story.join(', ')) : 'no story remembered yet');
+      // The camp's own look, which the code carries whether or not it changed.
+      const banner = n0(d.camp && d.camp.banner);
+      const tent = n0(d.camp && d.camp.tentPattern);
+      lines.push((banner || tent)
+        ? ('camp look: banner ' + banner + ', tent pattern ' + tent)
+        : 'camp look: the plain banner and tent');
+      // The one thing here that is not an overwrite, and the player should be
+      // told so before they agree to any of the rest.
+      lines.push('your records (best night, most slain, dawns seen) keep the best of both camps');
       return lines;
     },
 
-    // Overwrite this camp with that one. Everything goes through META.save
-    // and META.load, so a code full of nonsense lands as the same normalized
-    // shape any other save would. Returns the records block for the caller to
-    // install, because App.best is not this file's to write.
-    apply(d, m) {
+    // Records are the best thing that ever happened on either machine, so they
+    // take the higher of the two and never go down: a camp carried over from a
+    // phone cannot pull a laptop's best night backwards. mine is this
+    // machine's block, handed in the way make takes it; left out, it is read
+    // off the page's own records if there are any, and failing even that the
+    // code's records come back unchanged.
+    mergeBest(from, mine) {
+      const a = from || {};
+      let b = mine;
+      if (!b && typeof App !== 'undefined' && App && App.best) b = App.best;
+      if (!b) b = {};
+      const top = (x, y) => { const p = cap(x), q = cap(y); return p > q ? p : q; };
+      return {
+        time: top(a.time, b.time),
+        kills: top(a.kills, b.kills),
+        dawns: top(a.dawns, b.dawns),
+        runs: top(a.runs, b.runs),
+      };
+    },
+
+    // Overwrite this camp with that one. The whole new camp is built first and
+    // committed in one go, so a throw anywhere in the building leaves the camp
+    // standing exactly as it was. Nothing is reported as landed until the
+    // write is known to have reached the disk: a browser that refuses it (a
+    // full quota, some private modes) gets the old camp back and an honest
+    // refusal, rather than a camp that says it moved and did not.
+    //
+    // Returns the merged records block for the caller to install, because
+    // App.best is not this file's to write, or null if nothing landed.
+    apply(d, best, m) {
       const meta = m || META;
       if (!d) return null;
-      meta.badges = n0(d.badges);
-      meta.lifetime = n0(d.lifetime);
-      meta.spent = n0(d.spent);
-      meta.dawns = n0(d.dawns);
-      meta.deaths = n0(d.deaths);
-      meta.runs = n0(d.runs);
-      meta.upgrades = {};
+
+      // ---------------------------------------------------- build it first --
+      const next = {};
+      next.badges = cap(d.badges);
+      next.lifetime = cap(d.lifetime);
+      next.spent = cap(d.spent);
+      next.dawns = cap(d.dawns);
+      next.deaths = cap(d.deaths);
+      next.runs = cap(d.runs);
+      next.upgrades = {};
       for (const id in (d.upgrades || {})) {
         const def = (typeof METADEFS !== 'undefined' && METADEFS) ? METADEFS[id] : null;
-        const cap = def ? def.ranks : 0;
-        const r = Math.max(0, Math.min(cap, n0(d.upgrades[id])));
-        if (r > 0) meta.upgrades[id] = r;
+        const top = def ? def.ranks : 0;
+        const r = Math.max(0, Math.min(top, n0(d.upgrades[id])));
+        if (r > 0) next.upgrades[id] = r;
       }
-      meta.selected = d.selected || 'max';
-      meta.unlocked = (d.unlocked || []).slice();
-      meta.metBrock = !!d.metBrock;
-      meta.journal = {};
-      for (const id of (d.journal || [])) meta.journal[id] = true;
-      meta.codex = {};
-      for (const id in (d.codex || {})) meta.codex[id] = d.codex[id];
-      meta.counters = this.norm(meta, d.counters);
-      meta.camp = { banner: n0(d.camp && d.camp.banner), tentPattern: n0(d.camp && d.camp.tentPattern) };
+      next.selected = d.selected || 'max';
+      next.unlocked = (d.unlocked || []).slice();
+      next.metBrock = !!d.metBrock;
+      next.journal = {};
+      for (const id of (d.journal || [])) next.journal[id] = true;
+      next.codex = {};
+      for (const id in (d.codex || {})) {
+        const e = d.codex[id] || {};
+        next.codex[id] = { seen: cap(e.seen), killed: cap(e.killed) };
+      }
+      const cs = d.counters || {};
+      next.counters = this.norm(meta, {
+        burned: cap(cs.burned),
+        lowHpTime: Math.min(f0(cs.lowHpTime), CAP),
+        birdhouses: cap(cs.birdhouses),
+      });
+      // The banner and the tent pattern are indexes into two short lists, so a
+      // silly number is worth nothing to anyone: keep them small.
+      next.camp = { banner: cap(d.camp && d.camp.banner, 999), tentPattern: cap(d.camp && d.camp.tentPattern, 999) };
       // lastRun describes one night on one machine, so it does not travel.
-      meta.lastRun = null;
+      next.lastRun = null;
 
       const flags = {};
       flags.feats = {};
@@ -532,19 +711,38 @@ const Transfer = (function () {
       if (d.metQuartermaster) flags.metQuartermaster = true;
       if (d.act2) flags.act2 = true;
       if (d.act3) flags.act3 = true;
-      if (n0(d.blink) > 0) flags.blink = n0(d.blink);
-      meta.flags = flags;
+      if (cap(d.blink) > 0) flags.blink = cap(d.blink);
+      next.flags = flags;
 
-      // Written, then read straight back, so an imported camp is loaded from
-      // storage exactly like any other camp: same normalizers, same defaults.
-      meta.save();
-      meta.load();
+      // ------------------------------------------------- then commit it all --
+      const keys = ['badges', 'lifetime', 'spent', 'dawns', 'deaths', 'runs', 'upgrades',
+        'selected', 'unlocked', 'metBrock', 'journal', 'codex', 'counters', 'camp',
+        'flags', 'lastRun'];
+      const prev = {};
+      for (const k of keys) prev[k] = meta[k];
+      for (const k of keys) meta[k] = next[k];
+
+      let wrote = false;
+      try { wrote = meta.save() !== false; } catch (e) { wrote = false; }
+      if (wrote) {
+        // Written, then read straight back, so an imported camp is loaded from
+        // storage exactly like any other camp: same normalizers, same
+        // defaults. It is also the proof: a browser that swallowed the write
+        // hands back the camp that was already there, and the numbers say so.
+        try { meta.load(); } catch (e) {}
+        if (n0(meta.lifetime) !== next.lifetime || n0(meta.badges) !== next.badges
+          || n0(meta.runs) !== next.runs) wrote = false;
+      }
+      if (!wrote) {
+        for (const k of keys) meta[k] = prev[k];
+        return null;
+      }
+
       // The pools follow the merit badges, and the badges just changed.
       if (typeof Feats !== 'undefined' && Feats && typeof Feats.syncPools === 'function') {
         try { Feats.syncPools(meta); } catch (e) {}
       }
-      const b = d.best || {};
-      return { time: n0(b.time), kills: n0(b.kills), dawns: n0(b.dawns), runs: n0(b.runs) };
+      return this.mergeBest(d.best, best);
     },
 
     norm(meta, c) {
