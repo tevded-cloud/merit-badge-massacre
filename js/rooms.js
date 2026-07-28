@@ -123,7 +123,7 @@ const ACT_TEMPLATES = [
     act: 1,
     name: 'THE UNDERSTORY',
     rooms: 6,
-    beats: ['combat', 'shop|lore', 'combat', 'combat|elite', 'loot|rest', 'boss'],
+    beats: ['combat', 'shop|lore', 'combat|elite', 'combat|elite', 'loot|rest|lore', 'boss'],
     bossTier: 1,
     rules: { noRepeatType: 2, guarantee: ['shop', 'loot'] },
   },
@@ -131,7 +131,7 @@ const ACT_TEMPLATES = [
     act: 2,
     name: 'THE SOG',
     rooms: 7,
-    beats: ['combat', 'combat|lore', 'shop', 'combat', 'elite', 'loot|rest', 'boss'],
+    beats: ['combat', 'combat|elite|lore', 'shop', 'combat|elite', 'combat|elite', 'loot|rest|lore', 'boss'],
     bossTier: 2,
     rules: { noRepeatType: 2, guarantee: ['shop', 'loot'] },
   },
@@ -139,7 +139,7 @@ const ACT_TEMPLATES = [
     act: 3,
     name: 'THE BURN',
     rooms: 8,
-    beats: ['combat', 'combat|lore', 'elite', 'shop', 'combat', 'combat|elite', 'loot|rest', 'boss'],
+    beats: ['combat', 'combat|elite|lore', 'combat|elite', 'shop', 'combat|elite', 'combat|elite', 'loot|rest|lore', 'boss'],
     bossTier: 3,
     rules: { noRepeatType: 2, guarantee: ['shop', 'loot'] },
   },
@@ -289,6 +289,102 @@ const ROOMS = {
       reward: { kind: 'auto' }, floor: 1,
     },
 
+    // -- act 1 added variety --
+    a1_c_boulderrun: {
+      id: 'a1_c_boulderrun', name: 'BOULDER RUN', type: 'combat', acts: [1],
+      size: { w: 1900, h: 1250 }, shape: 'rect', lock: 'clear',
+      doors: [{ side: 'n', t: 0.5 }, { side: 'e', t: 0.6 }, { side: 's', t: 0.5 }],
+      entry: { side: 'w', t: 0.5 },
+      solids: [
+        { x: 300, y: 820, w: 220, h: 70, spr: 'log' },
+        { x: 1460, y: 240, w: 220, h: 70, spr: 'log' },
+        { x: 840, y: 520, w: 150, h: 150, spr: 'brock' },
+      ],
+      props: [
+        { id: 'boulder', x: 350, y: 250 },
+        { id: 'boulder', x: 700, y: 430 },
+        { id: 'boulder', x: 1050, y: 610 },
+        { id: 'boulder', x: 1400, y: 790 },
+        { id: 'boulder', x: 1650, y: 970 },
+        { id: 'bush', x: 180, y: 1080 },
+        { id: 'stump', x: 1780, y: 1120 },
+      ],
+      scatter: { bush: [2, 4] },
+      spawnMarkers: [
+        { x: 260, y: 260 }, { x: 1780, y: 300 }, { x: 260, y: 1030 },
+        { x: 1700, y: 1050 }, { x: 950, y: 300 },
+      ],
+      waves: [
+        { delay: 0.8, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 18, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.2, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 22, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 20, mode: 'marker' }], elites: 0, drip: null, ref: null },
+      ],
+      reward: { kind: 'auto' }, floor: 1,
+    },
+
+    a1_c_mailboxlane: {
+      id: 'a1_c_mailboxlane', name: 'THE MAILBOX LANE', type: 'combat', acts: [1],
+      size: { w: 2000, h: 1100 }, shape: 'rect', lock: 'clear',
+      doors: [{ side: 'e', t: 0.3 }, { side: 'e', t: 0.7 }, { side: 'n', t: 0.5 }],
+      entry: { side: 'w', t: 0.5 },
+      solids: [
+        { x: 420, y: 260, w: 220, h: 70, spr: 'wall' },
+        { x: 420, y: 770, w: 220, h: 70, spr: 'wall' },
+        { x: 1100, y: 260, w: 220, h: 70, spr: 'wall' },
+        { x: 1100, y: 770, w: 220, h: 70, spr: 'wall' },
+      ],
+      props: [
+        { id: 'mailbox', x: 250, y: 550 },
+        { id: 'mailbox', x: 760, y: 550 },
+        { id: 'mailbox', x: 1260, y: 550 },
+        { id: 'mailbox', x: 1750, y: 550 },
+        { id: 'crate', x: 250, y: 950 },
+        { id: 'basket', x: 1750, y: 150 },
+      ],
+      scatter: { mailbox: [1, 3] },
+      spawnMarkers: [
+        { x: 1900, y: 330 }, { x: 1900, y: 770 }, { x: 1000, y: 180 },
+        { x: 250, y: 250 }, { x: 250, y: 850 },
+      ],
+      waves: [
+        { delay: 0.8, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 18, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.2, nextAt: 0, maxT: 55, spawns: [], elites: 0, drip: null, ref: 'foxfire_hunt' },
+        { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 30, mode: 'marker' }], elites: 0, drip: null, ref: null },
+      ],
+      reward: { kind: 'auto' }, floor: 1,
+    },
+
+    a1_c_stumphenge: {
+      id: 'a1_c_stumphenge', name: 'STUMP HENGE', type: 'combat', acts: [1],
+      size: { w: 1700, h: 1150 }, shape: 'round', lock: 'clear',
+      doors: [{ side: 'n', t: 0.5 }, { side: 'e', t: 0.35 }, { side: 'e', t: 0.7 }],
+      entry: { side: 's', t: 0.5 },
+      solids: [
+        { x: 1130, y: 350, w: 120, h: 120, spr: 'brock' },
+        { x: 1130, y: 780, w: 120, h: 120, spr: 'brock' },
+        { x: 460, y: 780, w: 120, h: 120, spr: 'brock' },
+        { x: 460, y: 350, w: 120, h: 120, spr: 'brock' },
+      ],
+      props: [
+        { id: 'stump', x: 850, y: 300 },
+        { id: 'stump', x: 850, y: 850 },
+        { id: 'stump', x: 300, y: 575 },
+        { id: 'stump', x: 1400, y: 575 },
+        { id: 'urn', x: 850, y: 575 },
+      ],
+      scatter: { bush: [2, 4] },
+      spawnMarkers: [
+        { x: 850, y: 230 }, { x: 850, y: 920 }, { x: 250, y: 575 },
+        { x: 1450, y: 575 }, { x: 850, y: 575 },
+      ],
+      waves: [
+        { delay: 0.9, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 16, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.2, nextAt: 0.30, maxT: 50, spawns: [{ id: 'auto', n: 22, mode: 'ring', r: 380 }], elites: 0, drip: null, ref: null },
+        { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 20, mode: 'marker' }], elites: 0, drip: null, ref: null },
+      ],
+      reward: { kind: 'auto' }, floor: 1,
+    },
+
     // ------------------------------ act 2 ------------------------------
     a2_c_sluicegate: {
       id: 'a2_c_sluicegate', name: 'THE SLUICE GATE', type: 'combat', acts: [2],
@@ -428,6 +524,107 @@ const ROOMS = {
         { delay: 1.0, nextAt: 0.35, maxT: 50, spawns: [{ id: 'auto', n: 18, mode: 'door' }], elites: 0, drip: { id: 'auto', every: 8, n: 1 }, ref: null },
         { delay: 1.2, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 20, mode: 'edge' }, { id: 'auto', n: 4, mode: 'point', x: 1000, y: 650 }], elites: 0, drip: { id: 'auto', every: 7, n: 1 }, ref: null },
         { delay: 1.0, nextAt: 0, maxT: 70, spawns: [{ id: 'auto', n: 10, mode: 'marker' }], elites: 1, drip: { id: 'auto', every: 6, n: 1 }, ref: null },
+      ],
+      reward: { kind: 'auto' }, floor: 2,
+    },
+
+    // -- act 2 added variety --
+    a2_c_birdhousegrove: {
+      id: 'a2_c_birdhousegrove', name: 'THE BIRDHOUSE GROVE', type: 'combat', acts: [2],
+      size: { w: 1800, h: 1200 }, shape: 'pillars', lock: 'clear',
+      doors: [{ side: 'n', t: 0.3 }, { side: 'n', t: 0.7 }, { side: 'w', t: 0.5 }],
+      entry: { side: 's', t: 0.5 },
+      solids: [
+        { x: 340, y: 380, w: 110, h: 110, spr: 'brock' },
+        { x: 700, y: 280, w: 110, h: 110, spr: 'brock' },
+        { x: 1060, y: 420, w: 110, h: 110, spr: 'brock' },
+        { x: 1420, y: 300, w: 110, h: 110, spr: 'brock' },
+        { x: 900, y: 760, w: 130, h: 130, spr: 'brock' },
+      ],
+      props: [
+        { id: 'birdhouse', x: 200, y: 600 },
+        { id: 'birdhouse', x: 600, y: 180 },
+        { id: 'birdhouse', x: 1000, y: 600 },
+        { id: 'birdhouse', x: 1400, y: 180 },
+        { id: 'birdhouse', x: 1650, y: 700 },
+        { id: 'bush', x: 850, y: 1000 },
+        { id: 'stump', x: 250, y: 1000 },
+      ],
+      scatter: { birdhouse: [2, 4], bush: [2, 4] },
+      spawnMarkers: [
+        { x: 260, y: 280 }, { x: 1550, y: 280 }, { x: 260, y: 950 },
+        { x: 1550, y: 950 }, { x: 900, y: 250 }, { x: 900, y: 1050 },
+      ],
+      waves: [
+        { delay: 0.9, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 18, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.3, nextAt: 0, maxT: 60, spawns: [], elites: 0, drip: { id: 'auto', every: 8, n: 1 }, ref: 'chiropteran_choir' },
+        { delay: 1.0, nextAt: 0, maxT: 65, spawns: [{ id: 'auto', n: 6, mode: 'marker' }], elites: 0, drip: { id: 'auto', every: 7, n: 1 }, ref: null },
+      ],
+      reward: { kind: 'auto' }, floor: 2,
+    },
+
+    a2_c_killbowl: {
+      id: 'a2_c_killbowl', name: 'THE KILL BOWL', type: 'combat', acts: [2],
+      size: { w: 1700, h: 1150 }, shape: 'round', lock: 'clear',
+      doors: [{ side: 'w', t: 0.5 }, { side: 'n', t: 0.5 }],
+      entry: { side: 'e', t: 0.5 },
+      solids: [
+        { x: 300, y: 300, w: 160, h: 60, spr: 'log' },
+        { x: 1240, y: 790, w: 160, h: 60, spr: 'log' },
+      ],
+      props: [
+        { id: 'boulder', x: 850, y: 575 },
+        { id: 'bush', x: 230, y: 900 },
+        { id: 'bush', x: 1470, y: 250 },
+      ],
+      scatter: { bush: [2, 4] },
+      spawnMarkers: [
+        { x: 850, y: 230 }, { x: 850, y: 920 }, { x: 250, y: 575 },
+        { x: 1450, y: 575 }, { x: 600, y: 850 },
+      ],
+      waves: [
+        { delay: 0.9, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 24, mode: 'ring', r: 420 }], elites: 0, drip: null, ref: null },
+        { delay: 1.4, nextAt: 0.28, maxT: 60, spawns: [{ id: 'auto', n: 32, mode: 'edge' }], elites: 0, drip: { id: 'auto', every: 8, n: 1 }, ref: null },
+        { delay: 1.2, nextAt: 0, maxT: 70, spawns: [{ id: 'auto', n: 10, mode: 'marker' }], elites: 1, drip: { id: 'auto', every: 6, n: 1 }, ref: null },
+      ],
+      reward: { kind: 'auto' }, floor: 2,
+    },
+
+    // Survive showcase: doors are meant to stay shut until the clock, not the
+    // kill count, says stop. js/room.js does not know 'survive' yet today:
+    // it only special-cases 'clear' (wave pump) and 'objective' (loot rooms)
+    // in _lockIn(), so an unrecognized lock like this one falls into the same
+    // branch as 'none' and opens the doors immediately on lock-in. This room
+    // is authored ahead of that runtime support: the waves below are a valid
+    // fallback so the room still plays a normal fight today, and are ready
+    // to run as drip pressure once the room runner picks up 'survive' and
+    // def.surviveT for real.
+    a2_c_pressurebog: {
+      id: 'a2_c_pressurebog', name: 'THE PRESSURE BOG', type: 'combat', acts: [2],
+      size: { w: 1800, h: 1150 }, shape: 'rect', lock: 'survive', surviveT: 45,
+      doors: [{ side: 'n', t: 0.3 }, { side: 'n', t: 0.7 }, { side: 'e', t: 0.5 }, { side: 's', t: 0.5 }],
+      entry: { side: 'w', t: 0.5 },
+      solids: [
+        { x: 820, y: 230, w: 140, h: 220, spr: 'wall' },
+        { x: 820, y: 700, w: 140, h: 220, spr: 'wall' },
+        { x: 340, y: 800, w: 130, h: 130, spr: 'brock' },
+      ],
+      props: [
+        { id: 'urn', x: 250, y: 300 },
+        { id: 'urn', x: 1550, y: 300 },
+        { id: 'barrel', x: 250, y: 900 },
+        { id: 'barrel', x: 1550, y: 900 },
+        { id: 'logpile', x: 900, y: 1080 },
+      ],
+      scatter: { bush: [2, 5] },
+      spawnMarkers: [
+        { x: 260, y: 280 }, { x: 1540, y: 280 }, { x: 260, y: 920 },
+        { x: 1540, y: 920 }, { x: 900, y: 180 }, { x: 900, y: 1000 },
+      ],
+      waves: [
+        { delay: 1.0, nextAt: 0.30, maxT: 50, spawns: [{ id: 'auto', n: 20, mode: 'marker' }], elites: 0, drip: { id: 'auto', every: 6, n: 1 }, ref: null },
+        { delay: 1.4, nextAt: 0.25, maxT: 60, spawns: [{ id: 'auto', n: 22, mode: 'edge' }], elites: 0, drip: { id: 'auto', every: 5, n: 1 }, ref: null },
+        { delay: 1.2, nextAt: 0, maxT: 70, spawns: [{ id: 'auto', n: 16, mode: 'marker' }], elites: 1, drip: { id: 'auto', every: 5, n: 1 }, ref: null },
       ],
       reward: { kind: 'auto' }, floor: 2,
     },
@@ -574,6 +771,103 @@ const ROOMS = {
       ],
       reward: { kind: 'auto' }, floor: 3,
     },
+
+    // -- act 3 added variety --
+    a3_c_twinkilns: {
+      id: 'a3_c_twinkilns', name: 'THE TWIN KILNS', type: 'combat', acts: [3],
+      size: { w: 2000, h: 1300 }, shape: 'rect', lock: 'clear',
+      doors: [{ side: 'e', t: 0.3 }, { side: 'e', t: 0.7 }],
+      entry: { side: 'w', t: 0.4 },
+      solids: [
+        { x: 900, y: 240, w: 160, h: 240, spr: 'wall' },
+        { x: 900, y: 760, w: 160, h: 240, spr: 'wall' },
+        { x: 1500, y: 560, w: 130, h: 130, spr: 'brock' },
+      ],
+      props: [
+        { id: 'stump', x: 260, y: 280 },
+        { id: 'stump', x: 1740, y: 280 },
+        { id: 'logpile', x: 260, y: 1020 },
+        { id: 'logpile', x: 1740, y: 1020 },
+        { id: 'urn', x: 900, y: 1120 },
+        { id: 'crate', x: 900, y: 180 },
+      ],
+      scatter: { stump: [2, 5] },
+      spawnMarkers: [
+        { x: 260, y: 650 }, { x: 1740, y: 650 }, { x: 900, y: 200 },
+        { x: 900, y: 1120 }, { x: 560, y: 1120 }, { x: 1300, y: 180 },
+      ],
+      waves: [
+        { delay: 0.8, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 20, mode: 'edge' }], elites: 0, drip: { id: 'auto', every: 8, n: 1 }, ref: null },
+        { delay: 1.2, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 24, mode: 'edge' }], elites: 0, drip: { id: 'auto', every: 7, n: 1 }, ref: null },
+        { delay: 1.0, nextAt: 0, maxT: 65, spawns: [{ id: 'auto', n: 16, mode: 'marker' }], elites: 1, drip: { id: 'auto', every: 6, n: 1 }, ref: null },
+      ],
+      reward: { kind: 'auto' }, floor: 3,
+    },
+
+    a3_c_barricadealley: {
+      id: 'a3_c_barricadealley', name: 'BARRICADE ALLEY', type: 'combat', acts: [3],
+      size: { w: 1900, h: 1200 }, shape: 'pillars', lock: 'clear',
+      doors: [{ side: 'n', t: 0.3 }, { side: 'n', t: 0.7 }, { side: 'w', t: 0.5 }],
+      entry: { side: 's', t: 0.5 },
+      solids: [
+        { x: 360, y: 400, w: 180, h: 70, spr: 'slab' },
+        { x: 360, y: 730, w: 180, h: 70, spr: 'slab' },
+        { x: 860, y: 400, w: 180, h: 70, spr: 'slab' },
+        { x: 860, y: 730, w: 180, h: 70, spr: 'slab' },
+        { x: 1360, y: 565, w: 180, h: 70, spr: 'slab' },
+      ],
+      props: [
+        { id: 'crate', x: 600, y: 250 },
+        { id: 'crate', x: 1100, y: 250 },
+        { id: 'barrel', x: 600, y: 950 },
+        { id: 'barrel', x: 1100, y: 950 },
+        { id: 'logpile', x: 1700, y: 600 },
+        { id: 'urn', x: 150, y: 600 },
+      ],
+      scatter: { crate: [1, 3], barrel: [1, 3] },
+      spawnMarkers: [
+        { x: 260, y: 300 }, { x: 1640, y: 300 }, { x: 260, y: 950 },
+        { x: 1640, y: 950 }, { x: 900, y: 200 }, { x: 900, y: 1050 },
+      ],
+      waves: [
+        { delay: 0.8, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 18, mode: 'edge' }], elites: 0, drip: { id: 'auto', every: 8, n: 1 }, ref: null },
+        { delay: 1.2, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 20, mode: 'door' }], elites: 0, drip: { id: 'auto', every: 7, n: 1 }, ref: null },
+        { delay: 1.0, nextAt: 0, maxT: 65, spawns: [{ id: 'auto', n: 18, mode: 'marker' }], elites: 1, drip: { id: 'auto', every: 6, n: 1 }, ref: null },
+      ],
+      reward: { kind: 'auto' }, floor: 3,
+    },
+
+    a3_c_kilngrid: {
+      id: 'a3_c_kilngrid', name: 'THE KILN GRID', type: 'combat', acts: [3],
+      size: { w: 2100, h: 1400 }, shape: 'pillars', lock: 'clear',
+      doors: [{ side: 'e', t: 0.3 }, { side: 'e', t: 0.7 }, { side: 'n', t: 0.5 }, { side: 's', t: 0.5 }],
+      entry: { side: 'w', t: 0.5 },
+      solids: [
+        { x: 500, y: 420, w: 120, h: 120, spr: 'slab' },
+        { x: 900, y: 420, w: 120, h: 120, spr: 'slab' },
+        { x: 1300, y: 420, w: 120, h: 120, spr: 'slab' },
+        { x: 700, y: 840, w: 120, h: 120, spr: 'slab' },
+        { x: 1100, y: 840, w: 120, h: 120, spr: 'slab' },
+      ],
+      props: [
+        { id: 'crate', x: 250, y: 250 },
+        { id: 'crate', x: 1850, y: 250 },
+        { id: 'barrel', x: 250, y: 1150 },
+        { id: 'barrel', x: 1850, y: 1150 },
+        { id: 'stump', x: 1050, y: 1250 },
+        { id: 'urn', x: 1050, y: 150 },
+      ],
+      scatter: { stump: [2, 5] },
+      spawnMarkers: [
+        { x: 260, y: 700 }, { x: 1840, y: 700 }, { x: 1050, y: 230 },
+        { x: 1050, y: 1250 }, { x: 600, y: 1250 }, { x: 1500, y: 230 },
+      ],
+      waves: [
+        { delay: 0.8, nextAt: 0.4, maxT: 40, spawns: [{ id: 'auto', n: 8, mode: 'edge' }], elites: 0, drip: null, ref: null },
+        { delay: 1.0, nextAt: 0, maxT: 65, spawns: [], elites: 1, drip: { id: 'auto', every: 6, n: 1 }, ref: 'the_squirrel_flood' },
+      ],
+      reward: { kind: 'auto' }, floor: 3,
+    },
   },
 
   elite: {
@@ -663,6 +957,95 @@ const ROOMS = {
       ],
       reward: { kind: 'auto' }, floor: 3,
     },
+
+    // -- one nastier elite per act: tight corridors that never seal a pocket --
+    a1_e_thorncorridor: {
+      id: 'a1_e_thorncorridor', name: 'THE THORN CORRIDOR', type: 'elite', acts: [1],
+      size: { w: 1800, h: 1200 }, shape: 'pillars', lock: 'clear',
+      doors: [{ side: 'e', t: 0.4 }, { side: 'n', t: 0.5 }],
+      entry: { side: 'w', t: 0.5 },
+      solids: [
+        { x: 400, y: 380, w: 260, h: 70, spr: 'wall' },
+        { x: 1000, y: 380, w: 260, h: 70, spr: 'wall' },
+        { x: 700, y: 760, w: 260, h: 70, spr: 'wall' },
+        { x: 1300, y: 760, w: 260, h: 70, spr: 'wall' },
+      ],
+      props: [
+        { id: 'bush', x: 250, y: 250 },
+        { id: 'bush', x: 1550, y: 950 },
+        { id: 'stump', x: 900, y: 1080 },
+        { id: 'urn', x: 250, y: 950 },
+        { id: 'boulder', x: 1650, y: 250 },
+      ],
+      scatter: { bush: [3, 6] },
+      spawnMarkers: [
+        { x: 900, y: 250 }, { x: 900, y: 950 }, { x: 280, y: 600 }, { x: 1520, y: 600 },
+      ],
+      waves: [
+        { delay: 1.0, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 16, mode: 'edge' }], elites: 1, drip: null, ref: null },
+        { delay: 1.5, nextAt: 0, maxT: 70, spawns: [{ id: 'auto', n: 20, mode: 'edge' }], elites: 2, drip: null, ref: null },
+      ],
+      reward: { kind: 'auto' }, floor: 1,
+    },
+
+    a2_e_causewaycut: {
+      id: 'a2_e_causewaycut', name: 'THE CAUSEWAY CUT', type: 'elite', acts: [2],
+      size: { w: 1900, h: 1250 }, shape: 'pillars', lock: 'clear',
+      doors: [{ side: 'e', t: 0.4 }, { side: 's', t: 0.6 }],
+      entry: { side: 'w', t: 0.5 },
+      solids: [
+        { x: 380, y: 300, w: 70, h: 260, spr: 'wall' },
+        { x: 380, y: 760, w: 70, h: 260, spr: 'wall' },
+        { x: 1420, y: 300, w: 70, h: 260, spr: 'wall' },
+        { x: 1420, y: 760, w: 70, h: 260, spr: 'wall' },
+      ],
+      props: [
+        { id: 'crate', x: 900, y: 200 },
+        { id: 'crate', x: 900, y: 1080 },
+        { id: 'barrel', x: 200, y: 625 },
+        { id: 'urn', x: 1700, y: 625 },
+        { id: 'boulder', x: 900, y: 625 },
+      ],
+      scatter: { barrel: [2, 4] },
+      spawnMarkers: [
+        { x: 900, y: 250 }, { x: 900, y: 1030 }, { x: 250, y: 625 }, { x: 1650, y: 625 },
+      ],
+      waves: [
+        { delay: 1.0, nextAt: 0.30, maxT: 60, spawns: [{ id: 'auto', n: 18, mode: 'edge' }], elites: 1, drip: { id: 'auto', every: 9, n: 1 }, ref: null },
+        { delay: 1.6, nextAt: 0, maxT: 75, spawns: [{ id: 'auto', n: 22, mode: 'edge' }], elites: 2, drip: { id: 'auto', every: 7, n: 1 }, ref: null },
+      ],
+      reward: { kind: 'auto' }, floor: 2,
+    },
+
+    a3_e_cindermaze: {
+      id: 'a3_e_cindermaze', name: 'THE CINDER MAZE', type: 'elite', acts: [3],
+      size: { w: 2000, h: 1300 }, shape: 'pillars', lock: 'clear',
+      doors: [{ side: 'e', t: 0.4 }, { side: 'n', t: 0.55 }],
+      entry: { side: 'w', t: 0.5 },
+      solids: [
+        { x: 400, y: 380, w: 130, h: 130, spr: 'slab' },
+        { x: 760, y: 600, w: 130, h: 130, spr: 'slab' },
+        { x: 1120, y: 380, w: 130, h: 130, spr: 'slab' },
+        { x: 1480, y: 600, w: 130, h: 130, spr: 'slab' },
+        { x: 900, y: 900, w: 130, h: 130, spr: 'slab' },
+      ],
+      props: [
+        { id: 'stump', x: 1750, y: 250 },
+        { id: 'stump', x: 250, y: 1050 },
+        { id: 'crate', x: 1750, y: 1050 },
+        { id: 'urn', x: 250, y: 250 },
+        { id: 'boulder', x: 1000, y: 1150 },
+      ],
+      scatter: { stump: [2, 5] },
+      spawnMarkers: [
+        { x: 1000, y: 280 }, { x: 1000, y: 1150 }, { x: 280, y: 650 }, { x: 1720, y: 650 },
+      ],
+      waves: [
+        { delay: 1.0, nextAt: 0.30, maxT: 60, spawns: [{ id: 'auto', n: 18, mode: 'edge' }], elites: 2, drip: { id: 'auto', every: 8, n: 1 }, ref: null },
+        { delay: 1.6, nextAt: 0, maxT: 80, spawns: [{ id: 'auto', n: 24, mode: 'edge' }], elites: 2, drip: { id: 'auto', every: 6, n: 1 }, ref: null },
+      ],
+      reward: { kind: 'auto' }, floor: 3,
+    },
   },
 
   puzzle: {},
@@ -721,6 +1104,65 @@ const ROOMS = {
       ],
       scatter: { stump: [2, 5] },
       spawnMarkers: [],
+      waves: [],
+      reward: { kind: 'auto' }, floor: 3,
+    },
+
+    // -- one extra lore stop per act: no enemies, warm dressing, one open
+    // spot flagged with a spawnMarker for wherever the find lands --
+    a1_lo_rangercache: {
+      id: 'a1_lo_rangercache', name: 'THE RANGER CACHE', type: 'lore', acts: [1],
+      size: { w: 1250, h: 950 }, shape: 'rect', lock: 'none',
+      doors: [{ side: 'e', t: 0.35 }, { side: 'e', t: 0.7 }],
+      entry: { side: 'w', t: 0.4 },
+      solids: [],
+      props: [
+        { id: 'logpile', x: 600, y: 300 },
+        { id: 'basket', x: 420, y: 600 },
+        { id: 'urn', x: 820, y: 600 },
+        { id: 'stump', x: 300, y: 280 },
+        { id: 'birdhouse', x: 950, y: 260 },
+      ],
+      scatter: { bush: [2, 4] },
+      spawnMarkers: [{ x: 640, y: 480 }],
+      waves: [],
+      reward: { kind: 'auto' }, floor: 1,
+    },
+
+    a2_lo_driftwoodline: {
+      id: 'a2_lo_driftwoodline', name: 'THE DRIFTWOOD LINE', type: 'lore', acts: [2],
+      size: { w: 1300, h: 950 }, shape: 'rect', lock: 'none',
+      doors: [{ side: 'e', t: 0.35 }, { side: 'e', t: 0.7 }],
+      entry: { side: 'w', t: 0.4 },
+      solids: [],
+      props: [
+        { id: 'logpile', x: 620, y: 320 },
+        { id: 'basket', x: 440, y: 620 },
+        { id: 'urn', x: 840, y: 620 },
+        { id: 'barrel', x: 320, y: 300 },
+        { id: 'birdhouse', x: 960, y: 260 },
+      ],
+      scatter: { bush: [2, 4] },
+      spawnMarkers: [{ x: 660, y: 500 }],
+      waves: [],
+      reward: { kind: 'auto' }, floor: 2,
+    },
+
+    a3_lo_cinderhearth: {
+      id: 'a3_lo_cinderhearth', name: 'THE CINDER HEARTH', type: 'lore', acts: [3],
+      size: { w: 1350, h: 950 }, shape: 'rect', lock: 'none',
+      doors: [{ side: 'e', t: 0.35 }, { side: 'e', t: 0.7 }],
+      entry: { side: 'w', t: 0.4 },
+      solids: [],
+      props: [
+        { id: 'logpile', x: 650, y: 330 },
+        { id: 'basket', x: 460, y: 630 },
+        { id: 'urn', x: 880, y: 630 },
+        { id: 'stump', x: 340, y: 300 },
+        { id: 'crate', x: 980, y: 270 },
+      ],
+      scatter: { stump: [2, 4] },
+      spawnMarkers: [{ x: 680, y: 500 }],
       waves: [],
       reward: { kind: 'auto' }, floor: 3,
     },
@@ -931,8 +1373,9 @@ const ROOMS = {
         { id: 'urn', x: 880, y: 960 },
       ],
       scatter: { bush: [2, 5] },
+      // 4 corner mounds, well inside the walls, for the warren's burrows.
       spawnMarkers: [
-        { x: 850, y: 300 }, { x: 850, y: 900 }, { x: 400, y: 600 }, { x: 1300, y: 600 },
+        { x: 300, y: 300 }, { x: 1400, y: 300 }, { x: 300, y: 900 }, { x: 1400, y: 900 },
       ],
       waves: [],
       reward: { kind: 'auto' }, floor: 1,
@@ -956,8 +1399,10 @@ const ROOMS = {
         { id: 'urn', x: 1520, y: 640 },
       ],
       scatter: { barrel: [2, 5] },
+      // 6 markers spread around the hall for the tunnel mouths.
       spawnMarkers: [
-        { x: 900, y: 300 }, { x: 900, y: 950 }, { x: 360, y: 640 }, { x: 1440, y: 640 },
+        { x: 900, y: 260 }, { x: 1450, y: 420 }, { x: 1450, y: 830 },
+        { x: 900, y: 1000 }, { x: 350, y: 830 }, { x: 350, y: 420 },
       ],
       waves: [],
       reward: { kind: 'auto' }, floor: 2,
@@ -977,10 +1422,19 @@ const ROOMS = {
         { id: 'urn', x: 950, y: 1000 },
         { id: 'boulder', x: 400, y: 650 },
         { id: 'boulder', x: 1500, y: 650 },
+        // 6 breakable stumps and crates preplaced for prop regrowth.
+        { id: 'stump', x: 700, y: 450 },
+        { id: 'stump', x: 1200, y: 450 },
+        { id: 'crate', x: 700, y: 850 },
+        { id: 'crate', x: 1200, y: 850 },
+        { id: 'stump', x: 950, y: 500 },
+        { id: 'crate', x: 950, y: 800 },
       ],
       scatter: { urn: [2, 5] },
+      // 8 markers rimming the space for prop regrowth.
       spawnMarkers: [
-        { x: 950, y: 320 }, { x: 950, y: 980 }, { x: 420, y: 650 }, { x: 1480, y: 650 },
+        { x: 1450, y: 650 }, { x: 1304, y: 297 }, { x: 950, y: 150 }, { x: 597, y: 297 },
+        { x: 450, y: 650 }, { x: 597, y: 1003 }, { x: 950, y: 1150 }, { x: 1304, y: 1003 },
       ],
       waves: [],
       reward: { kind: 'auto' }, floor: 3,
@@ -995,9 +1449,11 @@ const ROOMS = {
       solids: [],
       props: [],
       scatter: {},
+      // 6 markers evenly spread on a ring at 60% radius, for Old Nobody's
+      // sign circles.
       spawnMarkers: [
-        { x: 800, y: 340 }, { x: 1260, y: 800 }, { x: 800, y: 1260 },
-        { x: 340, y: 800 }, { x: 560, y: 560 }, { x: 1040, y: 1040 },
+        { x: 1280, y: 800 }, { x: 1040, y: 384 }, { x: 560, y: 384 },
+        { x: 320, y: 800 }, { x: 560, y: 1216 }, { x: 1040, y: 1216 },
       ],
       waves: [],
       reward: { kind: 'auto' }, floor: 'hollow',
