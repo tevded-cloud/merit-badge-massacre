@@ -1413,13 +1413,12 @@ plainly meant to be a rotational pair and they miss by 93 units more than the ey
 will forgive. This is the single clearest piece of evidence for the owner's
 complaint: the intent is visible in the numbers and the execution loses it.
 
-**Nothing checks any of this, because the assertion pass does not exist.** The
-`js/rooms.js` header (lines 26-30) states the house rules are "checked by the
-assertion pass". No such code is in the repository: there is no validator in
-`js/`, none in `tools/`, and `ROOMS` is read only by `js/run.js:102-118` to deal a
-layout. The house rules are therefore documentation, not enforcement, which is how
-everything below shipped. Writing that pass is the rebuild's first unit, not an
-extension of something already running.
+**Nothing checked any of this when this section was written, because the
+assertion pass did not exist.** That gap is now closed:
+`tools/validate_rooms.cjs` implements all 50 predicates of Section 8 and runs
+as `npm run rooms:check`, exiting nonzero on any failure. Its first run
+scored every one of the 46 layouts as failing, which is how everything below
+shipped. The catalogue has since been rebuilt against it act by act.
 
 **Five of nine bodies break the 130 wall line**, and two of them are `solids` that
 the header's own rule already covers:
@@ -1770,17 +1769,16 @@ is marginal and can stand with a note or be pulled to 256. The ring at
 `js/rooms.js:903` uses `r: 185`, which is under the `ROOM_EDGE_AWAY` floor of 190,
 and that one is not marginal: it spawns on top of the player. Fix it first.
 
-**The assertion pass does not exist and must be written.** This is the single
-biggest gap between what the code claims and what it does. The `js/rooms.js` header
-(lines 26-30) says the house rules are "checked by the assertion pass"; there is no
-such pass anywhere in the repository. `ROOMS` is referenced only by `js/run.js` to
-deal a layout, `tools/` holds a manifest builder and nothing else, and no function
-in `js/` validates a `RoomDef`. So the house rules have never been enforced on any
-of the 46 layouts, which is how Boulder Run shipped with five bodies over the wall
-line and all five of its spawn markers unusable. When the pass is written it must
-resolve solid props as well as `def.solids` (`crate`, `stump`, `urn`, `barrel`,
-`logpile`, `boulder` are all `solid: true`) and it must use the centre convention of
-Section 0.0. Section 8's 50 predicates are its specification.
+**The assertion pass has been written.** It was the single biggest gap between
+what the code claimed and what it did, and it is now `tools/validate_rooms.cjs`,
+wired to `npm run rooms:check`. It implements all 50 predicates of Section 8,
+resolves solid props as well as `def.solids` (`crate`, `stump`, `urn`, `barrel`,
+`logpile`, `boulder` are all `solid: true`), uses the centre convention of
+Section 0.0, builds a real block grid through `Room.enter` for the navigability
+group, and skips formation predicates with a counted warning until a layout
+declares `def.formations`. Predicates that a layout cannot satisfy without
+changing a frozen field (a door count, a door pairing, an entry side) are
+reported honestly rather than waived.
 
 **`mode: 'marker'` has no per-wave subset.** Section 5.2 shows the persistent
 `_markerI` cursor makes announce-then-flank expressible today with no engine

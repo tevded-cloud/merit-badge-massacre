@@ -2,9 +2,9 @@
 // grid the collide helpers read, the wave pump, and the clear-then-open door
 // lifecycle.
 //
-// The 1.0 open field never builds a Room: g.room stays null there, so every
-// path in this file stays asleep and the field game is untouched. A room is
-// driven by three calls and nothing else:
+// Every night is rooms now. The 1.0 open field survives only behind the
+// MBM_FIELD debug flag in ui.js, where g.room stays null and every path in
+// this file sleeps. A room is driven by three calls and nothing else:
 //
 //   const room = new Room(def, rng);   // geometry, doors, waves resolved
 //   room.enter(g);                     // solids, props, scatter, grid

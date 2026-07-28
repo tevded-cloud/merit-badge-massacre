@@ -1,6 +1,6 @@
 // Merit Badge Massacre: the run. Which act, which room, which doors are on
-// offer. Inert while the game is still one endless field: nothing calls
-// Run.begin in normal play, so the open field game behaves exactly as before.
+// offer. This drives every night: startRun calls Run.begin then Run.advance
+// before the first frame. Only the MBM_FIELD debug flag bypasses it.
 //
 // The run owns three things:
 //   1. the PLAN, a seeded list of concrete room slots, three acts deep
