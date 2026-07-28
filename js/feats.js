@@ -452,9 +452,9 @@ const Feats = {
 // pays a percentage on top of every badge the night banks. All six is exactly
 // double.
 //
-// Only the ids are stored. The systems that read them (room body counts,
-// corruption, coin payouts, enemy damage, act length, cache rooms) land in a
-// later wave. The badge multiplier is live now, in META.credit.
+// Only the ids are stored, and all six are wired: body counts and enemy damage
+// in director.js, corruption and coin payouts in room.js, act length and the
+// cache supply in run.js. The badge multiplier is applied in META.credit.
 //
 // Before the camp has seen a dawn there is no post to look at: there is a
 // lumpy shape under a weathered tarp, roped down, and nothing about it says

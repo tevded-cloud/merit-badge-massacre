@@ -472,8 +472,8 @@ DATA.COINS = {
   convert: 2,
 };
 
-// Active skills (the ones on a button, not the auto weapons) land in a later
-// wave. The runtime is not here yet: nothing reads this table during a run.
+// Active skills: the ones on a button, not the auto weapons. The runtime is
+// live, in game.js, and Q fires whichever one is in the slot.
 // The three entries below exist because the Feat Board awards them, and a
 // reward with no name on it is not a reward. Each one is locked: true, which
 // means feats.js keeps it out of DATA.skills entirely until its feat lands.

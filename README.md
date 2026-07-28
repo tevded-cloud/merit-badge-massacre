@@ -31,9 +31,10 @@ and each one ends with a boss.
 
 Rooms come in flavours: a straight fight, an elite with a chest, a store, a
 loot room, somewhere quiet to breathe, and a lore room with something to find.
-You never get marched through them. Clear a room and its doors light up with a
-card showing what is behind each one, two or three of them, and the door you
-take is the room you get.
+You mostly pick your own way through. Clear a room and its doors light up with
+a card showing what is behind each one, two or three of them, and the door you
+take is the room you get. The one exception is the room before each boss:
+there is only ever one door out of it, and you already know where it goes.
 
 Critters drop merit badges. Enough badges is a rank up, and a rank up deals you
 three cards: a new weapon, another level on one you carry, a patch that changes
@@ -81,7 +82,8 @@ Keyboard and mouse:
 - WASD or the arrow keys: move
 - Mouse: aim
 - Hold left click: attack
-- Space: dodge
+- Space, or Shift, or right click: dodge
+- Q: fire the skill in your slot, once you have earned one
 - E: interact, and open the store when you are standing in one
 - 1 / 2 / 3: pick a rank up card
 - J: Field Guide, B: Merit Badges (in camp)
