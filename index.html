@@ -9,7 +9,7 @@
   html,body { width:100%; height:100%; overflow:hidden; background:#07090c; }
   body { font-family: Verdana, 'Segoe UI', Tahoma, sans-serif; color:#d9d2c0; user-select:none; -webkit-user-select:none; }
   #wrap { position:fixed; inset:0; }
-  canvas#cv { position:absolute; inset:0; width:100%; height:100%; display:block; cursor:none; }
+  canvas#cv { position:absolute; inset:0; width:100%; height:100%; display:block; cursor:none; touch-action:none; }
   #vignette { position:absolute; inset:0; pointer-events:none;
     background:
       radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 38%, rgba(2,3,6,0.55) 78%, rgba(1,2,4,0.85) 100%),
@@ -21,19 +21,40 @@
   #hud { position:absolute; inset:0; pointer-events:none; }
   #xpwrap { position:absolute; top:0; left:0; right:0; height:14px; background:rgba(10,12,16,0.85); border-bottom:1px solid #1c2027; }
   #xpfill { height:100%; width:0%; background:linear-gradient(90deg,#8a6a1d,#f4c542); box-shadow:0 0 10px rgba(244,197,66,0.5); transition:width 0.15s; }
+  #lupip { position:absolute; top:18px; left:64px; font-size:11px; font-weight:bold; letter-spacing:2px;
+    color:#0d1015; background:#f4c542; border-radius:4px; padding:2px 8px; box-shadow:0 0 12px rgba(244,197,66,0.5); }
   #lvl { position:absolute; top:20px; left:14px; font-weight:bold; font-size:13px; color:#f4c542; text-shadow:0 2px 4px #000; }
   #hpwrap { position:absolute; top:40px; left:14px; width:190px; height:16px; background:rgba(10,12,16,0.8); border:1px solid #2a2f38; border-radius:8px; overflow:hidden; }
   #hpfill { height:100%; width:100%; background:linear-gradient(180deg,#d84b3a,#9c2418); transition:width 0.12s; }
   #hptext { position:absolute; top:39px; left:14px; width:190px; text-align:center; font-size:11px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; line-height:18px; }
+  #dodgepips { position:absolute; top:60px; left:16px; display:flex; gap:7px; }
+  .dpip { width:10px; height:10px; transform:rotate(45deg); border:1px solid #3d4650; background:rgba(10,12,16,0.8); position:relative; overflow:hidden; }
+  .dpip.on { border-color:#7ec8e8; box-shadow:0 0 6px rgba(126,200,232,0.45); }
+  .dfill { position:absolute; left:0; bottom:0; width:100%; height:0%; background:#7ec8e8; }
   #timer { position:absolute; top:22px; left:50%; transform:translateX(-50%); font-size:30px; font-weight:bold; letter-spacing:3px; color:#e8e0cc; text-shadow:0 0 14px rgba(200,60,40,0.55), 0 2px 4px #000; }
+  #timer.room { font-size:19px; letter-spacing:4px; top:26px; }
   #kills { position:absolute; top:26px; right:18px; font-size:16px; font-weight:bold; color:#d84b3a; text-shadow:0 2px 4px #000; }
-  #buildrow { position:absolute; top:64px; left:14px; display:flex; gap:6px; flex-wrap:wrap; max-width:320px; }
+  #coins { position:absolute; top:50px; right:18px; display:flex; align-items:center; gap:6px; justify-content:flex-end; }
+  #coins canvas { width:20px; height:20px; }
+  #coinval { font-size:15px; font-weight:bold; color:#f4c542; text-shadow:0 2px 4px #000; }
+
+  #buildrow { position:absolute; top:82px; left:14px; display:flex; flex-direction:column; gap:7px; max-width:340px; }
+  .bgroup { --cat:#f4c542; }
+  .glabel { font-size:9px; font-weight:bold; letter-spacing:2px; color:var(--cat); opacity:0.85; margin-bottom:3px; text-shadow:0 1px 3px #000; }
+  .gslots { display:flex; gap:6px; flex-wrap:wrap; }
   .slot { width:34px; height:40px; background:rgba(10,12,16,0.75); border:1px solid #2a2f38; border-radius:6px; display:flex; flex-direction:column; align-items:center; }
+  .slot.empty { border:1px dashed #333c46; background:rgba(10,12,16,0.35); }
   .slot canvas { width:28px; height:28px; margin-top:2px; }
-  .pips { display:flex; gap:2px; margin-top:1px; }
+  .pips { display:flex; gap:3px; margin-top:1px; }
   .pip { width:4px; height:4px; border-radius:2px; background:#3a3f46; }
   .pip.on { background:#f4c542; }
+  .pip.sq { border-radius:1px; }
+  .pip.rd { border-radius:50%; }
+  .pip.di { border-radius:1px; transform:rotate(45deg); }
+  .bgroup .pip.on { background:var(--cat); }
   #toast { position:absolute; top:96px; left:50%; transform:translateX(-50%); font-size:20px; font-weight:bold; letter-spacing:2px; color:#ff5b45; text-shadow:0 0 16px rgba(220,60,40,0.8), 0 2px 4px #000; opacity:0; transition:opacity 0.25s; text-align:center; }
+  #shophint { position:absolute; bottom:96px; left:50%; transform:translateX(-50%); font-size:13px; font-weight:bold; letter-spacing:3px; color:#f4c542;
+    background:rgba(12,14,18,0.88); border:1px solid rgba(244,197,66,0.45); border-radius:8px; padding:7px 16px; text-shadow:0 2px 4px #000; }
   #bossbar { position:absolute; bottom:26px; left:50%; transform:translateX(-50%); width:44%; min-width:300px; text-align:center; }
   #bossname { font-size:14px; font-weight:bold; letter-spacing:3px; color:#ff5b45; text-shadow:0 0 12px rgba(220,60,40,0.8); }
   #bossfillwrap { margin-top:4px; height:12px; background:rgba(10,12,16,0.85); border:1px solid #4a1512; border-radius:6px; overflow:hidden; }
@@ -56,9 +77,13 @@
   .best { font-size:13px; color:#f4c542; letter-spacing:1px; }
 
   .cardrow { display:flex; gap:18px; flex-wrap:wrap; justify-content:center; }
-  .card { pointer-events:auto; cursor:pointer; width:230px; background:linear-gradient(180deg,#151a22,#0e1218); border:2px solid #333a46; border-radius:12px;
+  .card { position:relative; overflow:hidden; pointer-events:auto; cursor:pointer; width:230px; background:linear-gradient(180deg,#151a22,#0e1218); border:2px solid #333a46; border-radius:12px;
     padding:16px 14px; display:flex; flex-direction:column; align-items:center; gap:8px; transition:all 0.13s; }
   .card:hover { border-color:#f4c542; transform:translateY(-4px); box-shadow:0 10px 26px rgba(0,0,0,0.65); }
+  .card .band { position:absolute; top:0; left:0; right:0; height:4px; background:#f4c542; }
+  .card.cat { --cat:#f4c542; }
+  .card.cat .band { background:var(--cat); }
+  .card.cat:hover { border-color:var(--cat); }
   .card .cname { font-size:16px; font-weight:bold; color:#e8e0cc; }
   .card .ctitle { font-size:11px; color:#f4c542; letter-spacing:1px; }
   .card .cdesc { font-size:12px; color:#8d947f; line-height:1.45; min-height:50px; }
@@ -67,11 +92,27 @@
   .card .newchip { font-size:10px; font-weight:bold; color:#0d1015; background:#f4c542; border-radius:4px; padding:2px 8px; letter-spacing:1px; }
   .card .lvchip { font-size:10px; font-weight:bold; color:#f4c542; border:1px solid #f4c542; border-radius:4px; padding:2px 8px; letter-spacing:1px; }
   .card .key { font-size:10px; color:#5d6370; }
+  .chips { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
+  .chip { font-size:10px; font-weight:bold; letter-spacing:1px; border-radius:4px; padding:2px 8px; }
+  .chip.solid { color:#0d1015; background:var(--cat); }
+  .chip.ghost { color:var(--cat); border:1px solid var(--cat); }
+  .slothint { font-size:10px; letter-spacing:1px; color:#8d947f; }
 
   #pause .panel, #over .panel { background:linear-gradient(180deg,#151a22,#0e1218); border:2px solid #333a46; border-radius:14px; padding:26px 34px; min-width:420px; }
   .statgrid { display:grid; grid-template-columns:1fr 1fr; gap:6px 26px; font-size:13px; text-align:left; margin:12px 0; }
   .statgrid .k { color:#6d7361; }
   .statgrid .v { color:#e8e0cc; text-align:right; font-weight:bold; }
+  #phead { font-size:12px; color:#8d947f; line-height:1.7; margin-bottom:10px; }
+  .pcols { display:flex; gap:22px; text-align:left; justify-content:center; }
+  .pcol { --cat:#f4c542; flex:1 1 0; min-width:170px; }
+  .pclabel { font-size:10px; font-weight:bold; letter-spacing:2px; color:var(--cat); border-bottom:1px solid #1f242e; padding-bottom:5px; margin-bottom:8px; }
+  .pentry { display:flex; align-items:flex-start; gap:8px; margin-bottom:9px; }
+  .pentry canvas { flex:0 0 26px; width:26px; height:26px; }
+  .pename { font-size:12px; font-weight:bold; color:#e8e0cc; }
+  .pstat { font-size:10px; color:#6d7361; letter-spacing:0.5px; margin-top:2px; }
+  .pcol .pips { margin-top:3px; }
+  .pcol .pip.on { background:var(--cat); }
+  .pempty { font-size:11px; color:#4e5560; font-style:italic; }
   #overtitle { font-size:44px; letter-spacing:6px; }
   #overtitle.lose { color:#d84b3a; text-shadow:0 0 26px rgba(216,75,58,0.7); }
   #overtitle.win { color:#f4c542; text-shadow:0 0 26px rgba(244,197,66,0.7); }
@@ -87,8 +128,27 @@
   .shoppips { display:flex; gap:3px; margin-top:3px; }
   .shoppips .pip { width:8px; height:8px; border-radius:4px; }
   .shopbuy { flex:0 0 auto; }
-  .btn.small { padding:8px 16px; font-size:12px; }
+  .btn.small { padding:8px 16px; font-size:12px; display:inline-flex; align-items:center; gap:6px; }
+  .btn.small canvas { width:18px; height:18px; }
   .btn.small:disabled { opacity:0.4; cursor:default; border-color:#3a4150; color:#8d947f; transform:none; box-shadow:none; }
+
+  /* Field Guide */
+  .jtabs { display:flex; gap:10px; justify-content:center; margin:10px 0 16px; }
+  .jtab { pointer-events:auto; cursor:pointer; font-family:inherit; font-size:12px; font-weight:bold; letter-spacing:2px;
+    color:#8d947f; background:#11151c; border:1px solid #333a46; border-radius:20px; padding:8px 20px; }
+  .jtab.on { color:#0d1015; background:#f4c542; border-color:#f4c542; }
+  .jgrid { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }
+  .jcard { width:170px; background:linear-gradient(180deg,#151a22,#0e1218); border:2px solid #262d38; border-radius:12px; padding:12px 10px; }
+  .jcard.killed { border-color:#f4c542; }
+  .jcard canvas { width:120px; height:120px; }
+  .jname { font-size:11px; font-weight:bold; letter-spacing:1px; color:#e8e0cc; margin-top:6px; }
+  .jsub { font-size:10px; color:#6d7361; font-style:italic; margin-top:3px; }
+  .junknown { font-size:54px; color:#2b3341; line-height:120px; }
+  .jrows { text-align:left; max-width:460px; margin:0 auto; }
+  .jrow { display:flex; align-items:center; gap:12px; padding:8px 6px; border-bottom:1px solid #1f242e; font-size:12px; }
+  .jrow .jn { color:#4e5560; width:22px; }
+  .jrow .jw { color:#4e5560; font-style:italic; letter-spacing:1px; }
+  .jrow.filled .jw { color:#e8e0cc; font-style:normal; }
 
   /* Dialogue box */
   #dialog { position:absolute; left:50%; bottom:60px; transform:translateX(-50%); width:min(680px, 86vw);
@@ -102,6 +162,23 @@
   .optrow { display:flex; align-items:center; justify-content:space-between; gap:24px; margin:12px 0; font-size:13px; letter-spacing:1px; color:#8d947f; }
   .optrow input[type=range] { width:180px; accent-color:#f4c542; }
   .optrow input[type=checkbox] { width:18px; height:18px; accent-color:#f4c542; }
+
+  /* Tap to start, touch devices only */
+  #tapstart { position:absolute; inset:0; z-index:60; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+    background:rgba(4,5,8,0.93); font-size:20px; font-weight:bold; letter-spacing:5px; color:#e8e0cc; }
+  #tapstart .tapsub { font-size:11px; font-weight:normal; letter-spacing:2px; color:#6d7361; }
+
+  /* Fat fingers get fat targets */
+  @media (pointer: coarse) {
+    .card { padding:22px 18px; width:250px; }
+    .btn { min-height:48px; padding:14px 34px; }
+    .btn.small { min-height:44px; padding:11px 18px; }
+    .jtab { min-height:44px; padding:12px 22px; }
+    .optrow { margin:18px 0; }
+    .optrow input[type=range] { width:210px; height:34px; }
+    .optrow input[type=checkbox] { width:26px; height:26px; }
+    .shoprow { padding:14px 8px; }
+  }
 </style>
 </head>
 <body>
@@ -112,12 +189,16 @@
   <div id="hud" class="hidden">
     <div id="xpwrap"><div id="xpfill"></div></div>
     <div id="lvl">LV 1</div>
+    <div id="lupip" class="hidden">LV UP x1</div>
     <div id="hpwrap"><div id="hpfill"></div></div>
     <div id="hptext">100 / 100</div>
+    <div id="dodgepips"></div>
     <div id="timer">00:00</div>
     <div id="kills">0 SLAIN</div>
+    <div id="coins"><canvas id="coinic" width="40" height="40"></canvas><span id="coinval">0</span></div>
     <div id="buildrow"></div>
     <div id="toast"></div>
+    <div id="shophint" class="hidden">[E]  SHOP</div>
     <div id="bossbar" class="hidden">
       <div id="bossname"></div>
       <div id="bossfillwrap"><div id="bossfill"></div></div>
@@ -131,7 +212,7 @@
     <button class="btn" id="btnstart">ENTER CAMP</button>
     <button class="btn" id="btnoptions">OPTIONS</button>
     <div class="best hidden" id="bestline"></div>
-    <div class="hint">WASD move &nbsp;|&nbsp; MOUSE aim &nbsp;|&nbsp; HOLD CLICK to attack &nbsp;|&nbsp; P pause &nbsp;|&nbsp; M mute</div>
+    <div class="hint">WASD move &nbsp;|&nbsp; MOUSE aim &nbsp;|&nbsp; HOLD CLICK to attack &nbsp;|&nbsp; SPACE dodge &nbsp;|&nbsp; P pause &nbsp;|&nbsp; M mute</div>
   </div>
 
   <div id="select" class="screen solid hidden">
@@ -147,9 +228,10 @@
   </div>
 
   <div id="pause" class="screen trans hidden">
-    <div class="panel">
+    <div class="panel" style="min-width:640px;">
       <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;margin-bottom:8px;">PAUSED</div>
-      <div id="pbuild" style="font-size:12px;color:#8d947f;line-height:1.7;"></div>
+      <div id="phead"></div>
+      <div class="pcols" id="pbuild"></div>
       <div class="statgrid" id="pstats"></div>
       <div class="btnrow">
         <button class="btn" id="btnresume">RESUME</button>
@@ -170,19 +252,44 @@
     </div>
   </div>
 
+  <div id="runshop" class="screen trans hidden">
+    <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:22px 28px;min-width:560px;max-height:82vh;overflow-y:auto;">
+      <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;">THE STORE</div>
+      <div id="rsbal" class="best" style="margin:8px 0 14px;">0 COOKIE MONEY</div>
+      <div id="rsrows"></div>
+      <div class="hint" style="margin:12px 0 4px;">Cookie Money spends here or turns into badges at dawn.</div>
+      <div class="btnrow"><button class="btn" id="btnrsback">BACK TO THE ROOM</button></div>
+    </div>
+  </div>
+
+  <div id="journal" class="screen solid hidden">
+    <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:22px 28px;min-width:620px;max-height:84vh;overflow-y:auto;">
+      <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;">THE FIELD GUIDE</div>
+      <div class="jtabs">
+        <button class="jtab on" id="jtab_cryptids">CRYPTIDS</button>
+        <button class="jtab" id="jtab_troop">TROOP 12</button>
+      </div>
+      <div id="jbody"></div>
+      <div class="hint" style="margin:14px 0 4px;">1 / 2 switch tabs &nbsp;|&nbsp; Esc back to camp</div>
+      <div class="btnrow"><button class="btn" id="btnjback">BACK TO CAMP</button></div>
+    </div>
+  </div>
+
   <div id="dialog" class="hidden">
     <div id="dlgname">SCOUTMASTER BROCK</div>
     <div id="dlgtext"></div>
     <div id="dlghint">E to close</div>
   </div>
 
-  <div id="camphint" class="hidden">WASD walk &nbsp;|&nbsp; E interact &nbsp;|&nbsp; Esc leave camp</div>
+  <div id="camphint" class="hidden">WASD walk &nbsp;|&nbsp; E interact &nbsp;|&nbsp; J field guide &nbsp;|&nbsp; Esc leave camp</div>
 
   <div id="options" class="screen solid hidden">
     <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:26px 34px;min-width:420px;">
       <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;margin-bottom:16px;">OPTIONS</div>
       <div class="optrow"><label for="optmusic">MUSIC VOLUME</label><input type="range" id="optmusic" min="0" max="100" value="80"></div>
       <div class="optrow"><label for="optsfx">SOUND VOLUME</label><input type="range" id="optsfx" min="0" max="100" value="80"></div>
+      <div class="optrow"><label for="optvoice">VOICE VOLUME</label><input type="range" id="optvoice" min="0" max="100" value="90"></div>
+      <div class="optrow"><label for="optsubs">SUBTITLES</label><input type="checkbox" id="optsubs" checked></div>
       <div class="optrow"><label for="optshake">SCREEN SHAKE</label><input type="checkbox" id="optshake" checked></div>
       <div class="optrow"><label for="optnums">DAMAGE NUMBERS</label><input type="checkbox" id="optnums" checked></div>
       <div class="hint" style="margin:14px 0;">F fullscreen &nbsp;|&nbsp; M mute &nbsp;|&nbsp; Esc back</div>
@@ -201,6 +308,8 @@
       </div>
     </div>
   </div>
+
+  <div id="tapstart" class="hidden">TAP TO START<div class="tapsub">landscape, full screen, both thumbs</div></div>
 </div>
 
 <script src="js/sprites.js"></script>
