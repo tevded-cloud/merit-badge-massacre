@@ -5,6 +5,20 @@
 
 (function () {
 
+  // The Mark: the red every telegraph and every stamped critter shares.
+  const MARK = '212,64,44';
+
+  // A sprite name whose painter has not landed yet must not take the frame
+  // down: the answer is cached per name, once.
+  const sprOk = {};
+  function safeSpr(name) {
+    if (sprOk[name] === undefined) {
+      try { SPR.get(name); sprOk[name] = name; }
+      catch (err) { sprOk[name] = 'stag'; }
+    }
+    return sprOk[name];
+  }
+
   // ---------------- render ----------------
   Game.prototype.render = function (ctx, W, H) {
     const p = this.player;
@@ -70,7 +84,14 @@
         ctx.fillRect(0, -e.r, e.ai.telegraph.len, e.r * 2);
         ctx.restore();
       }
+      // tunnel mouths a mole left behind, and the plug meter over them
+      if (e.ai && e.ai.tunnels) {
+        for (const tn of e.ai.tunnels) this.renderTunnel(ctx, tn);
+      }
     }
+
+    // zones: the warning, the hit, and the walls of sound
+    for (const z of this.zones) this.renderZone(ctx, z);
 
     // gems
     for (const g of this.gems) {
@@ -91,7 +112,7 @@
     // death pops: white silhouette inflates and bursts
     for (const c of this.corpses) {
       const k = c.t / c.dur;
-      SPR.drawBottom(ctx, c.spr, c.x, c.y, c.w * (1 + k * 0.45), {
+      SPR.drawBottom(ctx, safeSpr(c.spr), c.x, c.y, c.w * (1 + k * 0.45), {
         flip: c.flip, white: true, alpha: 0.9 * (1 - k), squash: 1 - k * 0.25,
       });
     }
@@ -181,6 +202,21 @@
       ctx.restore();
       ctx.fillStyle = '#f8d8f0';
       ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 0.5, 0, TAU); ctx.fill();
+      // a shell you can shoot out of the air wears its cracks
+      if (s.hp > 0) {
+        ctx.strokeStyle = 'rgba(248,216,240,' + (0.35 + 0.2 * s.hp) + ')';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, TAU); ctx.stroke();
+        ctx.strokeStyle = 'rgba(40,10,40,0.55)';
+        ctx.lineWidth = 1.2;
+        for (let i = 0; i < 3; i++) {
+          const a = i * TAU / 3 + this.t * 0.6;
+          ctx.beginPath();
+          ctx.moveTo(s.x + Math.cos(a) * s.r * 0.35, s.y + Math.sin(a) * s.r * 0.35);
+          ctx.lineTo(s.x + Math.cos(a) * s.r, s.y + Math.sin(a) * s.r);
+          ctx.stroke();
+        }
+      }
     }
 
     // bugle rings
@@ -279,8 +315,158 @@
       ctx.fillRect(0, 0, W, H);
     }
 
+    if (this.bossCard) this.renderBossCard(ctx, W, H);
+
     if (typeof Reticle !== 'undefined') Reticle.render(ctx, this, W, H);
     if (typeof Transition !== 'undefined') Transition.render(ctx, W, H);
+  };
+
+  // ---------------- zones ----------------
+  // A warning fills from a third of its weight to nearly solid over its warn,
+  // then flashes white-hot for the beat it is actually dangerous.
+  Game.prototype.renderZone = function (ctx, z) {
+    if (z.type === 'ring') {
+      const k = clamp(z.r / (z.maxR || 1), 0, 1);
+      ctx.strokeStyle = 'rgba(' + MARK + ',' + (0.75 * (1 - k)) + ')';
+      ctx.lineWidth = 6 * (1 - k) + 2;
+      ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,190,150,' + (0.35 * (1 - k)) + ')';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(z.x, z.y, Math.max(1, z.r - 6), 0, TAU); ctx.stroke();
+      return;
+    }
+
+    const warn = z.warn > 0 ? z.warn : 0.001;
+    const path = () => {
+      ctx.beginPath();
+      if (z.type === 'cone') {
+        ctx.moveTo(z.x, z.y);
+        ctx.arc(z.x, z.y, z.r, z.a - z.arc / 2, z.a + z.arc / 2);
+        ctx.closePath();
+      } else {
+        ctx.arc(z.x, z.y, z.r, 0, TAU);
+      }
+    };
+
+    if (!z.fired) {
+      const k = clamp(z.t / warn, 0, 1);
+      const a = 0.30 + 0.60 * k;
+      const pulse = 0.82 + Math.sin(this.t * 13) * 0.18;
+      ctx.fillStyle = 'rgba(' + MARK + ',' + (a * 0.26) + ')';
+      path(); ctx.fill();
+      ctx.strokeStyle = 'rgba(' + MARK + ',' + (a * pulse) + ')';
+      ctx.lineWidth = 2 + k * 2;
+      path(); ctx.stroke();
+      // the sweep hand: how much of the warning is spent
+      if (z.type !== 'cone') {
+        ctx.strokeStyle = 'rgba(255,180,150,' + (a * 0.7) + ')';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(z.x, z.y, z.r * 0.86, -Math.PI / 2, -Math.PI / 2 + k * TAU);
+        ctx.stroke();
+      }
+      // a contested sign fills gold as the player stands on it
+      if (z.contest > 0 && z.snuff > 0) {
+        const s = clamp(z.snuff / z.contest, 0, 1);
+        ctx.strokeStyle = 'rgba(244,197,66,0.9)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(z.x, z.y, z.r * 0.6, -Math.PI / 2, -Math.PI / 2 + s * TAU);
+        ctx.stroke();
+      }
+      return;
+    }
+
+    const k = clamp((z.t - warn) / (z.fire > 0 ? z.fire : 0.25), 0, 1);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = 'rgba(255,180,120,' + (0.55 * (1 - k)) + ')';
+    path(); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,240,220,' + (0.85 * (1 - k)) + ')';
+    ctx.lineWidth = 3 * (1 - k) + 1;
+    path(); ctx.stroke();
+  };
+
+  // A hole in the ground that keeps handing critters up, and the meter that
+  // fills while the player stands on it to fill it in.
+  Game.prototype.renderTunnel = function (ctx, tn) {
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.beginPath(); ctx.ellipse(tn.x, tn.y, 26, 15, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(74,52,34,0.9)';
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.ellipse(tn.x, tn.y, 26, 15, 0, 0, TAU); ctx.stroke();
+    ctx.fillStyle = 'rgba(' + MARK + ',' + (0.16 + Math.sin(this.t * 4 + tn.x) * 0.06) + ')';
+    ctx.beginPath(); ctx.ellipse(tn.x, tn.y, 18, 10, 0, 0, TAU); ctx.fill();
+    if (tn.plugT > 0) {
+      const k = clamp(tn.plugT / 1.2, 0, 1);
+      ctx.strokeStyle = '#f4c542';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.ellipse(tn.x, tn.y, 30, 18, 0, -Math.PI / 2, -Math.PI / 2 + k * TAU);
+      ctx.stroke();
+    }
+  };
+
+  // Something moving under the dirt: a low mound with the soil pushed aside.
+  Game.prototype.renderMound = function (ctx, e) {
+    const r = (e._rBak != null ? e._rBak : e.r) || 14;
+    const yB = e.y + r * 0.4;
+    ctx.fillStyle = 'rgba(0,0,0,0.30)';
+    ctx.beginPath(); ctx.ellipse(e.x, yB + 3, r * 1.5, r * 0.5, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#3a2b1c';
+    ctx.beginPath(); ctx.ellipse(e.x, yB, r * 1.35, r * 0.62, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#4d3a25';
+    ctx.beginPath(); ctx.ellipse(e.x, yB - r * 0.16, r * 0.95, r * 0.4, 0, 0, TAU); ctx.fill();
+    // clods thrown out to the sides, riding the shove
+    ctx.fillStyle = 'rgba(58,43,28,0.9)';
+    for (let i = 0; i < 4; i++) {
+      const a = this.t * 3 + i * 1.7 + e.bob;
+      const cx = e.x + Math.cos(a) * r * 1.5;
+      const cy = yB + Math.sin(a * 0.7) * r * 0.35;
+      ctx.beginPath(); ctx.arc(cx, cy, 2.6, 0, TAU); ctx.fill();
+    }
+  };
+
+  // The boss card: name, epithet, and the line it says, sliding in from the
+  // bottom left and gone before the fight has properly started.
+  Game.prototype.renderBossCard = function (ctx, W, H) {
+    const c = this.bossCard;
+    const slide = clamp(c.t / 0.4, 0, 1);
+    const ease = 1 - Math.pow(1 - slide, 3);
+    const fade = c.t > 4 ? clamp(1 - (c.t - 4) / 0.4, 0, 1) : 1;
+    const x = 26;
+    const y = H - 74 + (1 - ease) * 28;
+    ctx.save();
+    ctx.globalAlpha = fade * ease;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+
+    const spaced = (text, px, py, spacing) => {
+      let cx = px;
+      for (const ch of text) {
+        ctx.fillText(ch, cx, py);
+        cx += ctx.measureText(ch).width + spacing;
+      }
+    };
+
+    ctx.font = 'bold 22px Verdana, sans-serif';
+    ctx.fillStyle = 'rgba(8,6,6,0.9)';
+    spaced(c.name, x + 2, y + 2, 3);
+    ctx.fillStyle = '#e8e0cc';
+    spaced(c.name, x, y, 3);
+
+    if (c.epithet) {
+      ctx.font = 'italic 12px Verdana, sans-serif';
+      ctx.fillStyle = '#8d947f';
+      ctx.fillText(c.epithet, x + 1, y + 18);
+    }
+    if (c.line) {
+      ctx.font = '12px Verdana, sans-serif';
+      ctx.fillStyle = 'rgba(' + MARK + ',0.95)';
+      spaced(c.line.toLowerCase(), x + 1, y + 38, 1.6);
+    }
+    ctx.restore();
   };
 
   Game.prototype.renderGround = function (ctx, vw, vh) {
@@ -443,6 +629,14 @@
 
   Game.prototype.renderEnemy = function (ctx, e) {
     if (e.dead) return;
+    // underground: no body to draw, only the dirt it is shoving. Something
+    // that went up instead of down draws nothing at all: it is not here.
+    if (e.hidden) {
+      if (!e.airborne) this.renderMound(ctx, e);
+      return;
+    }
+    const spr = safeSpr(e.spr);
+    const behind = e.move === 'bossbehind';
     const yB = e.y + e.r;
     // shadow
     ctx.fillStyle = 'rgba(0,0,0,0.32)';
@@ -488,11 +682,18 @@
     }
     const drawY = yB - hopY;
     const o = { flip: e.flip, squash, rot: gaitRot, alpha: e.stunT > 0 ? 0.85 : 1 };
-    SPR.drawBottom(ctx, e.spr, e.x, drawY, e.w, o);
+    // THE BEHIND is never a body, only a shape where a body would be
+    if (behind) { o.tint = '#131013'; o.alpha = 0.85; }
+    SPR.drawBottom(ctx, spr, e.x, drawY, e.w, o);
     if (e.flash > 0) {
-      o.white = true;
-      o.alpha = clamp(e.flash / 0.1, 0, 1) * 0.75;
-      SPR.drawBottom(ctx, e.spr, e.x, drawY, e.w, o);
+      const f = { flip: e.flip, squash, rot: gaitRot, white: true, alpha: clamp(e.flash / 0.1, 0, 1) * 0.75 };
+      SPR.drawBottom(ctx, spr, e.x, drawY, e.w, f);
+    }
+    // an untouchable boss strobes white through the roar
+    if (e.phaseGuard > 0 && Math.floor(this.t * 8) % 2 === 0) {
+      SPR.drawBottom(ctx, spr, e.x, drawY, e.w, {
+        flip: e.flip, squash, rot: gaitRot, white: true, alpha: 0.8,
+      });
     }
     // burning
     if (e.burnT > 0) {
@@ -506,11 +707,17 @@
       }
       ctx.restore();
     }
-    // possessed eye glow
+    // possessed eye glow, or the two pale glints that are all THE BEHIND
+    // ever shows of itself
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     const glow = 0.32 + 0.2 * Math.sin(this.t * 5 + e.bob);
-    for (const [ex, ey] of SPR.eyePositions(e.spr, e.x, drawY, e.w, e.flip, squash)) {
+    for (const [ex, ey] of SPR.eyePositions(spr, e.x, drawY, e.w, e.flip, squash)) {
+      if (behind) {
+        ctx.fillStyle = 'rgba(226,232,220,' + (0.55 + 0.3 * Math.sin(this.t * 2.2 + e.bob)) + ')';
+        ctx.beginPath(); ctx.arc(ex, ey, 2.6, 0, TAU); ctx.fill();
+        continue;
+      }
       const grd = ctx.createRadialGradient(ex, ey, 0, ex, ey, e.boss ? 9 : 5);
       grd.addColorStop(0, 'rgba(255,60,30,' + glow + ')');
       grd.addColorStop(1, 'rgba(255,30,10,0)');
@@ -525,8 +732,8 @@
       ctx.fillStyle = '#ff5b45';
       ctx.strokeStyle = 'rgba(10,5,5,0.9)';
       ctx.lineWidth = 3;
-      ctx.strokeText('!', e.x, drawY - e.w * SPR.height(e.spr, 1) - 8);
-      ctx.fillText('!', e.x, drawY - e.w * SPR.height(e.spr, 1) - 8);
+      ctx.strokeText('!', e.x, drawY - e.w * SPR.height(spr, 1) - 8);
+      ctx.fillText('!', e.x, drawY - e.w * SPR.height(spr, 1) - 8);
     }
   };
 
