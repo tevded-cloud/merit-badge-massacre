@@ -205,9 +205,9 @@ DATA.enemies = {
 // boot patch on: at 76 he could not be caught by anyone who had not bought
 // speed, and the fight simply never ended.
 DATA.bosses = [
-  { id: 'hare',     at: 300, name: 'BRAMBLEBUCK',  hp: 1050, dmg: 13, r: 26, w: 76,  spr: 'rabbit',  move: 'bosshare', hopSpd: 360, xp: 60 },
+  { id: 'hare',     at: 300, name: 'BRAMBLEBUCK',  hp: 1050, dmg: 13, r: 26, w: 96,  spr: 'bramblebuck', move: 'bosshare', hopSpd: 360, xp: 60 },
   { id: 'vicar',    at: 600, name: 'THE TALLYMAN', hp: 5000, dmg: 21, r: 30, w: 88,  spr: 'raccoon', move: 'bossvicar', spd: 58, xp: 120 },
-  { id: 'antlered', at: 840, name: 'OLD NOBODY',   hp: 6000, dmg: 26, r: 32, w: 120, spr: 'stag',    move: 'bossstag', spd: 54, xp: 0, final: true },
+  { id: 'antlered', at: 840, name: 'OLD NOBODY',   hp: 6000, dmg: 26, r: 32, w: 150, spr: 'oldnobody', move: 'bossstag', spd: 54, xp: 0, final: true },
 ];
 
 DATA.pool = [
@@ -488,6 +488,6 @@ DATA.skills = {
   },
   fieldstrip: {
     name: 'Field Strip', icon: 'knives', locked: true,
-    desc: 'Break your worst weapon down for parts, on the spot, and level the rest.',
+    desc: 'Turn the Cookie Money in your pocket into patched up scout, one coin at a time.',
   },
 };

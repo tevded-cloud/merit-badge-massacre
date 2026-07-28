@@ -50,8 +50,9 @@ lifetime badge count grows.
 - **Scoutmaster Brock**, at the fire, who has opinions about all of this.
 - **The Badge Board**: permanent ranks bought with banked badges. More health,
   more damage, faster legs, a revive. They never expire.
-- **The Feat Board**: standing dares. Finishing one is permanent and most of
-  them open something new up for good.
+- **Merit Badges**: standing dares, and the game is named after them. Earning
+  one is permanent, most of them open something new up for good, and every
+  emblem you earn is stitched onto the sash in your cabin.
 - **The Totem**: carvings you switch on before you leave. Each one makes the
   night harder and multiplies the badges you bring home. It opens once you have
   seen a sunrise.
@@ -76,7 +77,7 @@ Keyboard and mouse:
 - Space: dodge
 - E: interact, and open the store when you are standing in one
 - 1 / 2 / 3: pick a rank up card
-- J: Field Guide, B: Feat Board (in camp)
+- J: Field Guide, B: Merit Badges (in camp)
 - P or Esc: pause. In camp, Esc backs out one step: out of the cabin first, then
   out of camp
 - M: mute, F: fullscreen
