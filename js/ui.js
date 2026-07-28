@@ -753,10 +753,11 @@ function buildFeats() {
   featFlash = [];
 }
 
-// ---------------- the totem ----------------
-// Six carvings. Each one is a promise the night will be worse and a percentage
-// on every badge it banks. Only the ids are stored: the systems that read them
-// land in a later wave, and the badge multiplier is applied in META.credit.
+// ---------------- the tally post ----------------
+// Six blazes cut into the post with a hatchet. Each one is a promise the night
+// will be worse and a percentage on every badge it banks. Only the ids are
+// stored, and the badge multiplier is applied in META.credit. The screen id
+// stays 'totem' so old saves and state names keep working.
 function openTotem() {
   buildTotem();
   setState('totem');
@@ -770,9 +771,9 @@ function buildTotem() {
   const n = Totem.active(META).length;
   $('totemmult').textContent = mult.toFixed(2) + 'x BADGES';
   $('totemsub').textContent =
-    n === 0 ? 'Nothing carved. The night is only the night.' :
-    n >= Totem.list.length ? 'Every face carved. Whatever is out there has been fully briefed.' :
-    n + ' of ' + Totem.list.length + ' carved. The woods have been told.';
+    n === 0 ? 'Nothing cut. The night is only the night.' :
+    n >= Totem.list.length ? 'Every blaze cut. Whatever is out there has been fully briefed.' :
+    n + ' of ' + Totem.list.length + ' cut. The woods have been told.';
 
   for (const c of Totem.list) {
     const on = Totem.on(c.id, META);
@@ -795,7 +796,7 @@ function buildTotem() {
     wrap.className = 'shopbuy';
     const btn = document.createElement('button');
     btn.className = 'btn small';
-    btn.textContent = on ? 'CARVED' : 'SMOOTH';
+    btn.textContent = on ? 'CUT' : 'SMOOTH';
     btn.addEventListener('click', () => {
       gesture();
       Totem.toggle(c.id, META);
@@ -950,7 +951,7 @@ function showOver(won) {
   t.textContent = won ? 'DAWN' : 'DEVOURED';
   t.className = won ? 'win' : 'lose';
   $('oversub').textContent = won
-    ? 'Troop 13 survives. The Antlered One does not.'
+    ? 'Troop 13 survives. Old Nobody does not.'
     : 'The forest keeps score. The camp keeps your badges.';
   const grid = $('overstats');
   grid.innerHTML = '';

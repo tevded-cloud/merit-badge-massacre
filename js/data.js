@@ -39,7 +39,7 @@ DATA.characters = {
 DATA.weapons = {
   slingshot: {
     name: 'Slingshot', kind: 'manual', icon: 'slingshot',
-    desc: 'Pelts the faithful with river stones. Hold attack to fire.',
+    desc: 'Pelts the Signed with river stones. Hold attack to fire.',
     base: { cd: 0.42, dmg: 12, count: 1, speed: 520, pierce: 0, spread: 0.07 },
     levels: [
       { dmg: 4, text: '+4 damage' },
@@ -115,8 +115,8 @@ DATA.weapons = {
     ],
   },
   canteen: {
-    name: 'Canteen of Holy Water', kind: 'auto', icon: 'canteen',
-    desc: 'Splashes blessed puddles that scald the unholy where they stand.',
+    name: 'Canteen of Creek Water', kind: 'auto', icon: 'canteen',
+    desc: 'Splashes puddles that get into the tokens. Tin rusts, and rust stings.',
     base: { cd: 3.0, count: 1, radius: 64, dps: 10, dur: 3, range: 300 },
     levels: [
       { radius: 18, text: 'Wider puddles' },

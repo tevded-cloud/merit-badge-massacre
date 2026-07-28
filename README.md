@@ -1,8 +1,13 @@
 # Merit Badge Massacre
 
-Troop 13 vs. the Cult of the Antlered One. A top down action roguelite where
-the woodland critters found a religion with horns, and three scout kids did not
-sign the attendance sheet.
+A top down action roguelite about the last three scouts of Camp Hearthwood.
+
+A cryptid nobody believes in starves, so the ones out past the treeline Sign the
+wildlife: a little tin token stamped into the fur, and whatever wears it believes
+forever after. A Signed critter then goes looking for the one thing in these
+woods that says it is not real, which turns out to be an eleven year old in a
+neckerchief holding a merit badge for knowing better. Troop 13 walks out anyway.
+The badges do not earn themselves.
 
 Every sprite, every sound effect and every note of music is generated in code
 when the page loads. There are no art files and no audio files to download.
@@ -53,8 +58,10 @@ lifetime badge count grows.
 - **Merit Badges**: standing dares, and the game is named after them. Earning
   one is permanent, most of them open something new up for good, and every
   emblem you earn is stitched onto the sash in your cabin.
-- **The Totem**: carvings you switch on before you leave. Each one makes the
-  night harder and multiplies the badges you bring home. It opens once you have
+- **The Tally Post**: a weathered post at the trailhead. Take a hatchet to it
+  before you leave and cut one blaze per dare, up to six. Each one makes the
+  night harder and multiplies the badges you bring home, and the post stands
+  taller for every mark on it. It comes out from under its tarp once you have
   seen a sunrise.
 - **The Field Guide**: what you have met and what you have killed, plus the
   notes Troop 12 left behind.

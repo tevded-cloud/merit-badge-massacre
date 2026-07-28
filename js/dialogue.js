@@ -128,16 +128,16 @@ const BROCK = {
     { t: '"Your firefly sat on my ledger hand for an hour last night. Got nothing done. It can stay."', e: 'warm' },
     { t: '"Thirty years on this ridge and the woods finally sent us something that is not trying to eat anyone. Do not tell it I said that."', e: 'warm' },
   ],
-  // The totem at the trailhead. Brock does not approve of it, has never once
-  // said so outright, and mentions it constantly. Mixed into the idle pool
-  // only while there is at least one carving on the pole.
+  // The tally post at the trailhead. Brock does not approve of it, has never
+  // once said so outright, and mentions it constantly. Mixed into the idle
+  // pool only while there is at least one blaze cut into the post.
   totem: [
-    { t: '"You carved the pole." He does not look at the pole. "Thirty years that log sat there with the bark on and nobody touched it. Now it has a face. Now it has several."', e: 'deadpan' },
-    { t: '"Every notch on that thing is a promise, and out there they read promises the way you read a trail sign. Loudly, and from a long way off."', e: 'alarmed' },
+    { t: '"You put a hatchet to the post." He does not look at the post. "Thirty years that thing stood there with the bark on and nobody touched it. Now it is marked. Now it is marked several times."', e: 'deadpan' },
+    { t: '"Every blaze on that post is a promise, and out there they read promises the way you read a trail sign. Loudly, and from a long way off."', e: 'alarmed' },
     { t: '"The badges do come back heavier. I have counted. I would like the record to show I counted while disapproving."', e: 'deadpan' },
-    { t: '"You can sand it smooth, you know. Any night you like. Nobody out there has ever been told that a promise came off, but you can try."', e: 'warm' },
-    { t: '"I watched a scout carve four faces and walk out whistling. He came back. He did not whistle."', e: 'alarmed' },
-    { t: '"Old trick, that pole. Older than me, older than the camp. Somebody knew exactly what the woods pay for a bad night and left us the receipt."', e: 'deadpan' },
+    { t: '"You can plane it smooth, you know. Any night you like. Nobody out there has ever been told a promise came off, but you are welcome to try."', e: 'warm' },
+    { t: '"I watched a scout cut four blazes and walk out whistling. He came back. He did not whistle."', e: 'alarmed' },
+    { t: '"Marking wood to say you were here. That is their habit, not ours." He lets that sit. "And the woods have never once failed to notice."', e: 'alarmed' },
   ],
   // Spoken the first time he sees a feat land, one per visit, with {feat}
   // swapped for whatever you just earned.

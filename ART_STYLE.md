@@ -25,8 +25,9 @@ corrupted, and everything alive through motion, not frames.
    white specular dot. The helper also registers the eye position so the
    renderer can pulse a red glow. Friendly characters get `cuteEye()`: black
    bead plus specular. This is the single strongest theme signal, never skip it.
-5. **Every critter carries one tell of the cult**: gold pendant (`pendant()`),
-   red eyes, or a rune. Cute first, wrong second.
+5. **Every critter carries one tell that it has been Signed**: the stamped tin
+   Token (`pendant()`), red eyes, or the eye-in-ring Sign. Cute first, wrong
+   second.
 6. **Silhouette carries identity**: each species must read at 30 pixels by
    outline alone (squirrel tail, rabbit ears, boar tusks, owl discs, beaver
    tail, fox ears, stag antlers). Design the silhouette before the details.
@@ -39,7 +40,7 @@ corrupted, and everything alive through motion, not frames.
 - Cream and bone `#e8cfa5 #e9e4da #d8cfc0`, grey `#98a4b2`
 - Mark red `#d4402c`, glow red `#ff4a20`, gold `#f4c542 #e3b341`
 - Scout khaki `#c9a86a`, forest green `#5c7248`, navy `#3a4a63`
-- Fire `#ffdc8c #ff8c28 #c83c0a`, holy water `#7ec8e8`
+- Fire `#ffdc8c #ff8c28 #c83c0a`, creek water `#7ec8e8`
 
 ## Amendment 2026-07-27: structured high fidelity
 
@@ -115,7 +116,7 @@ not mention stays binding.
 
 ## Adding a new critter (checklist)
 
-1. Pick the silhouette tell and one cult tell.
+1. Pick the silhouette tell and one Signed tell.
 2. Painter in js/sprites.js: tail or wings first (behind), body `apoly`
    with haunch and chest planes, head `apoly` with a snout wedge, pointed
    ears, muzzle, `demonEye` x2 with the head's lid tint, feet with claw

@@ -80,7 +80,7 @@ function campMeta() {
 }
 
 // Merit badges change what stands in the camp: earned cosmetics turn up as
-// furniture and the totem grows a face per carving. Both are baked, so the
+// furniture and the tally post gains a blaze per dare taken. Both are baked, so the
 // bake has to know when they move. This signature is compared against the
 // baked one every frame, exactly the way the growth tier already is. The
 // identifiers here still say feat on purpose: only the player facing words
@@ -102,19 +102,33 @@ function campHasCosmetic(id) {
   } catch (e) { return false; }
 }
 
-// The totem is uncarved wood until the camp has seen a dawn, the same shape
-// the cabin and the lakeshore gates use.
-function campTotemOpen() {
+// The width the tally post is drawn at, which is also its bake width in
+// sprites.js, so the sprite lands at scale 1 and its packed earth sits where
+// the keep out circle at the trailhead already is.
+const CAMP_POST_W = 46;
+
+// The tally post stays under its tarp until the camp has seen a dawn, the same
+// shape the cabin and the lakeshore gates use. The object it asks is still
+// called Totem: that identifier is read by five other files and by every save
+// already written, and only the words the player sees changed.
+function campPostOpen() {
   try {
     return (typeof Totem !== 'undefined' && Totem) ? Totem.open() : false;
   } catch (e) { return false; }
 }
 
-function campCarvings() {
+// The dares cut into the post tonight, one blaze each.
+function campNotches() {
   try {
     return (typeof Totem !== 'undefined' && Totem) ? Totem.active() : [];
   } catch (e) { return []; }
 }
+
+// Brock's unease about a scout cutting the same mark into wood that the
+// marked things cut into bark lives in one place, BROCK.totem in dialogue.js,
+// which brockLine() mixes into the fire pool while the post has a blaze on
+// it. Nothing here duplicates it: two sources for the same beat would only
+// dilute the authored pool.
 
 // Deterministic rng so the bake is stable between visits.
 function campRng(seed) {
@@ -488,6 +502,29 @@ function campMossLog(q, x, y, s, rng) {
   q.closePath(); q.fill();
   q.restore();
 }
+// Fallback for the tally post, used only if sprites.js is older than this file
+// and has no tallypost painters in it. Same read, far less drawing: a grey
+// post with a slant cut top and one pale blaze per dare taken.
+function campFallbackPost(q, x, yB, w, n) {
+  const s = w / CAMP_POST_W;
+  const h = Math.max(54, 16 + n * 22) * s;
+  const hw = 12 * s;
+  q.fillStyle = '#8b8474'; q.strokeStyle = CPAL.out; q.lineWidth = 1.8;
+  q.beginPath(); q.roundRect(x - hw, yB - 4 * s - h, hw * 2, h, 2 * s); q.fill(); q.stroke();
+  q.fillStyle = 'rgba(255,248,224,0.16)';
+  q.fillRect(x - hw + 1.6 * s, yB - 4 * s - h + 2, 4 * s, h - 4);
+  q.fillStyle = 'rgba(22,18,9,0.3)';
+  q.fillRect(x + hw - 6 * s, yB - 4 * s - h + 2, 4.4 * s, h - 4);
+  for (let i = 0; i < n; i++) {
+    const fy = yB - 16 * s - i * 22 * s;
+    q.fillStyle = i === n - 1 ? '#f7edd4' : '#dfcca6';
+    q.beginPath(); q.roundRect(x - 4.6 * s, fy - 12 * s, 9.2 * s, 12 * s, 2 * s); q.fill();
+    q.strokeStyle = CPAL.out; q.lineWidth = 1; q.stroke();
+  }
+  q.fillStyle = '#a29a86'; q.strokeStyle = CPAL.out; q.lineWidth = 1.6;
+  q.beginPath(); q.ellipse(x, yB - 4 * s - h + 3 * s, hw, 4.6 * s, 0.266, 0, TAU); q.fill(); q.stroke();
+}
+
 function campGrassClump(q, x, y, s, rng) {
   for (let i = 0; i < 3 + ((rng() * 3) | 0); i++) {
     const gx = x + (rng() - 0.5) * s * 1.6, gy = y + (rng() - 0.5) * s * 0.6;
@@ -641,7 +678,7 @@ class Camp {
       [-250, -265, 16], [-285, 130, 16], [240, -200, 16], [360, 190, 16],  // lone pines
       [-118, -300, 14],             // the feat board rack
       [-540, -350, 11],             // the grove birdhouse
-      [330, -70, 17],               // the totem, carved or not
+      [330, -70, 17],               // the tally post, notched or bare
     ];
     if (tier >= 2) K.push([170, 430, 34]);   // moored canoe
     if (tier >= 4) K.push([95, -120, 9]);    // trophy post
@@ -759,7 +796,9 @@ class Camp {
     // files read both. Only the words on the prompt changed.
     s.push({ id: 'featboard', x: -118, y: -300, r: 36, label: 'Read the merit badges' });
     s.push({ id: 'birdhouse', x: -540, y: -350, r: 30, label: 'Knock on the birdhouse' });
-    if (campTotemOpen()) s.push({ id: 'totem', x: 330, y: -70, r: 42, label: 'Carve the totem' });
+    // the spot ids stay 'totem' and 'totemhint': ui.js switches on the interact
+    // type they produce, and it is not this unit's file. Only the words moved.
+    if (campPostOpen()) s.push({ id: 'totem', x: 330, y: -70, r: 42, label: 'Notch the tally post' });
     else s.push({ id: 'totemhint', x: 330, y: -70, r: 42, label: 'Look at the tarp' });
     if (tier >= 1) s.push({ id: 'cabindoor', x: 520, y: -292, r: 30, label: 'Step inside the cabin' });
     else s.push({ id: 'cabinhint', x: 480, y: -146, r: 40, label: 'Read the sign' });
@@ -1316,14 +1355,14 @@ class Camp {
     if (id === 'featboard') return { type: 'feats' };
     if (id === 'totem') return { type: 'totem' };
     if (id === 'totemhint') {
-      this.msg = { text: 'Something lumpy under a weathered tarp, roped down at the corners. The canvas is stiff with old rain. Brock, from the fire: "Leave it. It comes off when you have seen a sunrise, and not one hour before."', t: 6 };
+      this.msg = { text: 'Something tall and narrow under a weathered tarp, roped down at two heights. The canvas is stiff with old rain, and one bottom corner has worked loose over a sliver of planed wood. Brock, from the fire, not looking up: "Leave that alone. It comes off when you have seen a sunrise, and not one hour before."', t: 6 };
       return null;
     }
     if (id === 'birdhouse') return this.knockBirdhouse();
     if (id === 'fire') {
-      // The tarp coming off the pole is worth exactly one line, once ever, and
-      // the Totem owns both the line and the flag that spends it. An older
-      // feats.js has no revealLine at all, which reads as nothing to say.
+      // The tarp coming off the post is worth exactly one line, once ever, and
+      // the Totem object owns both the line and the flag that spends it. An
+      // older feats.js has no revealLine at all, which reads as nothing to say.
       let ln = null;
       try { if (typeof Totem !== 'undefined' && Totem && Totem.revealLine) ln = Totem.revealLine(META); } catch (e) { ln = null; }
       if (ln) return { type: 'talk', line: ln, speaker: 'SCOUTMASTER BROCK' };
@@ -1353,7 +1392,7 @@ class Camp {
 
   // =========================================================== bake =========
   // The camp rebakes when it grows a tier, and now also when a feat lands a
-  // new cosmetic or a carving changes the totem: both are baked furniture.
+  // new cosmetic or a dare changes the tally post: both are baked furniture.
   _maybeBake() {
     if (this.bakedTier !== this.tier() || this.bakedFeatSig !== campFeatSig()) this._bake();
   }
@@ -1965,11 +2004,11 @@ class Camp {
       this.renderFeatRack(ctx, -118, -300);
     });
 
-    // the totem at the trailhead: bark on until the camp has seen a dawn, and
-    // one carved face per carving after that.
+    // the tally post at the trailhead: under its tarp until the camp has seen
+    // a dawn, and one hatchet blaze per dare taken after that.
     push(-70, (ctx) => {
       shadow(ctx, 330, -70, 15);
-      this.renderTotem(ctx, 330, -70);
+      this.renderTallyPost(ctx, 330, -70);
     });
 
     // trail sign
@@ -2201,7 +2240,7 @@ class Camp {
     this.furn = F;
   }
 
-  // -------------------------------------- merit badge rack and the totem ---
+  // ---------------------------------- merit badge rack and the tally post ---
   // A crossbar with a hand sewn sash over it and one tin badge per claimed
   // merit badge, up to the whole board. Reading the camp should tell you where
   // you are before you open a single screen. Feats.count() and Feats.total are
@@ -2242,87 +2281,35 @@ class Camp {
     }
   }
 
-  // A cedar log at the trailhead. Before the first dawn it is under a tarp and
-  // reads as a question nobody will answer. After it, every carving you switch
-  // on is another face stacked up the pole, so the camp shows how much worse
-  // you have promised tonight will be from across the clearing.
-  renderTotem(ctx, x, yB) {
-    const open = campTotemOpen();
-    const carved = open ? campCarvings() : [];
-    const seg = 22;
-    const hw = 13;
-    // the pole is as tall as the promises on it, with a floor so a sanded
-    // pole is still a pole and not a stump.
-    const h = Math.max(54, 16 + carved.length * seg);
-    const top = yB - h;
-
-    ctx.fillStyle = open ? '#7c5630' : '#5a4327';
-    ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1.8;
-    ctx.beginPath(); ctx.roundRect(x - hw, top, hw * 2, h, 4); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = 'rgba(255,196,110,0.18)';
-    ctx.fillRect(x - hw + 2, top + 3, 5, h - 6);
-    ctx.fillStyle = 'rgba(24,16,8,0.22)';
-    ctx.fillRect(x + hw - 6, top + 3, 4, h - 6);
-
-    if (!open) {
-      // the pole above is what is under the canvas, and the canvas goes over
-      // it, so the lump has the shape of the actual thing.
-      this.renderTarp(ctx, x, yB, hw);
-      return;
-    }
-
-    // one carved face per promise, oldest at the bottom, newest wearing the
-    // antlers so the whole stack still reads as one totem from a distance.
-    for (let i = 0; i < carved.length; i++) {
-      const fy = yB - 12 - i * seg;
-      const topFace = i === carved.length - 1;
-      // recessed panel
-      ctx.fillStyle = 'rgba(24,16,8,0.5)';
-      ctx.beginPath(); ctx.roundRect(x - hw + 2, fy - 17, hw * 2 - 4, 19, 3); ctx.fill();
-      ctx.fillStyle = 'rgba(120,78,36,0.55)';
-      ctx.beginPath(); ctx.roundRect(x - hw + 3, fy - 16, hw * 2 - 6, 8, 3); ctx.fill();
-      // a heavy carved brow over two lit sockets
-      ctx.fillStyle = '#3b2711';
-      ctx.fillRect(x - 8, fy - 13, 16, 3);
-      ctx.fillStyle = '#f4c542';
-      ctx.beginPath(); ctx.arc(x - 4.5, fy - 8, 2.3, 0, TAU); ctx.fill();
-      ctx.beginPath(); ctx.arc(x + 4.5, fy - 8, 2.3, 0, TAU); ctx.fill();
-      ctx.fillStyle = 'rgba(244,197,66,0.22)';
-      ctx.beginPath(); ctx.arc(x - 4.5, fy - 8, 5, 0, TAU); ctx.fill();
-      ctx.beginPath(); ctx.arc(x + 4.5, fy - 8, 5, 0, TAU); ctx.fill();
-      // a flat tooth row for a mouth
-      ctx.fillStyle = '#241606';
-      ctx.fillRect(x - 7, fy - 3, 14, 3);
-      ctx.fillStyle = 'rgba(233,228,218,0.75)';
-      for (let k = 0; k < 4; k++) ctx.fillRect(x - 6 + k * 3.6, fy - 3, 1.6, 3);
-      if (topFace) {
-        ctx.fillStyle = '#c9ccd4'; ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1.1;
-        for (const s of [-1, 1]) {
-          ctx.beginPath();
-          ctx.moveTo(x + s * hw, fy - 14);
-          ctx.lineTo(x + s * (hw + 9), fy - 21);
-          ctx.lineTo(x + s * (hw + 10), fy - 15);
-          ctx.lineTo(x + s * (hw + 2), fy - 8);
-          ctx.closePath(); ctx.fill(); ctx.stroke();
-        }
-      }
-    }
-    // sanded cap
-    ctx.fillStyle = '#8a6138';
-    ctx.beginPath(); ctx.ellipse(x, top + 2, hw, 4, 0, 0, TAU); ctx.fill();
-    ctx.strokeStyle = CPAL.out; ctx.lineWidth = 1.4; ctx.stroke();
-    ctx.fillStyle = 'rgba(255,244,214,0.18)';
-    ctx.beginPath(); ctx.ellipse(x - 2, top + 1, hw * 0.5, 2, 0, 0, TAU); ctx.fill();
+  // THE TALLY POST at the trailhead. Before the first dawn it is under a tarp
+  // and reads as a question nobody will answer. After that it is a weathered
+  // post standing in packed earth, and every dare you take tonight is one more
+  // clean hatchet blaze cut into it, bright pale wood through the grey. The
+  // post stands taller for each one, so the camp says from across the clearing
+  // how much worse you have promised tonight will be.
+  //
+  // The post itself is baked in sprites.js, one bake per blaze count, because
+  // it only ever changes when a dare is switched on or off and the camp
+  // already rebakes its furniture on exactly that signal. The tarp stays here:
+  // its loose corner lifts in the breeze off this.t, which a bake cannot do.
+  renderTallyPost(ctx, x, yB) {
+    const open = campPostOpen();
+    const n = open ? Math.max(0, Math.min(6, campNotches().length)) : 0;
+    campSpr(ctx, 'tallypost' + n, x, yB, CAMP_POST_W, null,
+      (c2, px, py, pw) => campFallbackPost(c2, px, py, pw, n));
+    // the canvas goes over the actual post, so the lump under it has the
+    // shape of the thing it is hiding.
+    if (!open) this.renderTarp(ctx, x, yB, 11.5);
   }
 
   // Something lumpy under a weathered tarp. The canvas sags between the two
-  // rope lines, tents where the pole pushes up under it and splays where it
+  // rope lines, tents where the post pushes up under it and splays where it
   // piles on the dirt, so the shape of the thing reads through the cloth
   // without the cloth ever saying what it is. One bottom corner has worked
-  // loose and lifts in the breeze: renderTotem is called from the furniture
-  // draw list every frame, not from a bake, so this.t is live here and the
-  // corner really moves rather than being caught in a pose.
-  renderTarp(ctx, x, yB, poleHw) {
+  // loose and lifts in the breeze: renderTallyPost is called from the
+  // furniture draw list every frame, not from a bake, so this.t is live here
+  // and the corner really moves rather than being caught in a pose.
+  renderTarp(ctx, x, yB, postHw) {
     const t = this.t || 0;
     // Three waves whose periods do not divide into each other, pushed through
     // a smoothstep, so the corner mostly lies still and now and then a gust
@@ -2388,11 +2375,11 @@ class Camp {
     ctx.fillStyle = 'rgba(255,190,110,0.13)';
     ctx.fillRect(x - 26, yB - 3.5, 52, 6);
 
-    // the pole, read through the canvas: two seams where the cloth leaves it
+    // the post, read through the canvas: two seams where the cloth leaves it
     // and one lit ridge where the cloth is pulled taut across the front
     ctx.fillStyle = 'rgba(26,20,10,0.20)';
     for (const s of [-1, 1]) {
-      const e = x + s * poleHw;
+      const e = x + s * postHw;
       ctx.beginPath();
       ctx.moveTo(e + s * 1.5, yB - 4);
       ctx.quadraticCurveTo(e + s * 0.5, yB - 30, e - s * 4, yB - 52);
@@ -2530,27 +2517,28 @@ class Camp {
 
     if (lift > 0.03) {
       // what the corner has stopped covering: dark, then the edge of something
-      // pale and planed flat, and one groove that is not an answer
+      // planed flat and paler than weather leaves wood, with one groove in it
+      // that is not an answer
       ctx.save();
       outline(ctx); ctx.clip();
       flapPath(ctx, 0);
       ctx.fillStyle = '#241c10'; ctx.fill();
       ctx.save();
       flapPath(ctx, 0); ctx.clip();
-      ctx.fillStyle = '#c9a86a';
+      ctx.fillStyle = '#a89e88';
       ctx.beginPath();
-      ctx.moveTo(x - poleHw, yB + 5); ctx.lineTo(x - poleHw + 1.2, yB - 21);
+      ctx.moveTo(x - postHw, yB + 5); ctx.lineTo(x - postHw + 1.2, yB - 21);
       ctx.lineTo(x + 10, yB - 21); ctx.lineTo(x + 10, yB + 5);
       ctx.closePath(); ctx.fill();
-      ctx.fillStyle = 'rgba(255,244,214,0.30)';
-      ctx.fillRect(x - poleHw + 1, yB - 21, 2.4, 26);
-      ctx.strokeStyle = 'rgba(58,38,16,0.75)'; ctx.lineWidth = 1.4;
+      ctx.fillStyle = 'rgba(255,248,224,0.28)';
+      ctx.fillRect(x - postHw + 1, yB - 21, 2.4, 26);
+      ctx.strokeStyle = 'rgba(38,32,20,0.75)'; ctx.lineWidth = 1.4;
       ctx.beginPath();
-      ctx.moveTo(x - poleHw + 5, yB - 3); ctx.lineTo(x - poleHw + 5, yB - 11);
-      ctx.quadraticCurveTo(x - poleHw + 5.4, yB - 14, x - poleHw + 9, yB - 14.6);
+      ctx.moveTo(x - postHw + 5, yB - 3); ctx.lineTo(x - postHw + 5, yB - 11);
+      ctx.quadraticCurveTo(x - postHw + 5.4, yB - 14, x - postHw + 9, yB - 14.6);
       ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,238,196,0.35)'; ctx.lineWidth = 0.8;
-      ctx.beginPath(); ctx.moveTo(x - poleHw + 6.3, yB - 3.4); ctx.lineTo(x - poleHw + 6.3, yB - 11); ctx.stroke();
+      ctx.strokeStyle = 'rgba(240,234,212,0.35)'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(x - postHw + 6.3, yB - 3.4); ctx.lineTo(x - postHw + 6.3, yB - 11); ctx.stroke();
       // the flap's own shadow, laid along the fold
       ctx.fillStyle = 'rgba(14,10,4,0.45)';
       ctx.beginPath();

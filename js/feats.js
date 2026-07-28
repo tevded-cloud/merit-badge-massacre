@@ -1,12 +1,12 @@
-// Merit Badge Massacre: the Merit Badge Board and the Totem.
+// Merit Badge Massacre: the Merit Badge Board and the Tally Post.
 //
 // Two systems live here because they are the same idea from opposite ends.
 // A MERIT BADGE is a dare the camp remembers: do a specific, slightly stupid
 // thing across your whole history and the woods hand something back. A
-// CARVING is a dare you make in advance: promise the night will be worse,
-// and the night pays more. Neither one is a chore counter. Every badge below
-// is a joke, a dare or a discovery, and the ones that are none of those were
-// cut.
+// BLAZE cut into the tally post is a dare you make in advance: promise the
+// night will be worse, and the night pays more. Neither one is a chore
+// counter. Every badge below is a joke, a dare or a discovery, and the ones
+// that are none of those were cut.
 //
 // "Merit badge" is the name the player sees, on the board, the sash and the
 // cards. Underneath, nothing changed its name on purpose: FEATS, Feats,
@@ -446,19 +446,25 @@ const Feats = {
   },
 };
 
-// ============================================================== the totem ====
-// Deeper Nights v1. Six carvings on a pole at the trailhead. Each one is a
-// promise that tonight is worse, and each one pays a percentage on top of
-// every badge the night banks. All six is exactly double.
+// ========================================================= the tally post ====
+// Deeper Nights v1. Six dares, each one a hatchet blaze cut into the post at
+// the trailhead. Each one is a promise that tonight is worse, and each one
+// pays a percentage on top of every badge the night banks. All six is exactly
+// double.
 //
 // Only the ids are stored. The systems that read them (room body counts,
 // corruption, coin payouts, enemy damage, act length, cache rooms) land in a
 // later wave. The badge multiplier is live now, in META.credit.
 //
-// Before the camp has seen a dawn, the pole is not a totem at all: it is a
+// Before the camp has seen a dawn there is no post to look at: there is a
 // lumpy shape under a weathered tarp, roped down, and nothing about it says
 // what it is. revealLine is the one time anybody acknowledges the tarp
 // coming off, spoken once, ever, the night after the first dawn.
+//
+// The identifiers below are deliberately unchanged. NIGHT_CARVINGS, Totem,
+// flags.night.carvings and every carving id are read by five other files and
+// by every save already written, so they keep the names they were born with.
+// Only the words the player reads moved to the post and the hatchet.
 
 const NIGHT_CARVINGS = [
   {
@@ -501,12 +507,12 @@ const Totem = {
     return null;
   },
 
-  // The totem is uncarved wood until the camp has seen a dawn. Same tier gate
-  // shape the cabin and the lakeshore use.
+  // The post stays under its tarp until the camp has seen a dawn. Same tier
+  // gate shape the cabin and the lakeshore use.
   open(m) { return featNum(m, 'dawns') >= 1; },
 
-  // Brock's one line about the tarp coming off the pole. Fires once, ever:
-  // null unless the pole is open and flags.tarpAck is still falsy, and the
+  // Brock's one line about the tarp coming off the post. Fires once, ever:
+  // null unless the post is open and flags.tarpAck is still falsy, and the
   // one call that returns the line sets tarpAck true and saves immediately,
   // so it cannot fire twice, not even across sessions. An old save simply
   // has no tarpAck at all, which reads as falsy and is correct: it gets the
@@ -519,7 +525,7 @@ const Totem = {
     flags.tarpAck = true;
     if (meta && typeof meta.save === 'function') meta.save();
     return {
-      t: '"Tarp came off the log." He does not look at the trailhead. "Thirty years it sat under canvas because the man before me put it under canvas, and I never once asked why. You went and saw a sunrise, and the pole heard about it before I did."',
+      t: '"Tarp is off." He does not look at the trailhead. "Thirty years that post stood under canvas because the man before me covered it, and I never once asked what a post needs covering for. Weather has taken the old marks out of it. There is a hatchet on the nail by the door, and now that you have seen a sunrise I have no good reason left to tell you it is not yours."',
       e: 'deadpan',
     };
   },
@@ -531,7 +537,7 @@ const Totem = {
     if (!n || typeof n !== 'object') { n = { carvings: [] }; flags.night = n; }
     if (!Array.isArray(n.carvings)) n.carvings = [];
     // Anything the table no longer knows about is dropped on read, so a
-    // renamed carving cannot keep paying. The camp asks for this twice a
+    // renamed dare cannot keep paying. The camp asks for this twice a
     // frame, so the array is only rebuilt when there is actually a stray in
     // it rather than reallocated every call.
     let stray = false;
@@ -573,7 +579,7 @@ const Totem = {
     return n;
   },
 
-  // What one badge is worth tonight. 1 with a bare pole, 2 with all six.
+  // What one badge is worth tonight. 1 with a bare post, 2 with all six.
   badgeMult(m) {
     if (!this.open(m)) return 1;
     return 1 + this.bonusPct(m) / 100;

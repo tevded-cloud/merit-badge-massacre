@@ -3773,6 +3773,262 @@ const SPR = (() => {
     blob(g, 31, 28.6, 1.6, 1.1, '#e3b341', { flat: true, lw: 0.8 });
   });
 
+  // ---------------- the tally post ----------------
+  // The post at the trailhead. A scout takes a hatchet to it and cuts one
+  // clean blaze per dare accepted, up to six: the same axe cut the marked
+  // things leave in bark, which is exactly why doing it back at them is a
+  // dare. Bare grey wood means nothing has been promised tonight, so the
+  // count has to read from across the clearing: the pale cuts are the only
+  // bright value on the whole thing, and the newest is the rawest.
+  //
+  // Seven bakes, tallypost0 through tallypost6, because the post stands
+  // taller for every blaze on it and a baked sprite is one size. get() bakes
+  // on first ask, so only the ones the camp actually shows are ever built.
+  const POST_W = 46;          // bake width, and the width camp.js draws it at
+  const POST_SEG = 22;        // one blaze every 22 units up the post
+  // sapwood by age: the newest cut is raw, the ones under it have greyed off.
+  const POST_SAP = ['#f7edd4', '#ecdcba', '#dfcca6', '#d3bf98', '#c8b48d', '#bfab85'];
+
+  function tallyPostH(n) { return Math.max(54, 16 + n * POST_SEG) + 14; }
+
+  function tallyPost(g, n, H) {
+    const cx = 23;
+    const gy = H - 4;                 // where the post goes into packed earth
+    const topL = 10, topR = 16;       // the top was cut on a slant, high left
+    const topAt = (x) => topL + (x - 12) * (topR - topL) / 22;
+    g.lineCap = 'round'; g.lineJoin = 'round';
+
+    // ---- packed earth: trodden bare, nothing grows in the last foot -------
+    g.fillStyle = 'rgba(10,7,3,0.34)';
+    g.beginPath(); g.ellipse(cx + 1, gy + 1.8, 17.4, 4.2, 0, 0, TAU); g.fill();
+    const dirt = () => { g.beginPath(); g.ellipse(cx, gy - 0.4, 16.2, 4.4, 0, 0, TAU); };
+    dirt(); g.fillStyle = '#493a25'; g.fill();
+    g.save(); dirt(); g.clip();
+    g.fillStyle = 'rgba(255,224,164,0.14)';
+    g.beginPath(); g.ellipse(cx - 4.5, gy - 2.4, 10.5, 2.3, 0, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(10,7,3,0.3)';
+    g.beginPath(); g.ellipse(cx + 1, gy + 2.8, 15, 2.8, 0, 0, TAU); g.fill();
+    g.strokeStyle = 'rgba(28,20,10,0.42)'; g.lineWidth = 0.8;
+    for (const s of [[-11.4, -1.6, 6], [4.6, 1.4, 7], [-3.2, 2.4, 5]]) {
+      g.beginPath(); g.moveTo(cx + s[0], gy + s[1]); g.lineTo(cx + s[0] + s[2], gy + s[1] + 0.6); g.stroke();
+    }
+    g.restore();
+    dirt(); g.lineWidth = 1.2; g.strokeStyle = 'rgba(24,16,8,0.5)'; g.stroke();
+    blob(g, cx - 12.6, gy - 1.4, 2.6, 1.5, '#6b665c', { flat: true, lw: 0.9 });
+    blob(g, cx + 13.4, gy + 0.6, 2, 1.2, '#5f5a51', { flat: true, lw: 0.9 });
+    g.strokeStyle = '#6f7a4a'; g.lineWidth = 1;
+    for (const s of [[-16.4, -0.6], [16.2, -1.4], [-14.6, 1.4]]) {
+      g.beginPath(); g.moveTo(cx + s[0], gy + s[1]);
+      g.quadraticCurveTo(cx + s[0] - 1.4, gy + s[1] - 3, cx + s[0] - 2.6, gy + s[1] - 5.2);
+      g.stroke();
+    }
+    // chips somebody knocked off and never picked up
+    if (n > 0) {
+      for (const c of [[-9.4, 1.6, 0.5], [7.6, 2.4, -0.7], [11.4, -0.8, 0.3], [-4.6, 3, 1.1]]) {
+        g.save(); g.translate(cx + c[0], gy + c[1]); g.rotate(c[2]);
+        g.fillStyle = '#e6d5ae'; g.strokeStyle = 'rgba(24,16,8,0.6)'; g.lineWidth = 0.6;
+        g.beginPath(); g.ellipse(0, 0, 2.2, 0.9, 0, 0, TAU); g.fill(); g.stroke();
+        g.restore();
+      }
+    }
+
+    // ---- the post: squared timber, split and silvered by weather ----------
+    const body = [[12, topL, 2], [34, topR, 2], [35.2, gy, 1.2], [10.8, gy, 1.2]];
+    apoly(g, body, '#8b8474', {
+      lw: LW_SIL,
+      mid: 'rgba(20,16,8,0.12)', shade: 'rgba(20,16,8,0.2)',
+      bounce: 'rgba(255,176,96,0.12)', hi: 'rgba(255,248,224,0.16)',
+    });
+
+    g.save(); apath(g, body); g.clip();
+    // the right flank turns away, the left keeps what light there is
+    g.fillStyle = 'rgba(22,18,9,0.3)';
+    g.beginPath();
+    g.moveTo(28, topAt(28)); g.lineTo(36, topR); g.lineTo(36, gy + 2); g.lineTo(27.4, gy + 2);
+    g.closePath(); g.fill();
+    g.fillStyle = 'rgba(255,248,224,0.15)';
+    g.beginPath();
+    g.moveTo(11, topL); g.lineTo(16.8, topAt(16.8)); g.lineTo(16.2, gy); g.lineTo(10, gy);
+    g.closePath(); g.fill();
+    g.fillStyle = 'rgba(255,168,88,0.12)';
+    g.fillRect(10, gy - 9, 26, 9);
+
+    // split grain: long checks that opened as the post dried, each with a lit
+    // lip on its west side
+    for (const k of [[15.4, 0.9, 'rgba(36,29,16,0.5)', 1.2], [20.2, -0.7, 'rgba(36,29,16,0.4)', 1],
+      [26.6, 0.6, 'rgba(30,24,12,0.5)', 1.3], [30.8, -0.5, 'rgba(30,24,12,0.36)', 0.9]]) {
+      const y0 = topAt(k[0]) + 2.6, ym = (y0 + gy) / 2;
+      g.strokeStyle = k[2]; g.lineWidth = k[3];
+      g.beginPath(); g.moveTo(k[0], y0); g.quadraticCurveTo(k[0] + k[1] * 2, ym, k[0] + k[1], gy - 1); g.stroke();
+      g.strokeStyle = 'rgba(240,234,212,0.16)'; g.lineWidth = Math.max(0.6, k[3] * 0.6);
+      g.beginPath(); g.moveTo(k[0] - 1, y0 + 1); g.quadraticCurveTo(k[0] + k[1] * 2 - 1, ym, k[0] + k[1] - 1, gy - 2); g.stroke();
+    }
+    // one deep split running down out of the cut
+    g.strokeStyle = 'rgba(26,20,10,0.7)'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(23.4, topAt(23.4) + 1); g.lineTo(22.6, topAt(23.4) + 21); g.stroke();
+    g.strokeStyle = 'rgba(246,240,220,0.2)'; g.lineWidth = 0.8;
+    g.beginPath(); g.moveTo(22.3, topAt(23.4) + 2.4); g.lineTo(21.6, topAt(23.4) + 19); g.stroke();
+    // fine weather checking across the grain
+    g.strokeStyle = 'rgba(40,32,18,0.26)'; g.lineWidth = 0.7;
+    for (let i = 0; i < 7; i++) {
+      const ty = topL + 9 + i * ((gy - topL - 12) / 7);
+      const tx = 13.6 + ((i * 37) % 17);
+      g.beginPath(); g.moveTo(tx, ty); g.lineTo(tx + 3.4, ty + 0.5); g.stroke();
+    }
+    // A knot the grain has to bend around, and two nails left in the post by
+    // whatever sign used to hang off it. Both are parked in the clear band
+    // above the topmost blaze, so nothing a hatchet does lands on top of them.
+    const blazeTop = n > 0 ? gy - 24 - (n - 1) * POST_SEG : gy - 10;
+    const knotY = Math.max(topAt(15) + 8, Math.min(gy - 30, blazeTop - 6));
+    g.fillStyle = 'rgba(64,52,32,0.75)';
+    g.beginPath(); g.ellipse(15, knotY, 2.4, 3.1, 0.12, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(38,30,16,0.85)';
+    g.beginPath(); g.ellipse(15, knotY, 1.2, 1.7, 0.12, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(246,240,220,0.18)';
+    g.beginPath(); g.ellipse(14.2, knotY - 1.2, 0.85, 1, 0.12, 0, TAU); g.fill();
+    g.strokeStyle = 'rgba(46,38,22,0.4)'; g.lineWidth = 0.7;
+    for (const o of [1.2, 2.4]) {
+      g.beginPath();
+      g.moveTo(15 + 2.2 + o, knotY - 6.5);
+      g.quadraticCurveTo(15 + 3 + o * 1.2, knotY, 15 + 2.2 + o, knotY + 6.5);
+      g.stroke();
+    }
+    for (const nl of [[28.6, knotY - 6], [27.8, knotY + 3.4]]) {
+      g.fillStyle = '#4c4842';
+      g.beginPath(); g.arc(nl[0], nl[1], 1.5, 0, TAU); g.fill();
+      g.strokeStyle = 'rgba(24,16,8,0.7)'; g.lineWidth = 0.7; g.stroke();
+      g.fillStyle = 'rgba(240,240,236,0.55)';
+      g.beginPath(); g.arc(nl[0] - 0.5, nl[1] - 0.6, 0.5, 0, TAU); g.fill();
+      g.fillStyle = 'rgba(150,84,36,0.26)';
+      g.fillRect(nl[0] - 1.1, nl[1] + 1.2, 2.2, 4.4);
+    }
+
+    // lichen, the one accent: crustose sage on the shaded flank and the foot,
+    // a darker rim where it has eaten into the wood and speckles at its edge
+    const lichen = (lx, ly, r, c, rim) => {
+      g.fillStyle = rim;
+      g.beginPath(); g.ellipse(lx, ly, r * 1.15, r * 0.86, 0.3, 0, TAU); g.fill();
+      g.fillStyle = c;
+      g.beginPath(); g.ellipse(lx, ly, r, r * 0.72, 0.3, 0, TAU); g.fill();
+      g.beginPath(); g.ellipse(lx + r * 0.72, ly + r * 0.42, r * 0.5, r * 0.4, 0.2, 0, TAU); g.fill();
+      g.beginPath(); g.ellipse(lx - r * 0.6, ly - r * 0.5, r * 0.42, r * 0.3, -0.2, 0, TAU); g.fill();
+      for (let s = 0; s < 5; s++) {
+        const a = s * 1.9;
+        g.beginPath();
+        g.arc(lx + Math.cos(a) * r * 1.25, ly + Math.sin(a) * r * 0.95, 0.55, 0, TAU);
+        g.fill();
+      }
+    };
+    lichen(30, gy - 16, 4.2, 'rgba(126,140,96,0.5)', 'rgba(52,58,36,0.34)');
+    lichen(31.2, gy - 15.2, 2.1, 'rgba(178,190,146,0.45)', 'rgba(60,68,42,0.2)');
+    lichen(14.6, gy - 6, 3.2, 'rgba(112,126,86,0.45)', 'rgba(48,54,32,0.3)');
+    if (gy - 34 > topAt(27) + 5) lichen(27, gy - 34, 2.6, 'rgba(126,140,96,0.4)', 'rgba(52,58,36,0.26)');
+
+    // ---- the blazes: one clean hatchet cut per dare taken ------------------
+    for (let i = 0; i < n; i++) {
+      const fresh = i === n - 1;
+      const sap = POST_SAP[Math.min(POST_SAP.length - 1, n - 1 - i)];
+      const ax = cx + (i % 2 ? 1.4 : -1.2);
+      const yb = gy - 12 - i * POST_SEG;      // the floor of the cut
+      const yt = yb - 11;                     // where the bit went in
+      const w = 10.8;
+      // A hatchet blaze is chopped, not carved: a hard straight lip top and
+      // bottom where the bit stopped, and two short breaks down the sides.
+      const cutPath = (c) => {
+        c.beginPath();
+        c.moveTo(ax - w * 0.47, yt + 1.5);
+        c.lineTo(ax + w * 0.5, yt);
+        c.lineTo(ax + w * 0.47, yt + 4.4);
+        c.lineTo(ax + w * 0.36, yb - 0.4);
+        c.lineTo(ax - w * 0.4, yb + 0.9);
+        c.lineTo(ax - w * 0.5, yt + 5.2);
+        c.closePath();
+      };
+      // no two swings land square, so each cut sits a degree or two off
+      g.save();
+      g.translate(ax, (yt + yb) / 2); g.rotate(((i % 3) - 1) * 0.035); g.translate(-ax, -(yt + yb) / 2);
+      cutPath(g); g.fillStyle = sap; g.fill();
+      g.save(); cutPath(g); g.clip();
+      // the rind overhangs the top of the cut and throws a hard shadow down
+      // into it, which is what makes a blaze read as a hole and not a label
+      g.fillStyle = 'rgba(46,34,16,0.6)'; g.fillRect(ax - w, yt - 0.4, w * 2, 1.6);
+      g.fillStyle = 'rgba(96,72,36,0.3)'; g.fillRect(ax - w, yt + 1.2, w * 2, 1.8);
+      // the right wall keeps the shade, the left flat takes what light there is
+      g.fillStyle = 'rgba(60,44,22,0.26)'; g.fillRect(ax + w * 0.18, yt, w, 22);
+      g.fillStyle = 'rgba(255,252,238,' + (fresh ? 0.42 : 0.2) + ')';
+      g.fillRect(ax - w * 0.44, yt + 3.4, 2.6, yb - yt - 3.6);
+      g.strokeStyle = 'rgba(146,116,70,0.4)'; g.lineWidth = 0.7;
+      for (const gxo of [-2, 1, 3.4]) {
+        g.beginPath(); g.moveTo(ax + gxo, yt + 3.6); g.lineTo(ax + gxo - 0.5, yb - 0.6); g.stroke();
+      }
+      // it took more than one swing: two facets step across the flat, each
+      // with a shaded step under it and a lit step above
+      for (const fy of [yt + 5.4, yt + 8.2]) {
+        g.strokeStyle = 'rgba(74,54,26,0.3)'; g.lineWidth = 1.1;
+        g.beginPath(); g.moveTo(ax - w * 0.5, fy); g.lineTo(ax + w * 0.5, fy - 1.6); g.stroke();
+        g.strokeStyle = 'rgba(255,250,230,0.26)'; g.lineWidth = 0.7;
+        g.beginPath(); g.moveTo(ax - w * 0.5, fy - 1.1); g.lineTo(ax + w * 0.5, fy - 2.7); g.stroke();
+      }
+      g.fillStyle = 'rgba(58,42,20,0.16)'; g.fillRect(ax - w, yb - 3.4, w * 2, 4);
+      g.restore();
+      // the cut edge: hard where the wood overhangs it, and only there
+      cutPath(g); g.lineWidth = LW_INT; g.strokeStyle = 'rgba(24,16,8,0.72)'; g.stroke();
+      g.strokeStyle = OUT; g.lineWidth = 1.3;
+      g.beginPath(); g.moveTo(ax - w * 0.47, yt + 1.5); g.lineTo(ax + w * 0.5, yt); g.stroke();
+      // the bright edge where the grey rind came off, hottest on the newest
+      // cut because nothing has weathered it yet
+      g.strokeStyle = fresh ? 'rgba(255,255,246,0.75)' : 'rgba(236,228,204,0.36)'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(ax - w * 0.44, yt + 2.3); g.lineTo(ax + w * 0.47, yt + 0.9); g.stroke();
+      // the floor of the cut catches the light along its lower lip
+      g.strokeStyle = fresh ? 'rgba(255,250,228,0.5)' : 'rgba(226,214,182,0.3)'; g.lineWidth = 0.9;
+      g.beginPath(); g.moveTo(ax - w * 0.38, yb + 0.4); g.lineTo(ax + w * 0.34, yb - 0.8); g.stroke();
+      g.restore();
+    }
+    g.restore();
+
+    // the silhouette edge again, so nothing painted inside softened it
+    apath(g, body); g.lineWidth = LW_SIL; g.strokeStyle = OUT; g.stroke();
+
+    // ---- the top, cut on a slant and grey ever since -----------------------
+    const cut = () => { g.beginPath(); g.ellipse(cx, 13, 11.4, 4.6, 0.266, 0, TAU); };
+    cut(); g.fillStyle = '#a29a86'; g.fill();
+    g.save(); cut(); g.clip();
+    g.strokeStyle = 'rgba(96,88,70,0.55)'; g.lineWidth = 0.9;
+    for (let i = 1; i <= 3; i++) {
+      g.beginPath(); g.ellipse(cx - 0.6, 12.6, 11.4 * i / 4, 4.6 * i / 4, 0.266, 0, TAU); g.stroke();
+    }
+    g.strokeStyle = 'rgba(56,48,32,0.6)'; g.lineWidth = 1.1;
+    g.beginPath(); g.moveTo(cx - 0.6, 12.6); g.lineTo(cx + 8, 15.6); g.stroke();
+    g.beginPath(); g.moveTo(cx - 0.6, 12.6); g.lineTo(cx - 7.4, 10.2); g.stroke();
+    g.fillStyle = 'rgba(255,250,232,0.22)';
+    g.beginPath(); g.ellipse(cx - 4.6, 10.9, 5, 1.8, 0.266, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(22,18,9,0.22)';
+    g.beginPath(); g.ellipse(cx + 4.2, 15.4, 6, 1.9, 0.266, 0, TAU); g.fill();
+    g.restore();
+    cut(); g.lineWidth = LW_SIL; g.strokeStyle = OUT; g.stroke();
+    g.fillStyle = 'rgba(126,140,96,0.45)';
+    g.beginPath(); g.ellipse(14.6, 10.6, 2.2, 1.2, 0.266, 0, TAU); g.fill();
+
+    // one splinter still hanging off the floor of the newest cut, small
+    // enough to read as loose wood and not as a shape of its own
+    if (n > 0) {
+      const i = n - 1;
+      const ax = cx + (i % 2 ? 1.4 : -1.2);
+      const yb = gy - 12 - i * POST_SEG;
+      g.fillStyle = '#efe1c0'; g.strokeStyle = OUT; g.lineWidth = 0.7;
+      g.beginPath();
+      g.moveTo(ax - 3.6, yb + 0.6);
+      g.quadraticCurveTo(ax - 6.4, yb + 1.6, ax - 7.4, yb + 3.6);
+      g.quadraticCurveTo(ax - 5.6, yb + 2, ax - 3.2, yb + 1.8);
+      g.closePath(); g.fill(); g.stroke();
+    }
+  }
+
+  for (let n = 0; n <= 6; n++) {
+    const h = tallyPostH(n);
+    P['tallypost' + n] = () => mk(POST_W, h, (g) => tallyPost(g, n, h));
+  }
+
   // Strung lanterns for the camp. Drawn once by camp.js at width 200 with a
   // runtime pulse glow landing on seven fixed points, so the paper bodies
   // are placed exactly under those points. Wire ends level so it can tile.
