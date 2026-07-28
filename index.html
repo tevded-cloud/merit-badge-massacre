@@ -468,19 +468,22 @@
     <button class="btn" id="btnstart">ENTER CAMP</button>
     <button class="btn" id="btnoptions">OPTIONS</button>
     <div class="best hidden" id="bestline"></div>
-    <div class="hint">WASD move &nbsp;|&nbsp; MOUSE aim &nbsp;|&nbsp; HOLD CLICK to attack &nbsp;|&nbsp; SPACE dodge &nbsp;|&nbsp; P pause &nbsp;|&nbsp; M mute</div>
+    <div class="hint keysonly">WASD move &nbsp;|&nbsp; MOUSE aim &nbsp;|&nbsp; HOLD CLICK to attack &nbsp;|&nbsp; SPACE dodge &nbsp;|&nbsp; P pause &nbsp;|&nbsp; M mute</div>
+    <div class="hint touchonly">Left thumb walks &nbsp;|&nbsp; right thumb aims and fires &nbsp;|&nbsp; the button above it dodges &nbsp;|&nbsp; MENU pauses</div>
   </div>
 
   <div id="select" class="screen solid hidden">
     <div class="sub seltitle">CHOOSE YOUR SCOUT</div>
     <div class="cardrow" id="selcards"></div>
-    <div class="hint">Click a scout, or press 1 / 2 / 3. Esc to go back.</div>
+    <div class="hint keysonly">Click a scout, or press 1 / 2 / 3. Esc to go back.</div>
+    <div class="hint touchonly">Tap a scout. MENU goes back.</div>
   </div>
 
   <div id="levelup" class="screen trans hidden">
     <div class="sub lutitle">RANK UP</div>
     <div class="cardrow" id="lucards"></div>
-    <div class="hint">Click a reward, or press 1 / 2 / 3</div>
+    <div class="hint keysonly">Click a reward, or press 1 / 2 / 3</div>
+    <div class="hint touchonly">Tap a reward.</div>
   </div>
 
   <div id="pause" class="screen trans hidden">
@@ -526,7 +529,8 @@
         <button class="jtab" id="jtab_troop">TROOP 12</button>
       </div>
       <div id="jbody"></div>
-      <div class="hint" style="margin:14px 0 4px;">1 / 2 switch tabs &nbsp;|&nbsp; Esc back to camp</div>
+      <div class="hint keysonly" style="margin:14px 0 4px;">1 / 2 switch tabs &nbsp;|&nbsp; Esc back to camp</div>
+      <div class="hint touchonly" style="margin:14px 0 4px;">Tap a tab to switch &nbsp;|&nbsp; MENU goes back to camp</div>
       <div class="btnrow"><button class="btn" id="btnjback">BACK TO CAMP</button></div>
     </div>
   </div>
@@ -536,7 +540,8 @@
       <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;">MERIT BADGES</div>
       <div id="featsum">0 of 0 claimed</div>
       <div class="featgrid" id="featsgrid"></div>
-      <div class="hint" style="margin:14px 0 4px;">Merit badges are permanent, and they open things up for good. Esc back to camp.</div>
+      <div class="hint keysonly" style="margin:14px 0 4px;">Merit badges are permanent, and they open things up for good. Esc back to camp.</div>
+      <div class="hint touchonly" style="margin:14px 0 4px;">Merit badges are permanent, and they open things up for good. MENU goes back to camp.</div>
       <div class="btnrow"><button class="btn" id="btnfeatsback">BACK TO CAMP</button></div>
     </div>
   </div>
@@ -604,7 +609,8 @@
         </div>
       </div>
 
-      <div class="hint" style="margin:14px 0;">F fullscreen &nbsp;|&nbsp; M mute &nbsp;|&nbsp; Esc back</div>
+      <div class="hint keysonly" style="margin:14px 0;">F fullscreen &nbsp;|&nbsp; M mute &nbsp;|&nbsp; Esc back</div>
+      <div class="hint touchonly" style="margin:14px 0;">MENU goes back</div>
       <div class="btnrow"><button class="btn" id="btnoptback">BACK</button></div>
     </div>
   </div>

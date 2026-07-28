@@ -1793,3 +1793,27 @@ document requires a schema change.
 whose composition rect (840 x 840) admits a true circle. Its layout at
 `js/rooms.js:1603` should be worked as a second example once the Boulder Run
 template is proven.
+
+## Validator baseline (recorded 2026-07-28, at v2.0)
+
+`npm run rooms:check` exits 1 today and is EXPECTED to. The doctrine above is
+deliberately stricter than the shipped layouts, so the validator is a ratchet,
+not a build gate. What matters is whether the numbers MOVE.
+
+The baseline at the 2.0 release:
+
+    33 of 46 layouts fail at least one predicate
+    85 failures
+    165 skips (predicates awaiting a field the layout has not declared)
+    exit code 1
+
+Worst offenders, all three boss arenas: a2_b_middenhall (9), a3_b_ashenring (8),
+a1_b_warren (7). The commonest failures are D2 (entry to door corridors clear,
+18 layouts), D3 (entry view covers 60 percent, 15) and E3 (no body within 263 of
+a door, 15).
+
+A release gate should compare against these numbers and report ANY change in
+either direction. Fewer failures is progress and should be recorded here. More
+failures means a layout edit broke something the doctrine cares about, and is a
+finding. A gate with nothing to compare against cannot do its job: this section
+exists because one ran without it.

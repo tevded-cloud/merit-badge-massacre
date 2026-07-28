@@ -42,7 +42,8 @@ how you fight, or a skill that fires on its own. Manual weapons shoot where you
 aim. Attacks physically grow as your damage grows.
 
 Coins drop too. Cookie Money spends at the store rooms mid night, and whatever
-you did not spend turns into badges at dawn.
+you did not spend turns into badges when the night ends, whether that is at
+dawn or face down in the leaves.
 
 The bosses, in order: BRAMBLEBUCK at the end of act one, THE TALLYMAN at the
 end of act two, and OLD NOBODY at the end of act three. Put OLD NOBODY down and
@@ -64,10 +65,10 @@ lifetime badge count grows.
   night harder and multiplies the badges you bring home, and the post stands
   taller for every mark on it. It comes out from under its tarp once you have
   seen a sunrise.
-- **The Field Guide**: what you have met and what you have killed, plus the
-  notes Troop 12 left behind.
-- **The old cabin**, which unlocks after your first night out, with a
-  footlocker, a pinboard and a window.
+- **The old cabin**, which unlocks after your first night out: your bunk, a
+  footlocker, a pinboard, a window, the sash with every emblem you have earned
+  stitched onto it, and **the Field Guide** on the lamp table, which is what you
+  have met and what you have killed plus the notes Troop 12 left behind.
 - **The other two scouts**, waiting around camp. Walk up to one and you play as
   them tonight instead.
 - **The trailhead sign**: take the trail and the night begins.
@@ -96,6 +97,12 @@ touch device, and stay off everywhere else. Left thumb moves. Right thumb aims,
 and holding it fires. The button up and inside of the aim stick dodges, and its
 face shows the recharge. Tap once at the title to go full screen and land in
 landscape.
+
+In camp there is no aiming and nothing to dodge, so the right hand side changes:
+a button appears wherever you can do something and says what it is, from
+"Talk to Scoutmaster Brock" to "Take the trail as Gus". MENU, in the corner,
+does what Escape does: it backs out of a panel, then out of the cabin, then out
+of camp, and it pauses a night.
 
 ## Options
 

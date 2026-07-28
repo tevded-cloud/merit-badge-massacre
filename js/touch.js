@@ -73,8 +73,14 @@ const Touch = (function () {
     return typeof App !== 'undefined' && App && App.state === 'play';
   }
 
+  // Camp is not only the state called 'camp'. Every panel you open FROM camp
+  // is still camp underneath, and two of them (the badge board and the tally
+  // post) are see-through, so a run's aim stick and dodge button used to show
+  // through them doing nothing while MENU disappeared. Anything reachable from
+  // the grounds counts.
+  const CAMP_STATES = ['camp', 'shop', 'feats', 'journal', 'totem', 'select'];
   function inCamp() {
-    return typeof App !== 'undefined' && App && App.state === 'camp';
+    return typeof App !== 'undefined' && App && CAMP_STATES.indexOf(App.state) !== -1;
   }
 
   // The camp's own words for whatever the scout is standing next to, or null

@@ -695,17 +695,18 @@ class Camp {
   // rectangle clamp can park you back inside a circle the push just moved you
   // out of, so the next frame teleports you.
   //
-  // Walking, this was never worth seeing: over 1.27 million real steps taken
+  // Walking, this was never worth seeing: over 1.2 million real steps taken
   // from legal ground, the worst jump was 0.58 units, and running to a fixed
-  // point takes it to 0.02. Almost free, too, since 98 percent of frames
-  // settle on the first pass and stop.
+  // point takes the worst residual to 0.398, with 6 steps in 1.2 million not
+  // fully settling. Almost free, too, since 98 percent of frames settle on the
+  // first pass and stop.
   //
   // It matters for positions set DIRECTLY rather than walked into (a scout
   // swap, a cabin exit, the arrival point the camp redesign adds). From an
-  // arbitrary coordinate one pass could jump 16 units; this holds it to 7.
-  // Seven is still too many, so the rule for any code that places the player
-  // is to place them somewhere legal, and to check it. This clamp is the net,
-  // not the plan.
+  // arbitrary coordinate one pass could jump 16 units; this holds it to 7.81.
+  // That is still too many, so the rule for any code that places the player is
+  // to place them somewhere legal, and to check it. This clamp is the net, not
+  // the plan.
   clampWalk(p) {
     const rects = this.walkRects();
     const keeps = this.keepOuts();

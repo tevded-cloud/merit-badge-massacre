@@ -604,7 +604,7 @@ const Transfer = (function () {
       for (const id in (d.codex || {})) bosses++;
       lines.push(plural((d.journal || []).length, 'field guide entry', 'field guide entries')
         + ' and ' + plural(bosses, 'cryptid written up', 'cryptids written up'));
-      if ((d.carvings || []).length) lines.push(plural(d.carvings.length, 'carving on the totem', 'carvings on the totem'));
+      if ((d.carvings || []).length) lines.push(plural(d.carvings.length, 'blaze cut into the tally post', 'blazes cut into the tally post'));
       // Brock, Blink, and the switches the fire remembers.
       const story = [];
       if (d.metBrock) story.push('Brock knows you');

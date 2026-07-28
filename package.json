@@ -2,7 +2,7 @@
   "name": "merit-badge-massacre",
   "productName": "Merit Badge Massacre",
   "version": "1.0.0",
-  "description": "Troop 13 vs. the Cult of the Antlered One. A survivors-like of cute damnation.",
+  "description": "Troop 13 walks out past the treeline. A top down action roguelite about scout kids and the wildlife something out there has Signed.",
   "author": "Tevded",
   "private": true,
   "main": "electron/main.cjs",
