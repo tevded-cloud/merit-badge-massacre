@@ -1303,7 +1303,9 @@ function tfRead() {
 function tfApply() {
   if (!tfPending || !transferOn()) return;
   let best = null;
-  try { best = Transfer.apply(tfPending); } catch (e) { best = null; }
+  // Hand the local records in explicitly. Transfer merges best-of, so an
+  // arriving camp can raise a record but never pull one back down.
+  try { best = Transfer.apply(tfPending, App.best); } catch (e) { best = null; }
   if (!best) { tfReset(); tfSay('That camp could not be brought in.', 'bad'); return; }
   Object.assign(App.best, best);
   saveBest();
@@ -1313,10 +1315,12 @@ function tfApply() {
   clearSavedNight();
   syncFeatPools();
   refreshBestLine();
+  // The panel already showed the full list and the player agreed to it. The
+  // toast is the receipt, so it takes the headline and stops.
   const lines = Transfer.describe(tfPending);
   tfReset();
   buildTransfer();
-  tfSay('Camp restored: ' + lines.join(', ') + '.', 'good');
+  tfSay('Camp restored: ' + lines.slice(0, 3).join(', ') + '.', 'good');
   AudioSys.play('levelup');
 }
 
@@ -1855,6 +1859,49 @@ function gesture() {
   AudioSys.poke();
 }
 
+// ---------------- the two camp verbs ----------------
+// Escape and E, in camp, as functions. A phone has neither key, so touch.js
+// paints a MENU button and an INTERACT button and calls straight into these.
+// They are written out here rather than left inline in the key handler so that
+// there is exactly one behaviour to keep working: the button and the key run
+// the same lines, and neither can drift away from the other.
+
+// Escape, in camp. A dialog closes first. Inside the cabin, Escape is the
+// door: leaving camp from in here used to drop the player at the title with
+// the camp still set to 'cabin', so walking back in put them straight back
+// inside a room they had just left. One step out, then the next Escape leaves
+// camp.
+function campEscape() {
+  if (App.dialogOpen) { closeDialog(); return; }
+  if (App.camp && App.camp.scene === 'cabin') {
+    AudioSys.play('click');
+    App.camp.exitCabin();
+    return;
+  }
+  setState('title');
+}
+
+// E, in camp: whatever the scout is standing next to.
+function campInteract() {
+  if (App.dialogOpen) { closeDialog(); return; }
+  const act = App.camp && App.camp.interact();
+  if (!act) return;
+  if (act.type === 'run') { AudioSys.play('click'); startRun(META.selected); }
+  else if (act.type === 'shop') { AudioSys.play('click'); openShop(); }
+  else if (act.type === 'feats') { AudioSys.play('click'); openFeats(); }
+  else if (act.type === 'totem') { AudioSys.play('click'); openTotem(); }
+  else if (act.type === 'talk') {
+    // a line is a plain string, or { t, e } carrying an expression tag
+    const ln = act.line;
+    if (ln && typeof ln === 'object') showDialog(ln.t, act.speaker, ln.e);
+    else showDialog(ln, act.speaker);
+  }
+  else if (act.type === 'select') AudioSys.play('pickup');
+}
+
+window.campEscape = campEscape;
+window.campInteract = campInteract;
+
 window.addEventListener('keydown', (e) => {
   // A text field owns its own keys. The transfer panel has two of them, and
   // inside one an M is a letter, not the mute button. Escape steps out of the
@@ -1888,20 +1935,7 @@ window.addEventListener('keydown', (e) => {
       if (e.code === 'Enter' || e.code === 'Space') { AudioSys.play('click'); enterCamp(); }
       break;
     case 'camp': {
-      if (e.code === 'Escape') {
-        if (App.dialogOpen) { closeDialog(); break; }
-        // Inside the cabin, Escape is the door. Leaving camp from in here used
-        // to drop the player at the title with the camp still set to 'cabin',
-        // so walking back in put them straight back inside a room they had
-        // just left. One step out, then the next Escape leaves camp.
-        if (App.camp && App.camp.scene === 'cabin') {
-          AudioSys.play('click');
-          App.camp.exitCabin();
-          break;
-        }
-        setState('title');
-        break;
-      }
+      if (e.code === 'Escape') { campEscape(); break; }
       if (e.code === 'KeyC' && savedNight()) {
         if (App.dialogOpen) { closeDialog(); break; }
         AudioSys.play('click');
@@ -1920,22 +1954,7 @@ window.addEventListener('keydown', (e) => {
         openFeats();
         break;
       }
-      if (e.code === 'KeyE' || e.code === 'Enter' || e.code === 'Space') {
-        if (App.dialogOpen) { closeDialog(); break; }
-        const act = App.camp && App.camp.interact();
-        if (!act) break;
-        if (act.type === 'run') { AudioSys.play('click'); startRun(META.selected); }
-        else if (act.type === 'shop') { AudioSys.play('click'); openShop(); }
-        else if (act.type === 'feats') { AudioSys.play('click'); openFeats(); }
-        else if (act.type === 'totem') { AudioSys.play('click'); openTotem(); }
-        else if (act.type === 'talk') {
-          // a line is a plain string, or { t, e } carrying an expression tag
-          const ln = act.line;
-          if (ln && typeof ln === 'object') showDialog(ln.t, act.speaker, ln.e);
-          else showDialog(ln, act.speaker);
-        }
-        else if (act.type === 'select') AudioSys.play('pickup');
-      }
+      if (e.code === 'KeyE' || e.code === 'Enter' || e.code === 'Space') campInteract();
       break;
     }
     case 'shop':
@@ -2045,6 +2064,15 @@ $('btnmute').addEventListener('click', () => {
   AudioSys.setMuted(!AudioSys.muted);
   $('btnmute').textContent = AudioSys.muted ? 'UNMUTE' : 'MUTE';
 });
+// The store hint doubles as the door into the store on a touch device: there
+// is no E key to press, so the words themselves are the button. The stylesheet
+// only lets taps through to it on a page the sticks are on, and the guards
+// below are the same two the E key answers to, so a mouse changes nothing.
+$('shophint').addEventListener('click', () => {
+  if (!(typeof Touch !== 'undefined' && Touch && Touch.active)) return;
+  if (App.state !== 'play' || !shopHere(App.game)) return;
+  gesture(); AudioSys.play('click'); openRunShop();
+});
 $('btnretry').addEventListener('click', () => { gesture(); AudioSys.play('click'); startRun(App.char); });
 $('btntitle').addEventListener('click', () => { gesture(); AudioSys.play('click'); enterCamp(); });
 $('btnoptions').addEventListener('click', () => { gesture(); AudioSys.play('click'); showOptions('title'); });
@@ -2078,7 +2106,12 @@ $('optnums').addEventListener('change', () => { SETTINGS.dmgNums = $('optnums').
 let last = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.05, (now - last) / 1000);
+  // Clamped at both ends. The ceiling keeps a tab that was in the background
+  // from arriving as one enormous step. The floor is the cheaper guard: a
+  // negative delta ages particles backwards, and a particle with a negative
+  // age asks the canvas for a negative radius, which throws. performance.now()
+  // is monotonic so nothing can produce one today, and this is one word.
+  const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
   last = now;
 
   // Sticks resolve before the simulation reads input, never after.

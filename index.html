@@ -112,7 +112,24 @@
   .chip.ghost { color:var(--cat); border:1px solid var(--cat); }
   .slothint { font-size:10px; letter-spacing:1px; color:#8d947f; }
 
-  #pause .panel, #over .panel { background:linear-gradient(180deg,#151a22,#0e1218); border:2px solid #333a46; border-radius:14px; padding:26px 34px; min-width:420px; }
+  /* ---------- Panels ----------
+     Every panel's width, padding and height used to be written inline on the
+     panel itself, down in the body. An inline style outranks every rule in a
+     stylesheet, so no media query could reach those numbers, and on a phone
+     each of these panels grew wider than the screen. .screen centres with flex,
+     so the overflow spilled off both sides at once, which is why the page never
+     scrolled to show it. The numbers below are the numbers that were inline,
+     unchanged. They live here now, where the phone block further down can
+     lower them. */
+  .panel { background:linear-gradient(180deg,#151a22,#0e1218); border:2px solid #333a46; border-radius:14px; }
+  #pause .panel, #over .panel { padding:26px 34px; min-width:420px; }
+  #pause .panel { min-width:640px; }
+  #shop .panel, #runshop .panel, #journal .panel, #feats .panel, #totem .panel { padding:22px 28px; overflow-y:auto; }
+  #shop .panel, #runshop .panel { min-width:560px; max-height:82vh; }
+  #journal .panel { min-width:620px; max-height:84vh; }
+  #feats .panel { max-height:88vh; }
+  #totem .panel { min-width:600px; max-height:86vh; }
+  #options .panel { padding:26px 34px; min-width:420px; max-height:88vh; overflow-y:auto; }
   .statgrid { display:grid; grid-template-columns:1fr 1fr; gap:6px 26px; font-size:13px; text-align:left; margin:12px 0; }
   .statgrid .k { color:#6d7361; }
   .statgrid .v { color:#e8e0cc; text-align:right; font-weight:bold; }
@@ -321,6 +338,72 @@
     #levelup > :last-child, #select > :last-child { margin-bottom:auto; }
   }
 
+  /* ---------- Panels on a phone ----------
+     The same two breakpoints the cards use: narrow, or short. Every panel drops
+     its desktop width floor, is capped to the screen it is standing on, and
+     scrolls inside itself. The scroll is on both axes on purpose: if any row
+     ever turns out to be wider than a phone, it scrolls within the panel rather
+     than hanging off the side of a page that cannot scroll at all. */
+  @media (max-width: 780px), (max-height: 480px) {
+    #pause .panel, #over .panel, #shop .panel, #runshop .panel, #journal .panel,
+    #feats .panel, #totem .panel, #options .panel {
+      min-width:0; width:100%; max-width:100%; max-height:100%;
+      padding:14px 12px; overflow:auto; -webkit-overflow-scrolling:touch;
+    }
+    /* Four 170px lanes of build in the pause panel are 746px wide between them,
+       which is twice a phone. They wrap and shrink instead. */
+    .pcols { flex-wrap:wrap; gap:10px 14px; }
+    .pcol { min-width:132px; }
+    .statgrid { gap:5px 14px; margin:8px 0; }
+    /* Merit badges: three fixed 232px columns cannot fit a phone either. The
+       grid takes as many whole columns as the screen has room for, which is one
+       held upright and three or four held sideways. */
+    .featgrid { grid-template-columns:repeat(auto-fill, minmax(168px, 1fr)); gap:10px; }
+    .featcard .fcond { min-height:0; }
+    /* Four buttons in a row do not fit either, so a row of buttons wraps. Every
+       one of them keeps a 48px tall target, it just stops being 34px of air on
+       each side of the word. */
+    .btnrow { flex-wrap:wrap; gap:8px; }
+    .btn { font-size:13px; letter-spacing:1px; padding:12px 16px; min-height:48px; }
+    .btn.small { font-size:11px; padding:11px 12px; min-height:44px; }
+    /* The coarse pointer block higher up already fattens the tabs and the
+       option controls, but it only fires on a device that calls itself coarse.
+       A narrow screen gets the fat targets whatever it calls its pointer. The
+       checkbox stays checkbox sized; its label is the 44px target, and a label
+       toggles the box it is tied to. */
+    .jtab { min-height:44px; padding:12px 18px; }
+    .optrow label { min-height:44px; display:flex; align-items:center; }
+    .optrow input[type=range] { width:min(210px, 46vw); height:44px; }
+    .optrow input[type=checkbox] { width:28px; height:28px; }
+    .optrow { gap:12px; margin:14px 0; }
+    .jtabs { margin:8px 0 12px; }
+    .jgrid { gap:10px; }
+    .jcard { width:148px; }
+    .jcard canvas { width:104px; height:104px; }
+    .junknown { font-size:44px; line-height:104px; }
+    .shoprow, .carverow { padding:10px 4px; gap:10px; }
+    #transfer { margin-top:12px; padding-top:12px; }
+    #phead { margin-bottom:8px; }
+    #totemmult { font-size:22px; margin:4px 0 2px; }
+    #overtitle { font-size:30px; letter-spacing:4px; }
+  }
+
+  /* ---------- Words for thumbs ----------
+     touch.js marks the page the moment it turns the sticks on, and only then.
+     The lines that name keys swap for lines that name what a thumb can reach,
+     and the two HUD readouts that share the top right corner step left out from
+     under the MENU button touch.js paints there. A mouse and keyboard page
+     never gets the class, so it never sees any of this. */
+  .touchonly { display:none; }
+  body.touch .touchonly { display:inline; }
+  body.touch .keysonly { display:none; }
+  body.touch #kills { right:104px; }
+  body.touch #coins { right:104px; }
+  /* The store hint is inside the HUD, which takes no clicks. On a phone the
+     hint is the door, so taps reach this one child of it, at a size worth
+     aiming at. */
+  body.touch #shophint { pointer-events:auto; padding:15px 22px; }
+
   /* ---------- Phone portrait HUD ----------
      Portrait is too narrow for a centred readout: the act and room line would
      sit on top of the kill count, and a centred toast would sit on top of the
@@ -369,7 +452,7 @@
     <div id="coins"><canvas id="coinic" width="40" height="40"></canvas><span id="coinval">0</span></div>
     <div id="buildrow"></div>
     <div id="toast"></div>
-    <div id="shophint" class="hidden">[E]  SHOP</div>
+    <div id="shophint" class="hidden"><span class="keysonly">[E]  SHOP</span><span class="touchonly">SHOP</span></div>
     <div id="bossbar" class="hidden">
       <div id="bossname"></div>
       <div id="bossfillwrap"><div id="bossfill"></div></div>
@@ -401,7 +484,7 @@
   </div>
 
   <div id="pause" class="screen trans hidden">
-    <div class="panel" style="min-width:640px;">
+    <div class="panel">
       <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;margin-bottom:8px;">PAUSED</div>
       <div id="phead"></div>
       <div class="pcols" id="pbuild"></div>
@@ -416,7 +499,7 @@
   </div>
 
   <div id="shop" class="screen trans hidden">
-    <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:22px 28px;min-width:560px;max-height:82vh;overflow-y:auto;">
+    <div class="panel">
       <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;">THE BADGE BOARD</div>
       <div id="shopbal" class="best" style="margin:8px 0 14px;">0 BADGES</div>
       <div id="shoprows"></div>
@@ -426,7 +509,7 @@
   </div>
 
   <div id="runshop" class="screen trans hidden">
-    <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:22px 28px;min-width:560px;max-height:82vh;overflow-y:auto;">
+    <div class="panel">
       <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;">THE STORE</div>
       <div id="rsbal" class="best" style="margin:8px 0 14px;">0 COOKIE MONEY</div>
       <div id="rsrows"></div>
@@ -436,7 +519,7 @@
   </div>
 
   <div id="journal" class="screen solid hidden">
-    <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:22px 28px;min-width:620px;max-height:84vh;overflow-y:auto;">
+    <div class="panel">
       <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;">THE FIELD GUIDE</div>
       <div class="jtabs">
         <button class="jtab on" id="jtab_cryptids">CRYPTIDS</button>
@@ -449,7 +532,7 @@
   </div>
 
   <div id="feats" class="screen solid hidden">
-    <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:22px 28px;max-height:88vh;overflow-y:auto;">
+    <div class="panel">
       <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;">MERIT BADGES</div>
       <div id="featsum">0 of 0 claimed</div>
       <div class="featgrid" id="featsgrid"></div>
@@ -459,7 +542,7 @@
   </div>
 
   <div id="totem" class="screen trans hidden">
-    <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:22px 28px;min-width:600px;max-height:86vh;overflow-y:auto;">
+    <div class="panel">
       <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;">THE TALLY POST</div>
       <div id="totemmult">1.00x BADGES</div>
       <div id="totemsub">Cut nothing and the night is the night.</div>
@@ -484,11 +567,11 @@
     </div>
   </div>
 
-  <div id="camphint" class="hidden">WASD walk &nbsp;|&nbsp; E interact &nbsp;|&nbsp; J field guide &nbsp;|&nbsp; B merit badges &nbsp;|&nbsp; Esc leave camp</div>
+  <div id="camphint" class="hidden"><span class="keysonly">WASD walk &nbsp;|&nbsp; E interact &nbsp;|&nbsp; J field guide &nbsp;|&nbsp; B merit badges &nbsp;|&nbsp; Esc leave camp</span><span class="touchonly">Left thumb walks &nbsp;|&nbsp; the button by your right thumb interacts &nbsp;|&nbsp; MENU leaves camp</span></div>
   <button class="btn hidden" id="campcontinue">CONTINUE NIGHT &nbsp;(C)</button>
 
   <div id="options" class="screen solid hidden">
-    <div class="panel" style="background:linear-gradient(180deg,#151a22,#0e1218);border:2px solid #333a46;border-radius:14px;padding:26px 34px;min-width:420px;max-height:88vh;overflow-y:auto;">
+    <div class="panel">
       <div class="sub" style="font-size:22px;color:#e8e0cc;letter-spacing:4px;margin-bottom:16px;">OPTIONS</div>
       <div class="optrow"><label for="optmusic">MUSIC VOLUME</label><input type="range" id="optmusic" min="0" max="100" value="80"></div>
       <div class="optrow"><label for="optsfx">SOUND VOLUME</label><input type="range" id="optsfx" min="0" max="100" value="80"></div>

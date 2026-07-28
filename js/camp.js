@@ -870,15 +870,27 @@ class Camp {
     if (!this.critter && this.codexHasKill()) this.buildCritter();
 
     const p = this.p;
-    const ax = (INPUT.keys.has('KeyD') || INPUT.keys.has('ArrowRight') ? 1 : 0) - (INPUT.keys.has('KeyA') || INPUT.keys.has('ArrowLeft') ? 1 : 0);
-    const ay = (INPUT.keys.has('KeyS') || INPUT.keys.has('ArrowDown') ? 1 : 0) - (INPUT.keys.has('KeyW') || INPUT.keys.has('ArrowUp') ? 1 : 0);
+    let ax = (INPUT.keys.has('KeyD') || INPUT.keys.has('ArrowRight') ? 1 : 0) - (INPUT.keys.has('KeyA') || INPUT.keys.has('ArrowLeft') ? 1 : 0);
+    let ay = (INPUT.keys.has('KeyS') || INPUT.keys.has('ArrowDown') ? 1 : 0) - (INPUT.keys.has('KeyW') || INPUT.keys.has('ArrowUp') ? 1 : 0);
+    // A phone has no WASD. The camp is a hub, not the night, so it is allowed
+    // to read the left thumb straight from here: the stick wins whenever it is
+    // pushed, exactly the way it does in a run, and its length is kept, so a
+    // small push is a slow walk and a full one is the same 175 the keys give.
+    let push = 1;
+    if (typeof Touch !== 'undefined' && Touch && Touch.active) {
+      const m = Touch.moveVec;
+      if (m && (m.x !== 0 || m.y !== 0)) {
+        ax = m.x; ay = m.y;
+        push = Math.min(1, Math.hypot(ax, ay));
+      }
+    }
     p.moving = ax !== 0 || ay !== 0;
     if (p.moving) {
-      const il = 1 / Math.hypot(ax, ay);
+      const il = push / Math.hypot(ax, ay);
       p.x += ax * il * 175 * dt;
       p.y += ay * il * 175 * dt;
-      if (ax !== 0) p.face = ax;
-      this.walkPhase = (this.walkPhase || 0) + dt * 13.5;
+      if (ax !== 0) p.face = ax > 0 ? 1 : -1;
+      this.walkPhase = (this.walkPhase || 0) + dt * 13.5 * push;
     }
 
     if (this.scene === 'cabin') {
@@ -1388,6 +1400,14 @@ class Camp {
       return this.swap(scout);
     }
     return null;
+  }
+
+  // Read only, for the touch layer: the words on the walk-up prompt the scout
+  // is standing in, or null when there is nothing here to press. update() has
+  // already worked out the nearest spot this frame, so this hands the answer
+  // over rather than doing the same arithmetic a second time somewhere else.
+  promptLabel() {
+    return (this.near && this.near.label) ? String(this.near.label) : null;
   }
 
   // =========================================================== bake =========
@@ -3024,7 +3044,11 @@ class Camp {
   renderPrompt(ctx) {
     if (!this.near) return;
     const s = this.near;
-    const label = '[E]  ' + s.label;
+    // There is no E key on a phone. When the sticks are on, touch.js puts these
+    // same words on a button in the corner, so the tag over the spot drops the
+    // key and is just the words.
+    const key = (typeof Touch !== 'undefined' && Touch && Touch.active) ? '' : '[E]  ';
+    const label = key + s.label;
     ctx.font = 'bold 12px Verdana, sans-serif';
     const tw = ctx.measureText(label).width;
     const bx = s.x, by = s.y - 62;
