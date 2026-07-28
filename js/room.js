@@ -345,10 +345,15 @@ class Room {
     this._syncGrid();
 
     if (this.state === 'entering') this._tickEntering(g, dt);
-    if (this.state === 'active' && this.lock === 'clear') this._tickWaves(g, dt);
+    if (this.state === 'active' && (this.lock === 'clear' || this.lock === 'survive')) this._tickWaves(g, dt);
     this._releasePending(g, dt);
     if (this.state === 'active') {
       if (this.lock === 'clear') this._tickClear(g, dt);
+      else if (this.lock === 'survive') {
+        // Hold out: the doors open on the clock, not on the body count.
+        this.surviveLeft = Math.max(0, (this.def.surviveT || 45) - (this.t - (this.lockT || 0)));
+        if (this.surviveLeft <= 0) this.onClear(g);
+      }
       else if (this.lock === 'objective' && this.objectiveDone === true) this._onObjective(g);
     }
     this._tickDoors(g, dt);
@@ -374,7 +379,8 @@ class Room {
   _lockIn(g) {
     this.state = 'active';
     this.armed = true;
-    if (this.lock !== 'clear') {
+    this.lockT = this.t;
+    if (this.lock !== 'clear' && this.lock !== 'survive') {
       // Nothing to fight. Shops, rests and lore rooms stand open; a loot room
       // waits on its objective and opens the moment that flips.
       if (this.lock !== 'objective') this.openDoors();
@@ -676,6 +682,7 @@ class Room {
   isClear(g) {
     if (this.lock === 'none') return true;
     if (this.lock === 'objective') return this.objectiveDone === true;
+    if (this.lock === 'survive') return this.state === 'cleared';
     if (this.lock === 'clear') {
       if (this.state === 'cleared') return true;
       if (!this.armed && this.waves.length) return false;
