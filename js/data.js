@@ -200,3 +200,127 @@ DATA.dmgScale = m => 1 + m * 0.11;
 DATA.bossHpScale = m => 1 + m * 0.09;
 DATA.spawnInterval = m => Math.max(0.24, 1.05 - m * 0.062);
 DATA.spawnBatch = m => 1 + Math.floor(m * 0.55);
+
+// ===========================================================================
+// Run structure. Everything below is additive: the open field game reads none
+// of it and behaves exactly as it did. The room runtime lands in a later wave.
+// ===========================================================================
+
+// Difficulty on the same 0 to 14 scale the curves above already use, except
+// keyed to where you are in the run instead of the wall clock. Each act is
+// worth 4.6, so act 1 room 0 is 0 and the last room of act 3 is 13.8, which
+// puts a winning 15 minute run on the same curve the timed field ends on.
+DATA.threatOf = (act, roomIdx, roomsInAct) =>
+  (act - 1) * 4.6 + (roomIdx / Math.max(1, roomsInAct)) * 4.6;
+
+// Floor themes, one per act plus the final arena. deco lists existing ground
+// painters from sprites.js with pick weights; the hollow has none, on purpose.
+DATA.themes = {
+  1: {
+    name: 'THE UNDERSTORY',
+    ground: '#0e1510',
+    mottle: '#1e2a16',
+    deco: [
+      { id: 'grass1', w: 34 },
+      { id: 'grass2', w: 30 },
+      { id: 'stone', w: 14 },
+      { id: 'mush', w: 14 },
+      { id: 'bone', w: 8 },
+    ],
+    signAlpha: 0.55,
+    fogColor: '#0a120c',
+    fogAlpha: 0.16,
+    ambient: '#8fd8a6',
+    accent: '#c9f27a',
+  },
+  2: {
+    name: 'THE SOG',
+    ground: '#0b1417',
+    mottle: '#123038',
+    deco: [
+      { id: 'grass2', w: 28 },
+      { id: 'stone', w: 26 },
+      { id: 'mush', w: 22 },
+      { id: 'grass1', w: 14 },
+      { id: 'bone', w: 10 },
+    ],
+    signAlpha: 0.5,
+    fogColor: '#0d2a30',
+    fogAlpha: 0.28,
+    ambient: '#5fb9c9',
+    accent: '#7fe6d8',
+  },
+  3: {
+    name: 'THE BURN',
+    ground: '#17110d',
+    mottle: '#2c1a10',
+    deco: [
+      { id: 'bone', w: 30 },
+      { id: 'stone', w: 28 },
+      { id: 'grass1', w: 16 },
+      { id: 'mush', w: 14 },
+      { id: 'grass2', w: 12 },
+    ],
+    signAlpha: 0.45,
+    fogColor: '#2a1408',
+    fogAlpha: 0.30,
+    ambient: '#e08a3c',
+    accent: '#ff7a2a',
+  },
+  hollow: {
+    name: 'THE HOLLOW',
+    ground: '#05060a',
+    mottle: '#0b0d14',
+    deco: [],
+    signAlpha: 0,
+    fogColor: '#000105',
+    fogAlpha: 0.42,
+    ambient: '#6a7cff',
+    accent: '#b7c0ff',
+  },
+};
+
+// Dodge roll, one per character. Added as a key on the existing entries so the
+// character table above stays exactly as it was. spd is the roll speed, dur how
+// long the roll lasts, iframe how long you are untouchable, cd the recharge per
+// charge in seconds.
+DATA.characters.max.dodge = {
+  name: 'Sidestep', spd: 620, dur: 0.17, iframe: 0.30, cd: 1.0, charges: 1,
+};
+DATA.characters.junie.dodge = {
+  name: 'Backdraft', spd: 700, dur: 0.13, iframe: 0.24, cd: 0.8, charges: 2, trail: 'burn',
+};
+DATA.characters.gus.dodge = {
+  name: 'Tuck and Roll', spd: 520, dur: 0.24, iframe: 0.34, cd: 1.4, charges: 1, barge: true,
+};
+
+// Bosses by act tier. These are the same three definitions from DATA.bosses,
+// copied with a tier and an act stamped on, so the room runner can ask for
+// "the act 2 boss" without caring about the field game's clock triggers. The
+// original DATA.bosses array is untouched and still drives the timed field.
+DATA.bossTiers = (function () {
+  const by = {};
+  for (const b of DATA.bosses) by[b.id] = b;
+  return {
+    1: [Object.assign({}, by.hare, { tier: 1, act: 1 })],
+    2: [Object.assign({}, by.vicar, { tier: 2, act: 2 })],
+    3: [Object.assign({}, by.antlered, { tier: 3, act: 3, final: true })],
+  };
+})();
+
+// Cookie Money: the in-run currency. clear pays out per cleared combat room and
+// grows by act, prop is the min and max a smashed prop coughs up, cache is a
+// loot room haul, and convert is how many badges each leftover coin is worth
+// when the run ends.
+DATA.COINS = {
+  clear: act => 8 + act * 4,
+  elite: 12,
+  boss: 60,
+  prop: [1, 3],
+  cache: 35,
+  convert: 2,
+};
+
+// Active skills (the ones on a button, not the auto weapons) land in a later
+// wave. The key exists now so nothing downstream has to guess at its shape.
+DATA.skills = {};
