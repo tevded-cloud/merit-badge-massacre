@@ -1,0 +1,1250 @@
+[
+  {
+    "speaker": "antlered",
+    "category": "bossline",
+    "slot": "0",
+    "text": "somebody tell them about me.",
+    "spokenText": "somebody tell them about me.",
+    "hash8": "c077d41e"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "actThree_0",
+    "text": "\"This deep, the maps stop helping. This deep, Camp Hearthwood stops being the last camp on the ridge and starts being the last camp, period.\"",
+    "spokenText": "This deep, the maps stop helping. This deep, Camp Hearthwood stops being the last camp on the ridge and starts being the last camp, period.",
+    "hash8": "5923af69"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "actThree_1",
+    "text": "\"Bring back whatever you find. I am done being surprised at my age. I would just like to be informed.\"",
+    "spokenText": "Bring back whatever you find. I am done being surprised at my age. I would just like to be informed.",
+    "hash8": "5d799309"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "actTwo_0",
+    "text": "\"You are past the treeline proper now. Further than I go. Further than most of my old troop got.\" A pause. \"Different makers stamp those tokens out there. Different hands, different tin. They compete. I do not know for what.\"",
+    "spokenText": "You are past the treeline proper now. Further than I go. Further than most of my old troop got. Different makers stamp those tokens out there. Different hands, different tin. They compete. I do not know for what.",
+    "hash8": "b387600c"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "actTwo_1",
+    "text": "\"Bring me one, if you can pry it loose. I have wanted to look at one up close for thirty years. I have also, and I cannot stress this enough, been too much of a coward.\"",
+    "spokenText": "Bring me one, if you can pry it loose. I have wanted to look at one up close for thirty years. I have also, and I cannot stress this enough, been too much of a coward.",
+    "hash8": "3d8f8fa3"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "brambleDown_0",
+    "text": "\"BRAMBLEBUCK, down. First one Signed, if the old stories are even true, which means you just beat the one with seniority.\"",
+    "spokenText": "BRAMBLEBUCK, down. First one Signed, if the old stories are even true, which means you just beat the one with seniority.",
+    "hash8": "a15ea9d9"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "brambleDown_1",
+    "text": "\"Do not let it go to your head. It was, and I want to stress this, a rabbit.\"",
+    "spokenText": "Do not let it go to your head. It was, and I want to stress this, a rabbit.",
+    "hash8": "c9087a71"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "finalDown_0",
+    "text": "\"OLD NOBODY. HOLLOWANTLER, if you want its whole name, though nothing out there wants to hear it said twice. Down. Thirty years running this camp did not prepare me for how quiet that would be.\"",
+    "spokenText": "OLD NOBODY. HOLLOWANTLER, if you want its whole name, though nothing out there wants to hear it said twice. Down. Thirty years running this camp did not prepare me for how quiet that would be.",
+    "hash8": "1b39d9c7"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "finalDown_1",
+    "text": "\"I had a whole speech ready. I am not giving it tonight. Go celebrate. And do not ask me about the twelfth name yet. Some other night.\"",
+    "spokenText": "I had a whole speech ready. I am not giving it tonight. Go celebrate. And do not ask me about the twelfth name yet. Some other night.",
+    "hash8": "8386e210"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "firstDawn_0",
+    "text": "\"You saw a whole dawn out there and came back to tell me about it. Sit by the fire. The actual seat, not the log with the splinter.\"",
+    "spokenText": "You saw a whole dawn out there and came back to tell me about it. Sit by the fire. The actual seat, not the log with the splinter.",
+    "hash8": "31201393"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "firstDawn_1",
+    "text": "\"Thirty years I ran this camp on the theory that somebody eventually would. Thank you for proving the theory. Cocoa is on me tonight.\"",
+    "spokenText": "Thirty years I ran this camp on the theory that somebody eventually would. Thank you for proving the theory. Cocoa is on me tonight.",
+    "hash8": "e3fe7575"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "firstNight_0",
+    "text": "\"Back already.\" Brock does not look up from the fire. \"Good. That means you are still breathing. Sit. I only tell this story once, and I am not repeating the good parts.\"",
+    "spokenText": "Back already. Good. That means you are still breathing. Sit. I only tell this story once, and I am not repeating the good parts.",
+    "hash8": "c0fe516c"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "firstNight_1",
+    "text": "\"Thirty years ago I brought twelve kids up this ridge. I brought one down. That is a fireside talk for later. Tonight, go get badges.\"",
+    "spokenText": "Thirty years ago I brought twelve kids up this ridge. I brought one down. That is a fireside talk for later. Tonight, go get badges.",
+    "hash8": "15eef9c6"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "firstPage_0",
+    "text": "\"You are keeping notes. Good. Nobody who ever camped this ridge before you wrote a single thing down, and look how that went.\"",
+    "spokenText": "You are keeping notes. Good. Nobody who ever camped this ridge before you wrote a single thing down, and look how that went.",
+    "hash8": "55de5095"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "firstPage_1",
+    "text": "\"Keep the journal. I will read it when you are done needing it. Preferably a long time from now.\"",
+    "spokenText": "Keep the journal. I will read it when you are done needing it. Preferably a long time from now.",
+    "hash8": "0bdd393b"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "fiveGraves_0",
+    "text": "\"Five times back to this fire in a body bag, more or less. I stopped flinching around number three. Professional courtesy.\"",
+    "spokenText": "Five times back to this fire in a body bag, more or less. I stopped flinching around number three. Professional courtesy.",
+    "hash8": "b03e5075"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "fiveGraves_1",
+    "text": "\"You keep coming back, though. That is either grit or a badge quota you are very committed to. I am choosing to believe grit.\"",
+    "spokenText": "You keep coming back, though. That is either grit or a badge quota you are very committed to. I am choosing to believe grit.",
+    "hash8": "5cb3e280"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "fullJournal_0",
+    "text": "\"That journal of yours is getting thick. You have written down more about this ridge than I managed in thirty years, and I LIVE here.\"",
+    "spokenText": "That journal of yours is getting thick. You have written down more about this ridge than I managed in thirty years, and I LIVE here.",
+    "hash8": "9be30a21"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "fullJournal_1",
+    "text": "\"Feel free to be smug about it. Once.\"",
+    "spokenText": "Feel free to be smug about it. Once.",
+    "hash8": "9b343b3c"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "tallymanDown_0",
+    "text": "\"THE TALLYMAN, finally handled. He has been walking off with badges since before you were born. Did you get any of them back?\"",
+    "spokenText": "THE TALLYMAN, finally handled. He has been walking off with badges since before you were born. Did you get any of them back?",
+    "hash8": "7bfb8781"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "tallymanDown_1",
+    "text": "\"No? Of course not. He is very organized about it. There is probably a ledger.\"",
+    "spokenText": "No? Of course not. He is very organized about it. There is probably a ledger.",
+    "hash8": "14e55075"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "threeKills_0",
+    "text": "\"Three of the named ones, put down for good. That is not luck, kid. That is a pattern. I am almost proud, which is new for me.\"",
+    "spokenText": "Three of the named ones, put down for good. That is not luck, kid. That is a pattern. I am almost proud, which is new for me.",
+    "hash8": "33f97676"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "threeKills_1",
+    "text": "\"Try not to let it go to your head twice in one season.\"",
+    "spokenText": "Try not to let it go to your head twice in one season.",
+    "hash8": "ec9996ef"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "twoMarks_0",
+    "text": "\"You have gotten a good look at two of them now. Notice the tin? Every marked critter wears one, pressed right into the fur. Somebody out there is stamping those by hand.\"",
+    "spokenText": "You have gotten a good look at two of them now. Notice the tin? Every marked critter wears one, pressed right into the fur. Somebody out there is stamping those by hand.",
+    "hash8": "fd021eaf"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "twoMarks_1",
+    "text": "\"Do not ask me who. I have theories. None of them let me sleep.\"",
+    "spokenText": "Do not ask me who. I have theories. None of them let me sleep.",
+    "hash8": "f6f55f7b"
+  },
+  {
+    "speaker": "brock",
+    "category": "dawn",
+    "slot": "0",
+    "text": "\"You saw the dawn. Thirty years I have run this camp and I can count dawn-watchers on one paw.\" He salutes with the coffee.",
+    "spokenText": "You saw the dawn. Thirty years I have run this camp and I can count dawn-watchers on one paw.",
+    "hash8": "0da071c1"
+  },
+  {
+    "speaker": "brock",
+    "category": "dawn",
+    "slot": "1",
+    "text": "\"OLD NOBODY is down and the sun came up. Do not get comfortable. Antlers grow back, and so, probably, does he.\"",
+    "spokenText": "OLD NOBODY is down and the sun came up. Do not get comfortable. Antlers grow back, and so, probably, does he.",
+    "hash8": "e6a842ce"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "antlered",
+    "text": "\"OLD NOBODY. HOLLOWANTLER, if you want its whole name, though nobody out there wants to be caught saying it twice. You got further than most of Troop 12 ever did. Again.\"",
+    "spokenText": "OLD NOBODY. HOLLOWANTLER, if you want its whole name, though nobody out there wants to be caught saying it twice. You got further than most of Troop 12 ever did. Again.",
+    "hash8": "0b46c734"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "bat",
+    "text": "\"Bats. Hate the wobble. Everyone hates the wobble.\"",
+    "spokenText": "Bats. Hate the wobble. Everyone hates the wobble.",
+    "hash8": "379a99e1"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "beaver",
+    "text": "\"A beaver. Death by municipal engineering. There is a badge for irony somewhere.\"",
+    "spokenText": "A beaver. Death by municipal engineering. There is a badge for irony somewhere.",
+    "hash8": "eacee1d4"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "boar",
+    "text": "\"Boars telegraph the charge. Big exclamation of intent. Step LEFT.\"",
+    "spokenText": "Boars telegraph the charge. Big exclamation of intent. Step LEFT.",
+    "hash8": "ddadb3d1"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "doe",
+    "text": "\"Killed by a doe. Gentle eyes, they said. Nature is healing, they said.\"",
+    "spokenText": "Killed by a doe. Gentle eyes, they said. Nature is healing, they said.",
+    "hash8": "166b2f9a"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "fox",
+    "text": "\"Foxes weave. Stop shooting where they were and shoot where they are going.\"",
+    "spokenText": "Foxes weave. Stop shooting where they were and shoot where they are going.",
+    "hash8": "768165f9"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "generic",
+    "text": "\"Back again. The forest keeps score, and so do I. Spend some badges before you go back out.\"",
+    "spokenText": "Back again. The forest keeps score, and so do I. Spend some badges before you go back out.",
+    "hash8": "ea53a063"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "hare",
+    "text": "\"BRAMBLEBUCK. Signed young, they say, back when the tokens were still hand stamped. Every third landing it sprays. Count the hops, kid.\"",
+    "spokenText": "BRAMBLEBUCK. Signed young, they say, back when the tokens were still hand stamped. Every third landing it sprays. Count the hops, kid.",
+    "hash8": "b8bb780e"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "owl",
+    "text": "\"The owls spit feathers. Keep your feet moving and they cannot lead the shot.\"",
+    "spokenText": "The owls spit feathers. Keep your feet moving and they cannot lead the shot.",
+    "hash8": "a6c714b5"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "rabbit",
+    "text": "\"A rabbit got you. They hop, kid. You can see the whole attack coming from the air.\"",
+    "spokenText": "A rabbit got you. They hop, kid. You can see the whole attack coming from the air.",
+    "hash8": "e303c7d3"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "raccoon",
+    "text": "\"A raccoon. It probably went through your pack afterwards. They always do.\"",
+    "spokenText": "A raccoon. It probably went through your pack afterwards. They always do.",
+    "hash8": "43593b04"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "squirrel",
+    "text": "\"A squirrel. You were bested by a SQUIRREL. I have led this troop thirty years and it does not get less embarrassing.\"",
+    "spokenText": "A squirrel. You were bested by a SQUIRREL. I have led this troop thirty years and it does not get less embarrassing.",
+    "hash8": "2be9be6b"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "vicar",
+    "text": "\"THE TALLYMAN got you. Everything you own, he considers a loan. Stay off his rings and mind the raccoons he calls.\"",
+    "spokenText": "THE TALLYMAN got you. Everything you own, he considers a loan. Stay off his rings and mind the raccoons he calls.",
+    "hash8": "26dd454d"
+  },
+  {
+    "speaker": "brock",
+    "category": "idle",
+    "slot": "0",
+    "text": "\"The Badge Board takes badges, not promises.\"",
+    "spokenText": "The Badge Board takes badges, not promises.",
+    "hash8": "18a68ee5"
+  },
+  {
+    "speaker": "brock",
+    "category": "idle",
+    "slot": "1",
+    "text": "\"Cocoa heals. That is not camp wisdom, that is medical fact out here.\"",
+    "spokenText": "Cocoa heals. That is not camp wisdom, that is medical fact out here.",
+    "hash8": "5cf36e81"
+  },
+  {
+    "speaker": "brock",
+    "category": "idle",
+    "slot": "2",
+    "text": "\"Hold your ground near the fire all you want. Out there, keep moving.\"",
+    "spokenText": "Hold your ground near the fire all you want. Out there, keep moving.",
+    "hash8": "1141e68e"
+  },
+  {
+    "speaker": "brock",
+    "category": "idle",
+    "slot": "3",
+    "text": "\"Elites glow red. Chests fall out of them. Draw your own conclusions.\"",
+    "spokenText": "Elites glow red. Chests fall out of them. Draw your own conclusions.",
+    "hash8": "ea199324"
+  },
+  {
+    "speaker": "brock",
+    "category": "idle",
+    "slot": "4",
+    "text": "\"I knew that stag when he was a fawn. Before he got Signed. Shame. Great rack, though.\"",
+    "spokenText": "I knew that stag when he was a fawn. Before he got Signed. Shame. Great rack, though.",
+    "hash8": "b7cecb1c"
+  },
+  {
+    "speaker": "brock",
+    "category": "idle",
+    "slot": "5",
+    "text": "\"Second Wind is not a myth. It is a purchase.\"",
+    "spokenText": "Second Wind is not a myth. It is a purchase.",
+    "hash8": "d2636eea"
+  },
+  {
+    "speaker": "brock",
+    "category": "idle",
+    "slot": "6",
+    "text": "\"You aim with your eyes, not your feet. Strafe, kid. Strafe.\"",
+    "spokenText": "You aim with your eyes, not your feet. Strafe, kid. Strafe.",
+    "hash8": "890586d6"
+  },
+  {
+    "speaker": "brock",
+    "category": "intro",
+    "slot": "0",
+    "text": "Scoutmaster Brock pokes the fire. \"New blood. Good. Every critter out here that has truly seen one of them believes forever after, and belief like that leaves a mark, a little tin stamp pressed into the fur. We call that getting Signed. Earn badges. Come back alive. In that order, preferably.\"",
+    "spokenText": "New blood. Good. Every critter out here that has truly seen one of them believes forever after, and belief like that leaves a mark, a little tin stamp pressed into the fur. We call that getting Signed. Earn badges. Come back alive. In that order, preferably.",
+    "hash8": "7c5febee"
+  },
+  {
+    "speaker": "brock",
+    "category": "intro",
+    "slot": "1",
+    "text": "\"Rules of Camp Hearthwood: respect the fire, bank your badges, and if a rabbit smiles at you, it already believes in something you really do not want it to.\"",
+    "spokenText": "Rules of Camp Hearthwood: respect the fire, bank your badges, and if a rabbit smiles at you, it already believes in something you really do not want it to.",
+    "hash8": "8277ea7d"
+  },
+  {
+    "speaker": "gus",
+    "category": "boss",
+    "slot": "0",
+    "text": "That is a lot of critter.",
+    "spokenText": "That is a lot of critter.",
+    "hash8": "34a73ca2"
+  },
+  {
+    "speaker": "gus",
+    "category": "boss",
+    "slot": "1",
+    "text": "You look like you skip breakfast.",
+    "spokenText": "You look like you skip breakfast.",
+    "hash8": "2108c7c9"
+  },
+  {
+    "speaker": "gus",
+    "category": "boss",
+    "slot": "2",
+    "text": "I have a skillet with your name on it.",
+    "spokenText": "I have a skillet with your name on it.",
+    "hash8": "a4a7ca23"
+  },
+  {
+    "speaker": "gus",
+    "category": "boss",
+    "slot": "3",
+    "text": "Oh, this one has a whole legend. Fancy.",
+    "spokenText": "Oh, this one has a whole legend. Fancy.",
+    "hash8": "10493804"
+  },
+  {
+    "speaker": "gus",
+    "category": "boss",
+    "slot": "4",
+    "text": "Big name, big target.",
+    "spokenText": "Big name, big target.",
+    "hash8": "e92da831"
+  },
+  {
+    "speaker": "gus",
+    "category": "boss",
+    "slot": "5",
+    "text": "I have been hungrier than this. Barely.",
+    "spokenText": "I have been hungrier than this. Barely.",
+    "hash8": "721a42ec"
+  },
+  {
+    "speaker": "gus",
+    "category": "bossnamed",
+    "slot": "antlered",
+    "text": "OLD NOBODY. I have skipped fewer meals than you have skipped centuries.",
+    "spokenText": "OLD NOBODY. I have skipped fewer meals than you have skipped centuries.",
+    "hash8": "fc751eb5"
+  },
+  {
+    "speaker": "gus",
+    "category": "bossnamed",
+    "slot": "hare",
+    "text": "The hopping one. I have heard the stories. Underwhelming so far.",
+    "spokenText": "The hopping one. I have heard the stories. Underwhelming so far.",
+    "hash8": "ee041cad"
+  },
+  {
+    "speaker": "gus",
+    "category": "bossnamed",
+    "slot": "vicar",
+    "text": "You are not getting my snacks. Try the badges instead.",
+    "spokenText": "You are not getting my snacks. Try the badges instead.",
+    "hash8": "8f297422"
+  },
+  {
+    "speaker": "gus",
+    "category": "chest",
+    "slot": "0",
+    "text": "Ooh. Heavier than it looks.",
+    "spokenText": "Ooh. Heavier than it looks.",
+    "hash8": "9c9679e4"
+  },
+  {
+    "speaker": "gus",
+    "category": "chest",
+    "slot": "1",
+    "text": "Is there food in this one?",
+    "spokenText": "Is there food in this one?",
+    "hash8": "1693234c"
+  },
+  {
+    "speaker": "gus",
+    "category": "death",
+    "slot": "0",
+    "text": "Someone... eat my rations...",
+    "spokenText": "Someone... eat my rations...",
+    "hash8": "126f69f5"
+  },
+  {
+    "speaker": "gus",
+    "category": "death",
+    "slot": "1",
+    "text": "Do not let this go to waste... any of it...",
+    "spokenText": "Do not let this go to waste... any of it...",
+    "hash8": "726e1401"
+  },
+  {
+    "speaker": "gus",
+    "category": "death",
+    "slot": "2",
+    "text": "Tell them I finished my snacks first...",
+    "spokenText": "Tell them I finished my snacks first...",
+    "hash8": "486a093b"
+  },
+  {
+    "speaker": "gus",
+    "category": "death",
+    "slot": "3",
+    "text": "Worth it. The snacks were worth it...",
+    "spokenText": "Worth it. The snacks were worth it...",
+    "hash8": "d302be33"
+  },
+  {
+    "speaker": "gus",
+    "category": "death",
+    "slot": "4",
+    "text": "Nap time... forever, I guess...",
+    "spokenText": "Nap time... forever, I guess...",
+    "hash8": "95272815"
+  },
+  {
+    "speaker": "gus",
+    "category": "kills",
+    "slot": "0",
+    "text": "I count them like sheep.",
+    "spokenText": "I count them like sheep.",
+    "hash8": "0e795562"
+  },
+  {
+    "speaker": "gus",
+    "category": "kills",
+    "slot": "1",
+    "text": "A hundred down. Arms are noodles.",
+    "spokenText": "A hundred down. Arms are noodles.",
+    "hash8": "50ab6a06"
+  },
+  {
+    "speaker": "gus",
+    "category": "lowhp",
+    "slot": "0",
+    "text": "I have been hit in the snacks.",
+    "spokenText": "I have been hit in the snacks.",
+    "hash8": "b27b6357"
+  },
+  {
+    "speaker": "gus",
+    "category": "lowhp",
+    "slot": "1",
+    "text": "Everything hurts. Even the trail mix.",
+    "spokenText": "Everything hurts. Even the trail mix.",
+    "hash8": "22f14511"
+  },
+  {
+    "speaker": "gus",
+    "category": "lowhp",
+    "slot": "2",
+    "text": "Walk it off. Walk it off.",
+    "spokenText": "Walk it off. Walk it off.",
+    "hash8": "06822e9d"
+  },
+  {
+    "speaker": "gus",
+    "category": "lowhp",
+    "slot": "3",
+    "text": "That woke me up, at least.",
+    "spokenText": "That woke me up, at least.",
+    "hash8": "4a4ef832"
+  },
+  {
+    "speaker": "gus",
+    "category": "lowhp",
+    "slot": "4",
+    "text": "I am fine. The trail mix is not.",
+    "spokenText": "I am fine. The trail mix is not.",
+    "hash8": "7009d43c"
+  },
+  {
+    "speaker": "gus",
+    "category": "lowhp",
+    "slot": "5",
+    "text": "Rude. Very rude.",
+    "spokenText": "Rude. Very rude.",
+    "hash8": "a4e9198e"
+  },
+  {
+    "speaker": "gus",
+    "category": "revive",
+    "slot": "0",
+    "text": "Nap is over.",
+    "spokenText": "Nap is over.",
+    "hash8": "8df66f3d"
+  },
+  {
+    "speaker": "gus",
+    "category": "revive",
+    "slot": "1",
+    "text": "You woke me up. Rude.",
+    "spokenText": "You woke me up. Rude.",
+    "hash8": "a4959462"
+  },
+  {
+    "speaker": "gus",
+    "category": "runstart",
+    "slot": "0",
+    "text": "I brought snacks for after.",
+    "spokenText": "I brought snacks for after.",
+    "hash8": "8b2e8cc3"
+  },
+  {
+    "speaker": "gus",
+    "category": "runstart",
+    "slot": "1",
+    "text": "Big night. Bigger appetite.",
+    "spokenText": "Big night. Bigger appetite.",
+    "hash8": "c5e2e765"
+  },
+  {
+    "speaker": "gus",
+    "category": "runstart",
+    "slot": "2",
+    "text": "Gus is here. Relax, everybody.",
+    "spokenText": "Gus is here. Relax, everybody.",
+    "hash8": "d5fd929f"
+  },
+  {
+    "speaker": "gus",
+    "category": "runstart",
+    "slot": "3",
+    "text": "Whatever it believes in, I believe in lunch.",
+    "spokenText": "Whatever it believes in, I believe in lunch.",
+    "hash8": "d4627e66"
+  },
+  {
+    "speaker": "gus",
+    "category": "runstart",
+    "slot": "4",
+    "text": "Let us get this over with, I am hungry.",
+    "spokenText": "Let us get this over with, I am hungry.",
+    "hash8": "5f9a2b74"
+  },
+  {
+    "speaker": "gus",
+    "category": "runstart",
+    "slot": "5",
+    "text": "Slow and steady. Mostly slow.",
+    "spokenText": "Slow and steady. Mostly slow.",
+    "hash8": "fd3278af"
+  },
+  {
+    "speaker": "gus",
+    "category": "select",
+    "slot": "0",
+    "text": "Gus stands, dusting crumbs. \"Fine. But we eat after.\"",
+    "spokenText": "Fine. But we eat after.",
+    "hash8": "3167d996"
+  },
+  {
+    "speaker": "gus",
+    "category": "win",
+    "slot": "0",
+    "text": "Dawn already? Time for pancakes.",
+    "spokenText": "Dawn already? Time for pancakes.",
+    "hash8": "d0d16810"
+  },
+  {
+    "speaker": "gus",
+    "category": "win",
+    "slot": "1",
+    "text": "We survived. Who wants eggs?",
+    "spokenText": "We survived. Who wants eggs?",
+    "hash8": "7887c0f0"
+  },
+  {
+    "speaker": "hare",
+    "category": "bossline",
+    "slot": "0",
+    "text": "hold still. it is only a pin.",
+    "spokenText": "hold still. it is only a pin.",
+    "hash8": "512cf885"
+  },
+  {
+    "speaker": "junie",
+    "category": "boss",
+    "slot": "0",
+    "text": "Ooh, a BIG candle.",
+    "spokenText": "Ooh, a BIG candle.",
+    "hash8": "3f20cfd3"
+  },
+  {
+    "speaker": "junie",
+    "category": "boss",
+    "slot": "1",
+    "text": "You ever seen a deer cry? Wanna?",
+    "spokenText": "You ever seen a deer cry? Wanna?",
+    "hash8": "d5a3a4e8"
+  },
+  {
+    "speaker": "junie",
+    "category": "boss",
+    "slot": "2",
+    "text": "I am going to need more marshmallows.",
+    "spokenText": "I am going to need more marshmallows.",
+    "hash8": "ec5355be"
+  },
+  {
+    "speaker": "junie",
+    "category": "boss",
+    "slot": "3",
+    "text": "It has a WHOLE NAME. I am so excited.",
+    "spokenText": "It has a WHOLE NAME. I am so excited.",
+    "hash8": "0ae94fbb"
+  },
+  {
+    "speaker": "junie",
+    "category": "boss",
+    "slot": "4",
+    "text": "Ooh, it is famous. Famous things burn great.",
+    "spokenText": "Ooh, it is famous. Famous things burn great.",
+    "hash8": "0201a0aa"
+  },
+  {
+    "speaker": "junie",
+    "category": "boss",
+    "slot": "5",
+    "text": "Bigger tin, bigger fire. Math.",
+    "spokenText": "Bigger tin, bigger fire. Math.",
+    "hash8": "aa4a5550"
+  },
+  {
+    "speaker": "junie",
+    "category": "bossnamed",
+    "slot": "antlered",
+    "text": "Big Nobody! I brought extra matches, just for you!",
+    "spokenText": "Big Nobody! I brought extra matches, just for you!",
+    "hash8": "030ec1ca"
+  },
+  {
+    "speaker": "junie",
+    "category": "bossnamed",
+    "slot": "hare",
+    "text": "BRAMBLEBUCK! I have wanted to meet you since orientation!",
+    "spokenText": "BRAMBLEBUCK! I have wanted to meet you since orientation!",
+    "hash8": "50ccc8fa"
+  },
+  {
+    "speaker": "junie",
+    "category": "bossnamed",
+    "slot": "vicar",
+    "text": "Ooh, the collector. Collect THIS.",
+    "spokenText": "Ooh, the collector. Collect THIS.",
+    "hash8": "f287426f"
+  },
+  {
+    "speaker": "junie",
+    "category": "chest",
+    "slot": "0",
+    "text": "Presents! For me!",
+    "spokenText": "Presents! For me!",
+    "hash8": "b1f7de55"
+  },
+  {
+    "speaker": "junie",
+    "category": "chest",
+    "slot": "1",
+    "text": "Ooh, shiny shiny.",
+    "spokenText": "Ooh, shiny shiny.",
+    "hash8": "4e1ae71c"
+  },
+  {
+    "speaker": "junie",
+    "category": "death",
+    "slot": "0",
+    "text": "Cold... why is it cold...",
+    "spokenText": "Cold... why is it cold...",
+    "hash8": "94c5bcc1"
+  },
+  {
+    "speaker": "junie",
+    "category": "death",
+    "slot": "1",
+    "text": "No fire... no fire anywhere...",
+    "spokenText": "No fire... no fire anywhere...",
+    "hash8": "8575d5c7"
+  },
+  {
+    "speaker": "junie",
+    "category": "death",
+    "slot": "2",
+    "text": "Tell the marshmallows... I loved them...",
+    "spokenText": "Tell the marshmallows... I loved them...",
+    "hash8": "acbaaf8e"
+  },
+  {
+    "speaker": "junie",
+    "category": "death",
+    "slot": "3",
+    "text": "This is... a really bad campfire story...",
+    "spokenText": "This is... a really bad campfire story...",
+    "hash8": "e0da2a62"
+  },
+  {
+    "speaker": "junie",
+    "category": "death",
+    "slot": "4",
+    "text": "I bet I still... look cool...",
+    "spokenText": "I bet I still... look cool...",
+    "hash8": "16f9ffa9"
+  },
+  {
+    "speaker": "junie",
+    "category": "kills",
+    "slot": "0",
+    "text": "I lost count at a hundred!",
+    "spokenText": "I lost count at a hundred!",
+    "hash8": "59b7de3b"
+  },
+  {
+    "speaker": "junie",
+    "category": "kills",
+    "slot": "1",
+    "text": "The smoke smells like victory.",
+    "spokenText": "The smoke smells like victory.",
+    "hash8": "563c5000"
+  },
+  {
+    "speaker": "junie",
+    "category": "lowhp",
+    "slot": "0",
+    "text": "Ow ow ow OW.",
+    "spokenText": "Ow ow ow OW.",
+    "hash8": "16bce81f"
+  },
+  {
+    "speaker": "junie",
+    "category": "lowhp",
+    "slot": "1",
+    "text": "Bad bunnies! BAD!",
+    "spokenText": "Bad bunnies! BAD!",
+    "hash8": "d92511fb"
+  },
+  {
+    "speaker": "junie",
+    "category": "lowhp",
+    "slot": "2",
+    "text": "I am mostly fine. Mostly.",
+    "spokenText": "I am mostly fine. Mostly.",
+    "hash8": "bf42d15b"
+  },
+  {
+    "speaker": "junie",
+    "category": "lowhp",
+    "slot": "3",
+    "text": "That is going to leave a hilarious scar.",
+    "spokenText": "That is going to leave a hilarious scar.",
+    "hash8": "2c94b130"
+  },
+  {
+    "speaker": "junie",
+    "category": "lowhp",
+    "slot": "4",
+    "text": "Okay THAT one I felt.",
+    "spokenText": "Okay THAT one I felt.",
+    "hash8": "9038cc7c"
+  },
+  {
+    "speaker": "junie",
+    "category": "lowhp",
+    "slot": "5",
+    "text": "Still on fire! Wait, is that me?",
+    "spokenText": "Still on fire! Wait, is that me?",
+    "hash8": "63cd66b3"
+  },
+  {
+    "speaker": "junie",
+    "category": "revive",
+    "slot": "0",
+    "text": "Can not stop, will not stop.",
+    "spokenText": "Can not stop, will not stop.",
+    "hash8": "9fb8ef67"
+  },
+  {
+    "speaker": "junie",
+    "category": "revive",
+    "slot": "1",
+    "text": "The fire says get UP.",
+    "spokenText": "The fire says get UP.",
+    "hash8": "0fa2cf57"
+  },
+  {
+    "speaker": "junie",
+    "category": "runstart",
+    "slot": "0",
+    "text": "Time to earn my FIRE badge.",
+    "spokenText": "Time to earn my FIRE badge.",
+    "hash8": "82d000fd"
+  },
+  {
+    "speaker": "junie",
+    "category": "runstart",
+    "slot": "1",
+    "text": "Ha ha ha ha. Okay. Focus.",
+    "spokenText": "Ha ha ha ha. Okay. Focus.",
+    "hash8": "6d5c3e06"
+  },
+  {
+    "speaker": "junie",
+    "category": "runstart",
+    "slot": "2",
+    "text": "Smells like s'mores and vengeance.",
+    "spokenText": "Smells like s'mores and vengeance.",
+    "hash8": "0ebba515"
+  },
+  {
+    "speaker": "junie",
+    "category": "runstart",
+    "slot": "3",
+    "text": "They are all Signed and I am ALL fire.",
+    "spokenText": "They are all Signed and I am ALL fire.",
+    "hash8": "65452274"
+  },
+  {
+    "speaker": "junie",
+    "category": "runstart",
+    "slot": "4",
+    "text": "Who wants to see something get REALLY believed in.",
+    "spokenText": "Who wants to see something get REALLY believed in.",
+    "hash8": "063d9895"
+  },
+  {
+    "speaker": "junie",
+    "category": "runstart",
+    "slot": "5",
+    "text": "Focus. Focus. Fire first, focus second.",
+    "spokenText": "Focus. Focus. Fire first, focus second.",
+    "hash8": "715dcf14"
+  },
+  {
+    "speaker": "junie",
+    "category": "select",
+    "slot": "0",
+    "text": "Junie grins. \"I already lit the roaster. It is not even dark yet.\"",
+    "spokenText": "I already lit the roaster. It is not even dark yet.",
+    "hash8": "9f779df4"
+  },
+  {
+    "speaker": "junie",
+    "category": "win",
+    "slot": "0",
+    "text": "The sun! My other favorite fire!",
+    "spokenText": "The sun! My other favorite fire!",
+    "hash8": "a01807a1"
+  },
+  {
+    "speaker": "junie",
+    "category": "win",
+    "slot": "1",
+    "text": "We won! Nobody check the forest.",
+    "spokenText": "We won! Nobody check the forest.",
+    "hash8": "938c687f"
+  },
+  {
+    "speaker": "max",
+    "category": "boss",
+    "slot": "0",
+    "text": "That one has a title. Great.",
+    "spokenText": "That one has a title. Great.",
+    "hash8": "82e4f1c6"
+  },
+  {
+    "speaker": "max",
+    "category": "boss",
+    "slot": "1",
+    "text": "Steady. Aim for the eyes.",
+    "spokenText": "Steady. Aim for the eyes.",
+    "hash8": "34c87083"
+  },
+  {
+    "speaker": "max",
+    "category": "boss",
+    "slot": "2",
+    "text": "Big ones fall the same way.",
+    "spokenText": "Big ones fall the same way.",
+    "hash8": "358150b5"
+  },
+  {
+    "speaker": "max",
+    "category": "boss",
+    "slot": "3",
+    "text": "It has a name. Do not learn it.",
+    "spokenText": "It has a name. Do not learn it.",
+    "hash8": "e890c4b4"
+  },
+  {
+    "speaker": "max",
+    "category": "boss",
+    "slot": "4",
+    "text": "Hold the line like Brock taught us.",
+    "spokenText": "Hold the line like Brock taught us.",
+    "hash8": "06ab9afc"
+  },
+  {
+    "speaker": "max",
+    "category": "boss",
+    "slot": "5",
+    "text": "Big or small, it still counts as one badge.",
+    "spokenText": "Big or small, it still counts as one badge.",
+    "hash8": "1240bfd2"
+  },
+  {
+    "speaker": "max",
+    "category": "bossnamed",
+    "slot": "antlered",
+    "text": "Troop 13. Hold the line. That is an order and a request.",
+    "spokenText": "Troop 13. Hold the line. That is an order and a request.",
+    "hash8": "75fd5397"
+  },
+  {
+    "speaker": "max",
+    "category": "bossnamed",
+    "slot": "hare",
+    "text": "Hold still, it says. Like that has ever worked.",
+    "spokenText": "Hold still, it says. Like that has ever worked.",
+    "hash8": "6162cb0b"
+  },
+  {
+    "speaker": "max",
+    "category": "bossnamed",
+    "slot": "vicar",
+    "text": "Nothing here is owed to you. Move.",
+    "spokenText": "Nothing here is owed to you. Move.",
+    "hash8": "2dc29a1f"
+  },
+  {
+    "speaker": "max",
+    "category": "chest",
+    "slot": "0",
+    "text": "Requisitioned.",
+    "spokenText": "Requisitioned.",
+    "hash8": "7cac4e69"
+  },
+  {
+    "speaker": "max",
+    "category": "chest",
+    "slot": "1",
+    "text": "The troop provides.",
+    "spokenText": "The troop provides.",
+    "hash8": "f2391bdb"
+  },
+  {
+    "speaker": "max",
+    "category": "death",
+    "slot": "0",
+    "text": "Tell them... I earned it...",
+    "spokenText": "Tell them... I earned it...",
+    "hash8": "6c534c00"
+  },
+  {
+    "speaker": "max",
+    "category": "death",
+    "slot": "1",
+    "text": "Somebody... bank my badges...",
+    "spokenText": "Somebody... bank my badges...",
+    "hash8": "e4d2253b"
+  },
+  {
+    "speaker": "max",
+    "category": "death",
+    "slot": "2",
+    "text": "Tell Brock... I held the line...",
+    "spokenText": "Tell Brock... I held the line...",
+    "hash8": "ae9d443d"
+  },
+  {
+    "speaker": "max",
+    "category": "death",
+    "slot": "3",
+    "text": "It is fine. This is fine. Mostly fine.",
+    "spokenText": "It is fine. This is fine. Mostly fine.",
+    "hash8": "e03f7b0b"
+  },
+  {
+    "speaker": "max",
+    "category": "death",
+    "slot": "4",
+    "text": "Troop 13... does not... run...",
+    "spokenText": "Troop 13... does not... run...",
+    "hash8": "70f3c8b2"
+  },
+  {
+    "speaker": "max",
+    "category": "kills",
+    "slot": "0",
+    "text": "That is a lot of paperwork.",
+    "spokenText": "That is a lot of paperwork.",
+    "hash8": "66de3350"
+  },
+  {
+    "speaker": "max",
+    "category": "kills",
+    "slot": "1",
+    "text": "Two hundred. Somebody count.",
+    "spokenText": "Two hundred. Somebody count.",
+    "hash8": "8f4054cc"
+  },
+  {
+    "speaker": "max",
+    "category": "lowhp",
+    "slot": "0",
+    "text": "Just a scratch. A big scratch.",
+    "spokenText": "Just a scratch. A big scratch.",
+    "hash8": "cdfff83d"
+  },
+  {
+    "speaker": "max",
+    "category": "lowhp",
+    "slot": "1",
+    "text": "Regroup. Breathe.",
+    "spokenText": "Regroup. Breathe.",
+    "hash8": "3a8a1f6f"
+  },
+  {
+    "speaker": "max",
+    "category": "lowhp",
+    "slot": "2",
+    "text": "Not like this. Not tonight.",
+    "spokenText": "Not like this. Not tonight.",
+    "hash8": "8b0aa3f9"
+  },
+  {
+    "speaker": "max",
+    "category": "lowhp",
+    "slot": "3",
+    "text": "I have had worse at scout camp. Probably.",
+    "spokenText": "I have had worse at scout camp. Probably.",
+    "hash8": "3375a4af"
+  },
+  {
+    "speaker": "max",
+    "category": "lowhp",
+    "slot": "4",
+    "text": "Troop 13 does not quit at half health.",
+    "spokenText": "Troop 13 does not quit at half health.",
+    "hash8": "1e9a5134"
+  },
+  {
+    "speaker": "max",
+    "category": "lowhp",
+    "slot": "5",
+    "text": "Hold. HOLD.",
+    "spokenText": "Hold. HOLD.",
+    "hash8": "b1bcea3c"
+  },
+  {
+    "speaker": "max",
+    "category": "revive",
+    "slot": "0",
+    "text": "A scout finishes the hike.",
+    "spokenText": "A scout finishes the hike.",
+    "hash8": "c2e2cc60"
+  },
+  {
+    "speaker": "max",
+    "category": "revive",
+    "slot": "1",
+    "text": "Not yet. NOT yet.",
+    "spokenText": "Not yet. NOT yet.",
+    "hash8": "59caa523"
+  },
+  {
+    "speaker": "max",
+    "category": "runstart",
+    "slot": "0",
+    "text": "Troop 13, moving out.",
+    "spokenText": "Troop 13, moving out.",
+    "hash8": "0f391c2b"
+  },
+  {
+    "speaker": "max",
+    "category": "runstart",
+    "slot": "1",
+    "text": "Eyes open. Hands steady.",
+    "spokenText": "Eyes open. Hands steady.",
+    "hash8": "3a379ec4"
+  },
+  {
+    "speaker": "max",
+    "category": "runstart",
+    "slot": "2",
+    "text": "For the troop.",
+    "spokenText": "For the troop.",
+    "hash8": "06dfbcb3"
+  },
+  {
+    "speaker": "max",
+    "category": "runstart",
+    "slot": "3",
+    "text": "Nobody gets Signed tonight. Not on my watch.",
+    "spokenText": "Nobody gets Signed tonight. Not on my watch.",
+    "hash8": "99fae9a1"
+  },
+  {
+    "speaker": "max",
+    "category": "runstart",
+    "slot": "4",
+    "text": "Badges up, chins up.",
+    "spokenText": "Badges up, chins up.",
+    "hash8": "1a51cd35"
+  },
+  {
+    "speaker": "max",
+    "category": "runstart",
+    "slot": "5",
+    "text": "Stay together. Camp Hearthwood does not do rescues twice.",
+    "spokenText": "Stay together. Camp Hearthwood does not do rescues twice.",
+    "hash8": "c4833708"
+  },
+  {
+    "speaker": "max",
+    "category": "select",
+    "slot": "0",
+    "text": "Max steps up. \"Troop 13 does not run. Not from squirrels.\"",
+    "spokenText": "Troop 13 does not run. Not from squirrels.",
+    "hash8": "5fb2acbc"
+  },
+  {
+    "speaker": "max",
+    "category": "win",
+    "slot": "0",
+    "text": "Dawn. We made it.",
+    "spokenText": "Dawn. We made it.",
+    "hash8": "2e1f6eba"
+  },
+  {
+    "speaker": "max",
+    "category": "win",
+    "slot": "1",
+    "text": "Report: everything is on fire, sir.",
+    "spokenText": "Report: everything is on fire, sir.",
+    "hash8": "3783fe27"
+  },
+  {
+    "speaker": "vicar",
+    "category": "bossline",
+    "slot": "0",
+    "text": "everything you have is owed.",
+    "spokenText": "everything you have is owed.",
+    "hash8": "7a928410"
+  }
+]

@@ -1,0 +1,99 @@
+{
+  "_readme": [
+    "Character recipe table read by tools/voice/gen.py. Plain JSON has no comment",
+    "syntax, so field meanings live here once instead of repeated per entry.",
+    "Any key starting with an underscore is documentation and is ignored by gen.py.",
+    "",
+    "engine          TTS backend. Only 'kokoro' is implemented right now.",
+    "voice           kokoro voice id, e.g. 'am_michael'. Prefix picks the language",
+    "                pack: af_/am_ = American English, bf_/bm_ = British English.",
+    "                gen.py reads the prefix to choose KPipeline(lang_code=...).",
+    "speed           kokoro speaking-rate multiplier passed straight to KPipeline.",
+    "                1.0 is native pace, lower is slower, higher is faster.",
+    "pitchSemitones  post-synthesis pitch shift in semitones, applied by gen.py",
+    "                via ffmpeg asetrate+atempo. This resampling approach shifts",
+    "                formants along with pitch (a small voice sounds like a small",
+    "                *body*, not just a high note): deliberate for this cast.",
+    "                Omit or set 0 for no shift. Ignored if 'stacked' is present.",
+    "stacked         optional array of semitone shifts, one per extra rendered",
+    "                layer, used instead of a single pitchSemitones value. Each",
+    "                layer is the same synthesized line pitch-shifted separately,",
+    "                then mixed down: a cheap multi-voice/chorus effect. Layer 0",
+    "                is the first entry (the 'base' layer for post-chain purposes",
+    "                like highpass_upper, see below).",
+    "mix             gain per stacked layer, same length and order as 'stacked'.",
+    "                1.0 = unity gain. Required whenever 'stacked' is present.",
+    "post            ordered list of named filter chains from POST_CHAINS in",
+    "                gen.py, applied after the pitch shift (and after the stack",
+    "                is mixed down, except 'highpass_upper', see next line).",
+    "                'highpass_upper' is special: gen.py applies it to every",
+    "                stacked layer *except layer 0* before mixdown, since its",
+    "                job is thinning the upper/overtone layer so it reads as a",
+    "                second voice rather than a full doubled voice. It is a",
+    "                no-op on speakers with no 'stacked' field.",
+    "",
+    "Editing voice/speed/pitch/post here and re-running npm run audio:voice will",
+    "NOT by itself regenerate existing files: gen.py's incremental check is keyed",
+    "on the line's *text* hash (hash8 in lines.json), not on the recipe. During",
+    "the recipe evaluation round, use gen.py --force (or delete the speaker's",
+    "folder under assets/voice/en/) to force a re-render. See tools/voice/README.md."
+  ],
+
+  "max": {
+    "engine": "kokoro",
+    "voice": "am_michael",
+    "speed": 1.05,
+    "pitchSemitones": 3,
+    "post": []
+  },
+
+  "junie": {
+    "engine": "kokoro",
+    "voice": "af_bella",
+    "speed": 1.12,
+    "pitchSemitones": 5,
+    "post": []
+  },
+
+  "gus": {
+    "engine": "kokoro",
+    "voice": "am_puck",
+    "speed": 0.94,
+    "pitchSemitones": 1,
+    "post": []
+  },
+
+  "brock": {
+    "engine": "kokoro",
+    "voice": "bm_lewis",
+    "speed": 0.92,
+    "pitchSemitones": -2,
+    "post": ["saturate", "campfire_slap"]
+  },
+
+  "hare": {
+    "_note": "'any bright voice' per spec: af_sky picked as a bright, energetic placeholder. Swap freely during the recipe evaluation round, no code changes needed.",
+    "engine": "kokoro",
+    "voice": "af_sky",
+    "speed": 1.20,
+    "pitchSemitones": -3,
+    "post": ["detune_double", "plate"]
+  },
+
+  "vicar": {
+    "engine": "kokoro",
+    "voice": "bm_george",
+    "speed": 0.88,
+    "pitchSemitones": -5,
+    "post": ["ringmod42", "plate"]
+  },
+
+  "antlered": {
+    "engine": "kokoro",
+    "voice": "am_onyx",
+    "speed": 0.80,
+    "stacked": [-7, 5],
+    "mix": [1.0, 0.35],
+    "post": ["longtail", "highpass_upper"]
+  }
+}

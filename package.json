@@ -9,7 +9,9 @@
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "audio:voice": "node tools/voice/dump_lines.cjs && python tools/voice/gen.py",
+    "audio:manifest": "node tools/manifest.cjs"
   },
   "devDependencies": {
     "electron": "^31.3.0",
