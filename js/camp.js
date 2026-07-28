@@ -10,12 +10,18 @@ class Camp {
     this.p = { x: 0, y: 130, r: 11, face: 1, moving: false };
     this.t = 0;
     this.parts = [];
+    this.puffs = [];      // dust kicked up by a takeover
     this.near = null;
     this.msg = null;      // { text, t }
+    this.popT = 0;        // avatar squash pulse after a swap
+    this.starT = 0;       // gold star flourish after a swap
+    this.idlers = [];     // everyone who is not you, hanging around camp
+    this.selId = null;
     this.fireflies = [];
     for (let i = 0; i < 14; i++) {
       this.fireflies.push({ x: rand(-380, 380), y: rand(-260, 260), a: rand(0, TAU), ph: rand(0, TAU) });
     }
+    this.buildIdlers();
   }
 
   scoutSpots() {
@@ -26,23 +32,98 @@ class Camp {
     ];
   }
 
+  spotFor(id) {
+    return this.scoutSpots().find(sc => sc.id === id) || null;
+  }
+
+  // One idler per scout who is not the one you are walking around as.
+  buildIdlers() {
+    this.selId = META.selected;
+    this.idlers = [];
+    for (const sc of this.scoutSpots()) {
+      if (sc.id === META.selected) continue;
+      this.idlers.push(this.mkIdler(sc.id, sc.x, sc.y, sc));
+    }
+  }
+
+  mkIdler(id, x, y, home) {
+    const h = home || this.spotFor(id) || { x, y };
+    return {
+      id,
+      x, y,
+      homeX: h.x, homeY: h.y,
+      state: 'idle',
+      tx: h.x, ty: h.y,
+      face: h.x > 0 ? -1 : 1,       // everybody faces the fire
+      sway: (h.x + h.y) * 0.03,     // sway phase, stable per spot
+      walkPhase: 0,
+      locked: !Roster.isUnlocked(id),
+    };
+  }
+
   spots() {
     const s = [
       { id: 'fire', x: 0, y: -70, r: 62, label: 'Talk to Scoutmaster Brock' },
       { id: 'board', x: -225, y: -30, r: 52, label: 'Open the Badge Board' },
       { id: 'sign', x: 240, y: 0, r: 50, label: 'Take the trail as ' + DATA.characters[META.selected].name },
     ];
-    for (const sc of this.scoutSpots()) {
+    // the prompt follows the actual scout, who may have traded spots with you
+    for (const it of this.idlers) {
+      if (it.id === META.selected) continue;   // you cannot pick yourself
+      const home = this.spotFor(it.id);
       s.push({
-        id: 'scout:' + sc.id, x: sc.x, y: sc.y, r: 42,
-        label: META.selected === sc.id ? sc.name + ' leads tonight' : 'Send ' + sc.name + ' tonight',
+        id: 'scout:' + it.id, x: it.x, y: it.y, r: 42, locked: it.locked,
+        label: it.locked ? 'zzz' : 'Send ' + (home ? home.name : it.id) + ' tonight',
       });
     }
     return s;
   }
 
+  // Take over another scout. The one you were is left behind to walk to the
+  // spot the new one just vacated, so the camp always holds all three.
+  swap(newId) {
+    const prev = META.selected;
+    if (newId === prev || !Roster.isUnlocked(newId)) return null;
+    // trade for the spot the incoming scout keeps, so the three camp spots
+    // stay the three camp spots no matter how often you swap
+    const incoming = this.idlers.find(it => it.id === newId);
+    const target = incoming ? { x: incoming.homeX, y: incoming.homeY } : this.spotFor(newId);
+    if (!target) return null;
+
+    const out = this.mkIdler(prev, this.p.x, this.p.y, target);
+    if (out.locked) {
+      // a locked scout never jogs across camp: they are asleep at their spot
+      out.x = target.x; out.y = target.y;
+    } else {
+      out.state = 'walking';
+      out.face = target.x >= this.p.x ? 1 : -1;
+    }
+    this.idlers = this.idlers.filter(it => it.id !== newId);
+    this.idlers.push(out);
+
+    META.selected = newId;
+    META.save();
+    this.selId = newId;
+
+    this.p.x = target.x;
+    this.p.y = target.y;
+    this.p.moving = false;
+    this.popT = 0.25;
+    this.starT = 0.4;
+    for (let i = 0; i < 11; i++) {
+      this.puffs.push({
+        x: target.x + rand(-6, 6), y: target.y + this.p.r + rand(-3, 3),
+        vx: rand(-48, 48), vy: rand(-30, -6),
+        t: 0, life: rand(0.32, 0.6), size: rand(1.8, 4.4),
+      });
+    }
+    this.msg = { text: SELECT_LINES[newId], t: 4 };
+    return { type: 'select', id: newId };
+  }
+
   update(dt) {
     this.t += dt;
+    if (this.selId !== META.selected) this.buildIdlers();
     const p = this.p;
     const ax = (INPUT.keys.has('KeyD') || INPUT.keys.has('ArrowRight') ? 1 : 0) - (INPUT.keys.has('KeyA') || INPUT.keys.has('ArrowLeft') ? 1 : 0);
     const ay = (INPUT.keys.has('KeyS') || INPUT.keys.has('ArrowDown') ? 1 : 0) - (INPUT.keys.has('KeyW') || INPUT.keys.has('ArrowUp') ? 1 : 0);
@@ -83,6 +164,45 @@ class Camp {
       pa.y += pa.vy * dt;
       if (pa.t >= pa.life) this.parts.splice(i, 1);
     }
+    // takeover dust
+    for (let i = this.puffs.length - 1; i >= 0; i--) {
+      const pu = this.puffs[i];
+      const damp = Math.exp(-4 * dt);
+      pu.t += dt;
+      pu.x += pu.vx * dt; pu.y += pu.vy * dt;
+      pu.vx *= damp; pu.vy *= damp;
+      if (pu.t >= pu.life) this.puffs.splice(i, 1);
+    }
+    if (this.popT > 0) this.popT = Math.max(0, this.popT - dt);
+    if (this.starT > 0) this.starT = Math.max(0, this.starT - dt);
+
+    // idlers: the scouts you are not. Locked ones sleep and never move.
+    for (const it of this.idlers) {
+      // someone can be earned mid session, so the sleepers wake here
+      const lk = !Roster.isUnlocked(it.id);
+      if (lk !== it.locked) {
+        it.locked = lk;
+        it.state = 'idle';
+        it.x = it.homeX; it.y = it.homeY;
+        it.face = it.x > 0 ? -1 : 1;
+      }
+      if (it.locked) { it.state = 'idle'; continue; }
+      if (it.state !== 'walking') continue;
+      const dx = it.tx - it.x, dy = it.ty - it.y;
+      const d = Math.hypot(dx, dy);
+      if (d <= 2) {
+        it.x = it.tx; it.y = it.ty;
+        it.state = 'idle';
+        it.face = it.x > 0 ? -1 : 1;
+      } else {
+        const step = Math.min(d, 120 * dt);
+        it.x += dx / d * step;
+        it.y += dy / d * step;
+        if (Math.abs(dx) > 0.5) it.face = dx > 0 ? 1 : -1;
+        it.walkPhase += dt * 13.5;
+      }
+    }
+
     for (const f of this.fireflies) {
       f.a += rand(-1.2, 1.2) * dt;
       f.x += Math.cos(f.a) * 20 * dt;
@@ -103,10 +223,11 @@ class Camp {
     if (id === 'fire') return { type: 'talk', line: brockLine() };
     if (id.startsWith('scout:')) {
       const scout = id.slice(6);
-      META.selected = scout;
-      META.save();
-      this.msg = { text: SELECT_LINES[scout], t: 4 };
-      return { type: 'select' };
+      if (!Roster.isUnlocked(scout)) {
+        this.msg = { text: Roster.hint(scout), t: 5 };
+        return null;
+      }
+      return this.swap(scout);
     }
     return null;
   }
@@ -195,35 +316,39 @@ class Camp {
       const sx = -77 + i * 14;
       push(175, () => SPR.drawBottom(ctx, 'stick', sx, 188, 11));
     }
-    // the three scouts
-    for (const sc of this.scoutSpots()) {
-      push(sc.y, () => {
-        const isSel = META.selected === sc.id;
-        const squash = 1 + Math.sin(this.t * 2.6 + sc.x) * 0.02;
-        ctx.fillStyle = 'rgba(0,0,0,0.35)';
-        ctx.beginPath(); ctx.ellipse(sc.x, sc.y + 12, 13, 5, 0, 0, TAU); ctx.fill();
-        SPR.drawBottom(ctx, sc.id, sc.x, sc.y + 12, 32, { squash, flip: sc.x > 0 });
-        if (isSel) {
-          SPR.star(ctx, sc.x, sc.y - 44 + Math.sin(this.t * 3) * 2, 5);
-          ctx.fillStyle = '#f4c542'; ctx.fill();
-        }
-      });
-    }
-    // the player walking around camp
+    // everyone who is not you: asleep, idling, or walking to a vacated spot
+    for (const it of this.idlers) push(it.y, () => this.renderIdler(ctx, it));
+    // the player walking around camp, drawn exactly once
     push(this.p.y, () => {
       const p = this.p;
+      const pop = this.popT > 0 ? this.popT / 0.25 : 0;
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.beginPath(); ctx.ellipse(p.x, p.y + p.r, 12, 4.6, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(p.x, p.y + p.r, 12 * (1 - pop * 0.35), 4.6 * (1 - pop * 0.35), 0, 0, TAU); ctx.fill();
       SPR.drawScout(ctx, META.selected, p.x, p.y + p.r, 34, {
         flip: p.face < 0,
         phase: this.walkPhase || 0,
         moving: p.moving,
-        squash: p.moving ? 1 : 1 + Math.sin(this.t * 2.4) * 0.015,
+        squash: (p.moving ? 1 : 1 + Math.sin(this.t * 2.4) * 0.015) + pop * 0.3,
       });
+      if (this.starT > 0) {
+        const k = this.starT / 0.4;
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, k * 1.5);
+        SPR.star(ctx, p.x, p.y - 42 - (1 - k) * 10, 5 + (1 - k) * 3.5, -Math.PI / 2 + (1 - k) * 1.4);
+        ctx.fillStyle = '#f4c542'; ctx.fill();
+        ctx.restore();
+      }
     });
 
     items.sort((a, b) => a.y - b.y);
     for (const it of items) it.fn();
+
+    // dust from a takeover
+    for (const pu of this.puffs) {
+      const k = pu.t / pu.life;
+      ctx.fillStyle = 'rgba(196,176,138,' + (0.42 * (1 - k)) + ')';
+      ctx.beginPath(); ctx.arc(pu.x, pu.y, pu.size * (1 + k * 1.7), 0, TAU); ctx.fill();
+    }
 
     // sparks above everything near the fire
     ctx.save();
@@ -279,6 +404,36 @@ class Camp {
     ctx.font = '11px Verdana, sans-serif';
     ctx.fillStyle = 'rgba(244,197,66,0.8)';
     ctx.fillText(META.badges + ' badges banked', W / 2, 52);
+  }
+
+  // A scout who is not you. Locked ones are a dark shape slumped against the
+  // tents with three sleepy dots rising off them.
+  renderIdler(ctx, it) {
+    if (it.locked) {
+      const yb = it.y + 32;                       // sitting, not standing
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ctx.beginPath(); ctx.ellipse(it.x, yb, 15, 5, 0, 0, TAU); ctx.fill();
+      SPR.drawBottom(ctx, it.id + '_body', it.x, yb, 32, {
+        tint: '#241b30', alpha: 0.9, squash: 0.86, flip: it.face < 0,
+      });
+      for (let i = 0; i < 3; i++) {
+        const k = (this.t * 0.5 + i / 3) % 1;
+        const a = 0.5 * Math.sin(k * Math.PI);
+        ctx.fillStyle = 'rgba(198,204,220,' + a + ')';
+        ctx.beginPath(); ctx.arc(it.x + 12 + k * 8, it.y - 4 - k * 22, 1.3 + k * 1.5, 0, TAU); ctx.fill();
+      }
+      return;
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.ellipse(it.x, it.y + 12, 13, 5, 0, 0, TAU); ctx.fill();
+    if (it.state === 'walking') {
+      SPR.drawScout(ctx, it.id, it.x, it.y + 12, 32, {
+        flip: it.face < 0, phase: it.walkPhase, moving: true,
+      });
+    } else {
+      const squash = 1 + Math.sin(this.t * 2.6 + it.sway) * 0.02;
+      SPR.drawBottom(ctx, it.id, it.x, it.y + 12, 32, { squash, flip: it.face < 0 });
+    }
   }
 
   renderFire(ctx) {

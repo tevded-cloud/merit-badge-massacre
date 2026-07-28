@@ -25,14 +25,22 @@ const META = {
   selected: 'max',
   lastRun: null,   // { result, time, kills, killer, char }
   metBrock: false,
+  unlocked: [],    // character ids earned beyond the free one
+  journal: {},     // long form notes the camp remembers
+  flags: {},       // one off story switches
+  codex: {},       // boss id -> { seen, killed }
 
   load() {
     try {
       const s = JSON.parse(localStorage.getItem('mbm_meta') || '{}');
-      for (const k of ['badges', 'lifetime', 'spent', 'dawns', 'deaths', 'runs', 'upgrades', 'selected', 'lastRun', 'metBrock']) {
+      for (const k of ['badges', 'lifetime', 'spent', 'dawns', 'deaths', 'runs', 'upgrades', 'selected', 'lastRun', 'metBrock', 'unlocked', 'journal', 'flags', 'codex']) {
         if (s[k] !== undefined) this[k] = s[k];
       }
       if (!DATA.characters[this.selected]) this.selected = 'max';
+      if (!Array.isArray(this.unlocked)) this.unlocked = [];
+      // 1.0 saves had the whole troop open from the start. Anyone who already
+      // walked the trail keeps the scouts they were playing with.
+      if (this.runs > 0 && this.unlocked.length === 0) this.unlocked.push('junie', 'gus');
     } catch (e) {}
   },
   save() {
@@ -42,6 +50,8 @@ const META = {
         dawns: this.dawns, deaths: this.deaths, runs: this.runs,
         upgrades: this.upgrades, selected: this.selected,
         lastRun: this.lastRun, metBrock: this.metBrock,
+        unlocked: this.unlocked, journal: this.journal,
+        flags: this.flags, codex: this.codex,
       }));
     } catch (e) {}
   },
