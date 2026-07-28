@@ -211,6 +211,7 @@
       }
 
       // knockback
+      const preX = e.x, preY = e.y;
       e.x += e.kx * dt;
       e.y += e.ky * dt;
       e.kx *= Math.pow(0.002, dt);
@@ -388,6 +389,26 @@
         }
       }
 
+      // room walls: revert the blocked axis so enemies slide along walls, and
+      // a boar that charges into one staggers (the arena becomes a weapon)
+      if (this.room) {
+        if (Collide.blockedAt(this.room, e.x, e.y)) {
+          const hitCharge = e.move === 'charge' && ai.state === 'charge';
+          if (!Collide.blockedAt(this.room, preX, e.y)) { e.x = preX; }
+          else if (!Collide.blockedAt(this.room, e.x, preY)) { e.y = preY; }
+          else { e.x = preX; e.y = preY; }
+          if (hitCharge) {
+            ai.state = 'recover'; ai.t = 0.6;
+            e.stunT = Math.max(e.stunT || 0, 0.6);
+            e.kx *= 0.2; e.ky *= 0.2;
+            this.spawnPuff(e.x, e.y - e.r * 0.5, 6);
+            this.shakeAdd(2);
+          }
+        }
+        const cb = Collide.clampToBounds(e.x, e.y, e.r * 0.6, this.room.bounds);
+        e.x = cb.x; e.y = cb.y;
+      }
+
       // cheap separation using the collision grid from the frame start
       const cellArr = this.grid.get(((e.x / CELL) | 0) + '|' + ((e.y / CELL) | 0));
       if (cellArr) {
@@ -412,8 +433,9 @@
         this.damagePlayer(e.dmg * (e.dmgF || 1), e.x, e.y, e.kind);
       }
 
-      // faraway trash gets recycled to the spawn ring
-      if (!e.boss && dist2(e.x, e.y, p.x, p.y) > relocate2) {
+      // faraway trash gets recycled to the spawn ring (open field only:
+      // a room's enemies stay in the room)
+      if (!e.boss && !this.room && dist2(e.x, e.y, p.x, p.y) > relocate2) {
         const pos = this.spawnPos();
         e.x = pos.x; e.y = pos.y;
       }

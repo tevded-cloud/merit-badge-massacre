@@ -643,6 +643,11 @@ class Game {
       p.lastDir.x = ax; p.lastDir.y = ay;
       this.walkPhase = (this.walkPhase || 0) + dt * (this.speed / 13);
     }
+    if (this.room) {
+      const q = Collide.resolveCircle(p.x, p.y, p.r, this.room.solids);
+      const c = Collide.clampToBounds(q.x, q.y, p.r, this.room.bounds);
+      p.x = c.x; p.y = c.y;
+    }
     p.iframe = Math.max(0, p.iframe - dt);
     if (this.regen > 0) p.hp = Math.min(p.maxhp, p.hp + this.regen * dt);
 
@@ -660,7 +665,8 @@ class Game {
     this.updateBombs(dt);
     this.updatePuddles(dt);
     this.updateRings(dt);
-    this.updateDirector(dt);   // director.js
+    if (this.room) this.room.update(this, dt);   // room.js drives spawns
+    else this.updateDirector(dt);                // director.js, open field
     this.updateEnemies(dt);    // director.js
     this.updateProps(dt);      // props.js
     this.updateEshots(dt);
@@ -794,6 +800,15 @@ class Game {
           let ty = p.in.aimY + (i > 0 ? rand(-40, 40) : 0);
           const d = Math.hypot(tx - p.x, ty - p.y);
           if (d > st.range) { tx = p.x + (tx - p.x) / d * st.range; ty = p.y + (ty - p.y) / d * st.range; }
+          if (this.room) {
+            const hit = Collide.segmentBlocked(this.room, p.x, p.y, tx, ty);
+            if (hit) {
+              const hd = Math.hypot(hit.x - p.x, hit.y - p.y);
+              const back = Math.max(0, hd - 24) / (hd || 1);
+              tx = p.x + (hit.x - p.x) * back;
+              ty = p.y + (hit.y - p.y) * back;
+            }
+          }
           this.bombs.push({ type: 'boom', sx: p.x, sy: p.y - 10, tx, ty, x: p.x, y: p.y, t: 0, fuse: st.fuse, radius: st.radius * (0.8 + gs * 0.25), dmg: st.dmg });
         }
         this.recoil = 0.15;
@@ -850,6 +865,7 @@ class Game {
           s.y += s.diry * s.speed * dt;
           s.traveled += s.speed * dt;
           if (s.traveled >= s.range) s.phase = 'back';
+          else if (this.room && Collide.blockedAt(this.room, s.x, s.y)) s.phase = 'back';
         } else {
           const dx = p.x - s.x, dy = p.y - s.y;
           const d = Math.hypot(dx, dy) || 1;
@@ -874,6 +890,11 @@ class Game {
       s.y += s.vy * dt;
       s.life -= dt;
       if (s.life <= 0) { this.shots.splice(i, 1); continue; }
+      if (this.room && Collide.blockedAt(this.room, s.x, s.y)) {
+        this.spawnPuff(s.x, s.y, 2);
+        this.shots.splice(i, 1);
+        continue;
+      }
 
       const hits = this.queryEnemies(s.x, s.y, s.r, true);
       for (const e of hits) {
@@ -972,6 +993,11 @@ class Game {
       s.y += s.vy * dt;
       s.life -= dt;
       if (s.life <= 0) { this.eshots.splice(i, 1); continue; }
+      if (this.room && Collide.blockedAt(this.room, s.x, s.y)) {
+        this.spawnPuff(s.x, s.y, 2);
+        this.eshots.splice(i, 1);
+        continue;
+      }
       if (dist2(s.x, s.y, p.x, p.y) < (s.r + p.r) * (s.r + p.r)) {
         this.damagePlayer(s.dmg, s.x, s.y, s.kind);
         this.eshots.splice(i, 1);

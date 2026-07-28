@@ -10,6 +10,15 @@
     const p = this.player;
     this.cam.x = p.x;
     this.cam.y = p.y;
+    if (this.room && this.room.bounds) {
+      // clamp the camera to the room, centering any axis the room is
+      // narrower than the viewport on
+      const b = this.room.bounds;
+      const zz = ZOOM * this.zoomF;
+      const hw = W / (2 * zz), hh = H / (2 * zz);
+      this.cam.x = (b.x1 - b.x0) < hw * 2 ? (b.x0 + b.x1) / 2 : clamp(this.cam.x, b.x0 + hw, b.x1 - hw);
+      this.cam.y = (b.y1 - b.y0) < hh * 2 ? (b.y0 + b.y1) / 2 : clamp(this.cam.y, b.y0 + hh, b.y1 - hh);
+    }
 
     ctx.fillStyle = '#131a11';
     ctx.fillRect(0, 0, W, H);
