@@ -215,6 +215,9 @@ DATA.threatOf = (act, roomIdx, roomsInAct) =>
 
 // Floor themes, one per act plus the final arena. deco lists existing ground
 // painters from sprites.js with pick weights; the hollow has none, on purpose.
+// The dress block is the world dressing palette the room renderer bakes from:
+// treeline canopy values, forest floor beyond the wall, trampled path colors,
+// standing water, char, and the clearing light. Purely visual.
 DATA.themes = {
   1: {
     name: 'THE UNDERSTORY',
@@ -232,6 +235,22 @@ DATA.themes = {
     fogAlpha: 0.16,
     ambient: '#8fd8a6',
     accent: '#c9f27a',
+    dress: {
+      void: '#040803',
+      floorOut: '#0a0f08',
+      canopyDeep: '#0a1309',
+      canopyWash: null,
+      rim: 'rgba(178,214,116,0.20)',
+      path: { edge: 'rgba(12,9,5,0.55)', base: '#2e2517', mid: '#3d3120', speck: '#57482e' },
+      water: { fill: '#0e2126', deep: '#0c2b33', edge: 'rgba(10,16,18,0.8)', glint: 'rgba(150,214,220,0.25)' },
+      charFill: '#0b0705',
+      ember: '255,122,42',
+      needles: ['#33270f', '#3e2f14', '#271e0c'],
+      firefly: '190,230,120',
+      lightWarm: '255,214,150',
+      lightDark: '4,8,6',
+      edgeDark: 0.28,
+    },
   },
   2: {
     name: 'THE SOG',
@@ -249,6 +268,22 @@ DATA.themes = {
     fogAlpha: 0.28,
     ambient: '#5fb9c9',
     accent: '#7fe6d8',
+    dress: {
+      void: '#03070a',
+      floorOut: '#070d10',
+      canopyDeep: '#081114',
+      canopyWash: 'rgba(24,74,80,0.20)',
+      rim: 'rgba(127,230,216,0.16)',
+      path: { edge: 'rgba(6,10,12,0.6)', base: '#20272a', mid: '#2b3438', speck: '#3e4a4e' },
+      water: { fill: '#0c2129', deep: '#0d2d38', edge: 'rgba(8,13,16,0.85)', glint: 'rgba(127,230,216,0.28)' },
+      charFill: '#0a0d0e',
+      ember: '127,230,216',
+      needles: ['#1c2422', '#232c2a', '#161d1c'],
+      firefly: '110,210,205',
+      lightWarm: '170,230,225',
+      lightDark: '2,7,10',
+      edgeDark: 0.30,
+    },
   },
   3: {
     name: 'THE BURN',
@@ -266,6 +301,22 @@ DATA.themes = {
     fogAlpha: 0.30,
     ambient: '#e08a3c',
     accent: '#ff7a2a',
+    dress: {
+      void: '#080403',
+      floorOut: '#0e0906',
+      canopyDeep: '#120b07',
+      canopyWash: 'rgba(80,32,12,0.22)',
+      rim: 'rgba(255,122,42,0.14)',
+      path: { edge: 'rgba(10,6,4,0.6)', base: '#2a221b', mid: '#383026', speck: '#4e4234' },
+      water: { fill: '#101314', deep: '#0c0f10', edge: 'rgba(8,6,4,0.8)', glint: 'rgba(255,150,80,0.18)' },
+      charFill: '#0a0605',
+      ember: '255,122,42',
+      needles: ['#2c211a', '#362a20', '#221913'],
+      firefly: '255,150,60',
+      lightWarm: '255,178,110',
+      lightDark: '8,4,3',
+      edgeDark: 0.30,
+    },
   },
   hollow: {
     name: 'THE HOLLOW',
@@ -277,6 +328,22 @@ DATA.themes = {
     fogAlpha: 0.42,
     ambient: '#6a7cff',
     accent: '#b7c0ff',
+    dress: {
+      void: '#020308',
+      floorOut: '#04050a',
+      canopyDeep: '#05070d',
+      canopyWash: 'rgba(16,20,48,0.35)',
+      rim: 'rgba(183,192,255,0.10)',
+      path: { edge: 'rgba(2,3,6,0.6)', base: '#0e1016', mid: '#14161e', speck: '#1e2230' },
+      water: { fill: '#070a12', deep: '#05070d', edge: 'rgba(2,3,6,0.8)', glint: 'rgba(140,150,255,0.14)' },
+      charFill: '#030408',
+      ember: '106,124,255',
+      needles: ['#0c0e14', '#101320', '#080a10'],
+      firefly: '106,124,255',
+      lightWarm: '140,150,255',
+      lightDark: '1,2,6',
+      edgeDark: 0.44,
+    },
   },
 };
 

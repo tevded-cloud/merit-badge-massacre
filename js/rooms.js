@@ -59,6 +59,26 @@
 //   ref      a WAVE_TEMPLATES key, or null. When set the template's spawns are
 //            the wave's spawns and the template's name toasts on the screen.
 // }
+//
+// ---------------------------------------------------------------------------
+// Dressing (additive, consumed by the room ground baker in render.js)
+// ---------------------------------------------------------------------------
+// dressing   [entry, ...] optional per layout. Room-local coordinates, same
+//            origin as solids and props. The renderer bakes these into the
+//            ground once per room entry; nothing here has any gameplay effect.
+//   { kind: 'path',  from: {x,y}, to: {x,y}, w? }   a worn trampled band
+//   { kind: 'road',  from: {x,y}, to: {x,y}, w? }   dirt road with wheel ruts
+//   { kind: 'ring',  x, y, r, w? }                  worn ritual circle
+//   { kind: 'patch', x, y, r, role }                ground patch, role one of
+//                     dirt | needle | moss | mud | ash | char | scree
+//   { kind: 'pool',  x, y, rx, ry }                 standing water with banks
+//   { kind: 'bowl',  x, y, r0, r1 }                 darkens from r0 out to r1
+//   { kind: 'scree', x0, y0, x1, y1, w? }           cracked rubble band
+//   { kind: 'burnband', x0, y0, x1, y1, w? }        charred strip with embers
+//   { kind: 'cracks', x, y, r }                     radiating ground cracks
+// Rooms without a dressing list still get the act's themed floor plus worn
+// paths from the entry toward each door. A layout may also set corruption:
+// 0 or 1; rooms near an act boss default to 1 (Mark red accents).
 'use strict';
 
 // The only prop ids a layout may name. boulder is the unbreakable one.
@@ -184,6 +204,12 @@ const ROOMS = {
         { delay: 1.2, nextAt: 0.30, maxT: 50, spawns: [{ id: 'auto', n: 22, mode: 'edge' }, { id: 'auto', n: 6, mode: 'ring', r: 227 }], elites: 0, drip: null, ref: null },
         { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 18, mode: 'marker' }], elites: 0, drip: null, ref: null },
       ],
+      dressing: [
+        { kind: 'patch', x: 320, y: 240, r: 80, role: 'needle' },
+        { kind: 'patch', x: 660, y: 410, r: 95, role: 'dirt' },
+        { kind: 'patch', x: 430, y: 500, r: 70, role: 'moss' },
+        { kind: 'cracks', x: 640, y: 413, r: 46 },
+      ],
       reward: { kind: 'auto' }, floor: 1,
     },
 
@@ -214,6 +240,11 @@ const ROOMS = {
         { delay: 0.9, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 18, mode: 'edge' }], elites: 0, drip: null, ref: null },
         { delay: 1.6, nextAt: 0.25, maxT: 55, spawns: [], elites: 0, drip: null, ref: 'ring_of_the_hare' },
         { delay: 1.2, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 20, mode: 'edge' }], elites: 0, drip: null, ref: null },
+      ],
+      dressing: [
+        { kind: 'bowl', x: 540, y: 365, r0: 170, r1: 470 },
+        { kind: 'patch', x: 425, y: 311, r: 60, role: 'moss' },
+        { kind: 'patch', x: 682, y: 444, r: 60, role: 'moss' },
       ],
       reward: { kind: 'auto' }, floor: 1,
     },
@@ -249,6 +280,11 @@ const ROOMS = {
         { delay: 0.8, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 20, mode: 'edge' }], elites: 0, drip: null, ref: null },
         { delay: 1.2, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 16, mode: 'edge' }, { id: 'auto', n: 8, mode: 'door' }], elites: 0, drip: null, ref: null },
         { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 22, mode: 'marker' }], elites: 0, drip: null, ref: null },
+      ],
+      dressing: [
+        { kind: 'road', from: { x: 100, y: 375 }, to: { x: 1030, y: 375 }, w: 64 },
+        { kind: 'patch', x: 176, y: 385, r: 44, role: 'dirt' },
+        { kind: 'patch', x: 954, y: 385, r: 44, role: 'dirt' },
       ],
       reward: { kind: 'auto' }, floor: 1,
     },
@@ -319,6 +355,14 @@ const ROOMS = {
         { delay: 1.2, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 22, mode: 'edge' }], elites: 0, drip: null, ref: null },
         { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 20, mode: 'marker' }], elites: 0, drip: null, ref: null },
       ],
+      dressing: [
+        { kind: 'scree', x0: 216, y0: 154, x1: 1016, y1: 580, w: 130 },
+        { kind: 'cracks', x: 374, y: 265, r: 52 },
+        { kind: 'cracks', x: 660, y: 376, r: 52 },
+        { kind: 'cracks', x: 862, y: 487, r: 52 },
+        { kind: 'patch', x: 216, y: 154, r: 60, role: 'scree' },
+        { kind: 'patch', x: 1016, y: 580, r: 60, role: 'scree' },
+      ],
       reward: { kind: 'auto' }, floor: 1,
     },
 
@@ -351,6 +395,11 @@ const ROOMS = {
         { delay: 1.2, nextAt: 0, maxT: 55, spawns: [], elites: 0, drip: null, ref: 'foxfire_hunt' },
         { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 30, mode: 'marker' }], elites: 0, drip: null, ref: null },
       ],
+      dressing: [
+        { kind: 'road', from: { x: 50, y: 350 }, to: { x: 1160, y: 350 }, w: 74 },
+        { kind: 'patch', x: 151, y: 360, r: 46, role: 'dirt' },
+        { kind: 'patch', x: 1059, y: 360, r: 46, role: 'dirt' },
+      ],
       reward: { kind: 'auto' }, floor: 1,
     },
 
@@ -381,6 +430,14 @@ const ROOMS = {
         { delay: 0.9, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 16, mode: 'edge' }], elites: 0, drip: null, ref: null },
         { delay: 1.2, nextAt: 0.30, maxT: 50, spawns: [{ id: 'auto', n: 22, mode: 'ring', r: 241 }], elites: 0, drip: null, ref: null },
         { delay: 1.0, nextAt: 0, maxT: 60, spawns: [{ id: 'auto', n: 20, mode: 'marker' }], elites: 0, drip: null, ref: null },
+      ],
+      dressing: [
+        { kind: 'ring', x: 540, y: 365, r: 178, w: 34 },
+        { kind: 'patch', x: 540, y: 190, r: 42, role: 'dirt' },
+        { kind: 'patch', x: 540, y: 540, r: 42, role: 'dirt' },
+        { kind: 'patch', x: 191, y: 365, r: 42, role: 'dirt' },
+        { kind: 'patch', x: 889, y: 365, r: 42, role: 'dirt' },
+        { kind: 'patch', x: 540, y: 365, r: 54, role: 'moss' },
       ],
       reward: { kind: 'auto' }, floor: 1,
     },
@@ -418,6 +475,12 @@ const ROOMS = {
         { delay: 1.2, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 20, mode: 'edge' }, { id: 'auto', n: 4, mode: 'point', x: 540, y: 365 }], elites: 0, drip: { id: 'auto', every: 7, n: 1 }, ref: null },
         { delay: 1.0, nextAt: 0, maxT: 65, spawns: [{ id: 'auto', n: 18, mode: 'marker' }], elites: 0, drip: { id: 'auto', every: 6, n: 1 }, ref: null },
       ],
+      dressing: [
+        { kind: 'pool', x: 300, y: 350, rx: 120, ry: 36 },
+        { kind: 'pool', x: 540, y: 365, rx: 130, ry: 40 },
+        { kind: 'pool', x: 790, y: 350, rx: 120, ry: 36 },
+        { kind: 'patch', x: 540, y: 510, r: 90, role: 'mud' },
+      ],
       reward: { kind: 'auto' }, floor: 2,
     },
 
@@ -454,6 +517,13 @@ const ROOMS = {
         { delay: 1.2, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 16, mode: 'ring', r: 259 }, { id: 'auto', n: 4, mode: 'door' }], elites: 0, drip: { id: 'auto', every: 7, n: 1 }, ref: null },
         { delay: 1.0, nextAt: 0, maxT: 65, spawns: [{ id: 'auto', n: 14, mode: 'marker' }], elites: 0, drip: { id: 'auto', every: 6, n: 1 }, ref: null },
       ],
+      dressing: [
+        { kind: 'pool', x: 360, y: 320, rx: 90, ry: 40 },
+        { kind: 'pool', x: 810, y: 520, rx: 100, ry: 46 },
+        { kind: 'pool', x: 585, y: 660, rx: 75, ry: 32 },
+        { kind: 'patch', x: 585, y: 400, r: 110, role: 'mud' },
+        { kind: 'patch', x: 260, y: 560, r: 70, role: 'mud' },
+      ],
       reward: { kind: 'auto' }, floor: 2,
     },
 
@@ -486,6 +556,11 @@ const ROOMS = {
         { delay: 0.9, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 18, mode: 'edge' }], elites: 0, drip: null, ref: null },
         { delay: 1.4, nextAt: 0.28, maxT: 55, spawns: [], elites: 0, drip: { id: 'auto', every: 8, n: 1 }, ref: 'dam_break' },
         { delay: 1.2, nextAt: 0, maxT: 65, spawns: [{ id: 'auto', n: 26, mode: 'edge' }], elites: 0, drip: { id: 'auto', every: 6, n: 1 }, ref: null },
+      ],
+      dressing: [
+        { kind: 'pool', x: 565, y: 570, rx: 210, ry: 74 },
+        { kind: 'pool', x: 300, y: 620, rx: 90, ry: 38 },
+        { kind: 'patch', x: 565, y: 430, r: 90, role: 'mud' },
       ],
       reward: { kind: 'auto' }, floor: 2,
     },
@@ -524,6 +599,11 @@ const ROOMS = {
         { delay: 1.0, nextAt: 0.35, maxT: 50, spawns: [{ id: 'auto', n: 18, mode: 'door' }], elites: 0, drip: { id: 'auto', every: 8, n: 1 }, ref: null },
         { delay: 1.2, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 20, mode: 'edge' }, { id: 'auto', n: 4, mode: 'point', x: 605, y: 395 }], elites: 0, drip: { id: 'auto', every: 7, n: 1 }, ref: null },
         { delay: 1.0, nextAt: 0, maxT: 70, spawns: [{ id: 'auto', n: 10, mode: 'marker' }], elites: 1, drip: { id: 'auto', every: 6, n: 1 }, ref: null },
+      ],
+      dressing: [
+        { kind: 'pool', x: 270, y: 730, rx: 150, ry: 36 },
+        { kind: 'pool', x: 940, y: 730, rx: 150, ry: 36 },
+        { kind: 'patch', x: 605, y: 660, r: 90, role: 'mud' },
       ],
       reward: { kind: 'auto' }, floor: 2,
     },
@@ -586,6 +666,11 @@ const ROOMS = {
         { delay: 0.9, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 24, mode: 'ring', r: 267 }], elites: 0, drip: null, ref: null },
         { delay: 1.4, nextAt: 0.28, maxT: 60, spawns: [{ id: 'auto', n: 32, mode: 'edge' }], elites: 0, drip: { id: 'auto', every: 8, n: 1 }, ref: null },
         { delay: 1.2, nextAt: 0, maxT: 70, spawns: [{ id: 'auto', n: 10, mode: 'marker' }], elites: 1, drip: { id: 'auto', every: 6, n: 1 }, ref: null },
+      ],
+      dressing: [
+        { kind: 'bowl', x: 540, y: 365, r0: 150, r1: 460 },
+        { kind: 'patch', x: 540, y: 365, r: 96, role: 'mud' },
+        { kind: 'ring', x: 540, y: 365, r: 210, w: 26 },
       ],
       reward: { kind: 'auto' }, floor: 2,
     },
@@ -663,6 +748,13 @@ const ROOMS = {
         { delay: 1.2, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 18, mode: 'ring', r: 271 }], elites: 0, drip: { id: 'auto', every: 6, n: 1 }, ref: null },
         { delay: 1.0, nextAt: 0, maxT: 70, spawns: [{ id: 'auto', n: 16, mode: 'marker' }], elites: 1, drip: { id: 'auto', every: 6, n: 1 }, ref: null },
       ],
+      dressing: [
+        { kind: 'burnband', x0: 160, y0: 231, x1: 1010, y1: 490, w: 120 },
+        { kind: 'cracks', x: 650, y: 231, r: 56 },
+        { kind: 'cracks', x: 455, y: 490, r: 56 },
+        { kind: 'patch', x: 293, y: 231, r: 70, role: 'char' },
+        { kind: 'patch', x: 911, y: 368, r: 70, role: 'ash' },
+      ],
       reward: { kind: 'auto' }, floor: 3,
     },
 
@@ -695,6 +787,13 @@ const ROOMS = {
         { delay: 0.9, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 20, mode: 'edge' }], elites: 0, drip: { id: 'auto', every: 7, n: 1 }, ref: null },
         { delay: 1.4, nextAt: 0.28, maxT: 60, spawns: [], elites: 0, drip: { id: 'auto', every: 6, n: 1 }, ref: 'stampede' },
         { delay: 1.2, nextAt: 0, maxT: 70, spawns: [{ id: 'auto', n: 30, mode: 'edge' }], elites: 1, drip: { id: 'auto', every: 5, n: 1 }, ref: null },
+      ],
+      dressing: [
+        { kind: 'patch', x: 432, y: 337, r: 90, role: 'char' },
+        { kind: 'patch', x: 723, y: 312, r: 90, role: 'char' },
+        { kind: 'patch', x: 592, y: 534, r: 80, role: 'ash' },
+        { kind: 'cracks', x: 432, y: 337, r: 60 },
+        { kind: 'cracks', x: 723, y: 312, r: 60 },
       ],
       reward: { kind: 'auto' }, floor: 3,
     },
@@ -769,6 +868,13 @@ const ROOMS = {
         { delay: 1.2, nextAt: 0.30, maxT: 60, spawns: [{ id: 'auto', n: 24, mode: 'edge' }, { id: 'auto', n: 4, mode: 'ring', r: 185 }], elites: 0, drip: { id: 'auto', every: 6, n: 1 }, ref: null },
         { delay: 1.0, nextAt: 0, maxT: 70, spawns: [{ id: 'auto', n: 16, mode: 'marker' }], elites: 1, drip: { id: 'auto', every: 5, n: 1 }, ref: null },
       ],
+      dressing: [
+        { kind: 'bowl', x: 585, y: 400, r0: 130, r1: 500 },
+        { kind: 'patch', x: 585, y: 400, r: 150, role: 'char' },
+        { kind: 'cracks', x: 585, y: 400, r: 120 },
+        { kind: 'patch', x: 330, y: 270, r: 70, role: 'ash' },
+        { kind: 'patch', x: 826, y: 283, r: 70, role: 'ash' },
+      ],
       reward: { kind: 'auto' }, floor: 3,
     },
 
@@ -800,6 +906,13 @@ const ROOMS = {
         { delay: 0.8, nextAt: 0.35, maxT: 45, spawns: [{ id: 'auto', n: 20, mode: 'edge' }], elites: 0, drip: { id: 'auto', every: 8, n: 1 }, ref: null },
         { delay: 1.2, nextAt: 0.30, maxT: 55, spawns: [{ id: 'auto', n: 24, mode: 'edge' }], elites: 0, drip: { id: 'auto', every: 7, n: 1 }, ref: null },
         { delay: 1.0, nextAt: 0, maxT: 65, spawns: [{ id: 'auto', n: 16, mode: 'marker' }], elites: 1, drip: { id: 'auto', every: 6, n: 1 }, ref: null },
+      ],
+      dressing: [
+        { kind: 'patch', x: 593, y: 219, r: 130, role: 'char' },
+        { kind: 'patch', x: 593, y: 535, r: 130, role: 'char' },
+        { kind: 'burnband', x0: 593, y0: 250, x1: 593, y1: 510, w: 150 },
+        { kind: 'cracks', x: 947, y: 379, r: 60 },
+        { kind: 'patch', x: 947, y: 379, r: 80, role: 'ash' },
       ],
       reward: { kind: 'auto' }, floor: 3,
     },

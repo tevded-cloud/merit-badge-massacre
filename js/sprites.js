@@ -1542,6 +1542,257 @@ const SPR = (() => {
     }
   });
 
+  // ---------------- world dressing painters ----------------
+  // Treeline stock: canopy crowns, trunks, undergrowth, and the solid-deco
+  // set (fallen trunks, rock ridges, slabs). Background art keeps thinner
+  // outlines so it sits behind the cast instead of competing with it.
+
+  P.tl_crown1 = () => mk(96, 80, (g) => {
+    const C0 = '#0d1a0b', C1 = '#142310', C2 = '#1c2e14', C3 = '#26391b';
+    blob(g, 48, 34, 44, 29, C0, { flat: true, lw: 1.5 });
+    blob(g, 21, 44, 19, 15, C1, { flat: true, lw: 1.3 });
+    blob(g, 50, 49, 27, 18, C1, { flat: true, lw: 1.3 });
+    blob(g, 77, 42, 16, 13, C1, { flat: true, lw: 1.3 });
+    blob(g, 33, 58, 17, 11, C2, { flat: true, lw: 1.2 });
+    blob(g, 63, 60, 15, 10, C2, { flat: true, lw: 1.2 });
+    furRow(g, 12, 65, 84, 67, 9, 5.4, 6.2, Math.PI, [C2, C3], null);
+    g.strokeStyle = 'rgba(190,224,130,0.20)'; g.lineWidth = 2; g.lineCap = 'round';
+    g.beginPath(); g.arc(33, 54, 15, Math.PI * 0.15, Math.PI * 0.85); g.stroke();
+    g.beginPath(); g.arc(63, 56, 13, Math.PI * 0.2, Math.PI * 0.8); g.stroke();
+  });
+
+  P.tl_crown2 = () => mk(80, 72, (g) => {
+    const C0 = '#0d1a0b', C1 = '#142310', C2 = '#1d2f15', C3 = '#26391b';
+    blob(g, 40, 32, 35, 27, C0, { flat: true, lw: 1.5 });
+    blob(g, 24, 44, 18, 14, C1, { flat: true, lw: 1.3 });
+    blob(g, 54, 42, 20, 16, C1, { flat: true, lw: 1.3 });
+    blob(g, 40, 55, 18, 11, C2, { flat: true, lw: 1.2 });
+    furRow(g, 12, 59, 68, 61, 8, 5, 5.8, Math.PI, [C2, C3], null);
+    g.strokeStyle = 'rgba(190,224,130,0.18)'; g.lineWidth = 1.8; g.lineCap = 'round';
+    g.beginPath(); g.arc(40, 50, 14, Math.PI * 0.18, Math.PI * 0.82); g.stroke();
+  });
+
+  P.tl_crown3 = () => mk(116, 66, (g) => {
+    const C0 = '#0c1809', C1 = '#132110', C2 = '#1b2c13', C3 = '#243617';
+    blob(g, 58, 28, 54, 24, C0, { flat: true, lw: 1.5 });
+    blob(g, 24, 38, 21, 15, C1, { flat: true, lw: 1.3 });
+    blob(g, 60, 42, 27, 16, C1, { flat: true, lw: 1.3 });
+    blob(g, 94, 38, 19, 14, C1, { flat: true, lw: 1.3 });
+    blob(g, 40, 51, 17, 9, C2, { flat: true, lw: 1.2 });
+    blob(g, 78, 51, 17, 9, C2, { flat: true, lw: 1.2 });
+    furRow(g, 14, 53, 102, 55, 11, 5.4, 5.8, Math.PI, [C2, C3], null);
+    g.strokeStyle = 'rgba(190,224,130,0.16)'; g.lineWidth = 1.8; g.lineCap = 'round';
+    g.beginPath(); g.arc(50, 46, 15, Math.PI * 0.2, Math.PI * 0.8); g.stroke();
+  });
+
+  P.tl_trunk1 = () => mk(46, 80, (g) => {
+    // canopy shadow pooling at the top of the bole
+    blob(g, 23, 10, 16, 9, '#0d1a0b', { flat: true, noline: true });
+    apoly(g, [
+      [17, 4, 3], [29, 4, 3], [31, 52, 2], [40, 72, 2], [28, 67, 2],
+      [23, 71, 2], [17, 67, 2], [6, 72, 2], [15, 52, 2],
+    ], '#2c1c10', { mid: 'rgba(8,4,2,0.2)', shade: 'rgba(8,4,2,0.3)', hi: 'rgba(120,80,40,0.14)', lw: 1.9 });
+    g.strokeStyle = 'rgba(10,6,3,0.6)'; g.lineWidth = 1.1;
+    g.beginPath(); g.moveTo(20, 10); g.lineTo(19, 56); g.stroke();
+    g.beginPath(); g.moveTo(26, 8); g.lineTo(27, 52); g.stroke();
+    g.beginPath(); g.moveTo(23, 14); g.lineTo(23, 44); g.stroke();
+    // knot
+    blob(g, 27.5, 34, 2.6, 3.4, '#1c110a', { flat: true, lw: 1 });
+    g.strokeStyle = 'rgba(255,170,90,0.12)'; g.lineWidth = 1.6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(17.5, 12); g.lineTo(16.5, 50); g.stroke();
+  });
+
+  P.tl_trunk2 = () => mk(50, 74, (g) => {
+    blob(g, 25, 9, 17, 9, '#0d1a0b', { flat: true, noline: true });
+    apoly(g, [
+      [16, 4, 3], [30, 5, 3], [34, 30, 2], [33, 48, 2], [43, 66, 2],
+      [30, 62, 2], [24, 66, 2], [17, 62, 2], [7, 66, 2], [15, 46, 2],
+    ], '#33200f', { mid: 'rgba(8,4,2,0.2)', shade: 'rgba(8,4,2,0.3)', hi: 'rgba(120,80,40,0.14)', lw: 1.9 });
+    // broken branch stub
+    apoly(g, [[31, 22, 1.5], [44, 16, 1.5], [45, 21, 1.5], [33, 27, 1.5]], '#26170a', { flat: true, lw: 1.4 });
+    blob(g, 44, 18.5, 2, 2.6, '#8a6138', { flat: true, lw: 0.9 });
+    g.strokeStyle = 'rgba(10,6,3,0.6)'; g.lineWidth = 1.1;
+    g.beginPath(); g.moveTo(20, 10); g.lineTo(19, 52); g.stroke();
+    g.beginPath(); g.moveTo(27, 9); g.lineTo(28, 50); g.stroke();
+    // moss collar
+    blob(g, 18, 55, 5, 3, '#2c3a1e', { flat: true, lw: 1 });
+    g.strokeStyle = 'rgba(255,170,90,0.12)'; g.lineWidth = 1.6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(16.6, 12); g.lineTo(15.6, 46); g.stroke();
+  });
+
+  P.tl_snag = () => mk(38, 90, (g) => {
+    apoly(g, [
+      [17, 3, 1], [23, 6, 1], [25, 44, 1.5], [30, 84, 2],
+      [8, 84, 2], [14, 42, 1.5],
+    ], '#150d08', { mid: 'rgba(0,0,0,0.25)', shade: 'rgba(0,0,0,0.3)', lw: 1.8 });
+    apoly(g, [[22, 24, 1], [34, 14, 1], [35, 18, 1], [24, 29, 1]], '#1a1009', { flat: true, lw: 1.3 });
+    apoly(g, [[15, 36, 1], [4, 30, 1], [3, 34, 1], [14, 41, 1]], '#1a1009', { flat: true, lw: 1.3 });
+    g.strokeStyle = 'rgba(255,122,42,0.35)'; g.lineWidth = 1; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(15, 66); g.lineTo(16, 78); g.stroke();
+    g.beginPath(); g.moveTo(22, 60); g.lineTo(23, 70); g.stroke();
+    g.fillStyle = 'rgba(255,150,80,0.5)';
+    g.beginPath(); g.arc(18, 79, 1, 0, TAU); g.fill();
+  });
+
+  P.tl_brush = () => mk(56, 34, (g) => {
+    clump(g, 13, 33, 11, 15, 0.1, '#16240f', { line: OUT, lw: 1.2 });
+    clump(g, 29, 34, 13, 19, -0.1, '#1c2c12', { line: OUT, lw: 1.2 });
+    clump(g, 44, 33, 10, 13, 0.2, '#16240f', { line: OUT, lw: 1.2 });
+    g.strokeStyle = '#2b4023'; g.lineWidth = 1.4; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(21, 32); g.quadraticCurveTo(20, 24, 23, 18); g.stroke();
+    g.beginPath(); g.moveTo(36, 33); g.quadraticCurveTo(38, 25, 36, 20); g.stroke();
+  });
+
+  P.reed = () => mk(24, 40, (g) => {
+    g.lineCap = 'round';
+    g.strokeStyle = '#3d4d2e'; g.lineWidth = 1.8;
+    g.beginPath(); g.moveTo(7, 40); g.quadraticCurveTo(5, 24, 5.5, 10); g.stroke();
+    g.beginPath(); g.moveTo(12, 40); g.quadraticCurveTo(13, 22, 13.5, 5); g.stroke();
+    g.beginPath(); g.moveTo(17, 40); g.quadraticCurveTo(19, 26, 20, 12); g.stroke();
+    g.strokeStyle = '#2e3d22'; g.lineWidth = 2.2;
+    g.beginPath(); g.moveTo(10, 40); g.quadraticCurveTo(16, 28, 22, 24); g.stroke();
+    // cattail heads
+    [[5.5, 10], [13.5, 5], [20, 12]].forEach(hd => {
+      g.fillStyle = '#5a3a1e'; g.strokeStyle = OUT; g.lineWidth = 0.9;
+      g.beginPath(); g.roundRect(hd[0] - 1.6, hd[1], 3.2, 8, 1.6); g.fill(); g.stroke();
+      g.fillStyle = 'rgba(255,220,160,0.25)';
+      g.fillRect(hd[0] - 1.1, hd[1] + 0.8, 1.1, 5.4);
+    });
+  });
+
+  P.redfungus = () => mk(22, 16, (g) => {
+    blob(g, 11, 11, 9, 4.6, 'rgba(255,74,32,0.16)', { flat: true, noline: true });
+    g.fillStyle = '#d8cfba'; g.strokeStyle = '#140a08'; g.lineWidth = 0.8;
+    g.beginPath(); g.roundRect(5, 8.6, 2.2, 4.6, 1); g.fill(); g.stroke();
+    g.beginPath(); g.roundRect(11, 7, 2.4, 5.6, 1); g.fill(); g.stroke();
+    g.beginPath(); g.roundRect(16.4, 9.4, 2, 4, 1); g.fill(); g.stroke();
+    blob(g, 6, 8, 3.6, 2.6, '#d4402c', { lw: 0.9, line: '#140a08' });
+    blob(g, 12.2, 6.2, 4.4, 3.2, '#c23322', { lw: 0.9, line: '#140a08' });
+    blob(g, 17.4, 8.8, 3.2, 2.4, '#d4402c', { lw: 0.9, line: '#140a08' });
+    g.fillStyle = 'rgba(255,140,110,0.85)';
+    [[5.2, 7.2], [11.4, 5.2], [16.8, 8]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 0.8, 0, TAU); g.fill();
+    });
+  });
+
+  P.logwall = () => mk(124, 58, (g) => {
+    const body = () => { g.beginPath(); g.roundRect(8, 22, 108, 28, 13); };
+    body(); g.fillStyle = '#5c3a1e'; g.fill();
+    g.save(); body(); g.clip();
+    g.fillStyle = 'rgba(12,5,3,0.28)'; g.fillRect(8, 38, 108, 14);
+    g.fillStyle = 'rgba(255,244,214,0.13)'; g.fillRect(8, 22, 108, 8);
+    g.strokeStyle = 'rgba(26,13,6,0.6)'; g.lineWidth = 1.1;
+    for (let i = 0; i < 6; i++) {
+      g.beginPath(); g.moveTo(24 + i * 16, 24); g.lineTo(26 + i * 16, 49); g.stroke();
+    }
+    g.strokeStyle = 'rgba(20,10,4,0.5)'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(20, 34); g.lineTo(112, 33); g.stroke();
+    g.fillStyle = '#2c3a1e';
+    g.beginPath(); g.ellipse(92, 25, 12, 4.4, 0.1, 0, TAU); g.fill();
+    g.fillStyle = '#41552a';
+    [[86, 23.4], [95, 24.4], [101, 25.6]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 1.2, 0, TAU); g.fill();
+    });
+    g.restore();
+    body(); g.lineWidth = 1.9; g.strokeStyle = OUT; g.stroke();
+    // broken branch stubs on top
+    apoly(g, [[46, 12, 1.5], [56, 12, 1.5], [57, 23, 1], [45, 23, 1]], '#4a2e16', { flat: true, lw: 1.5 });
+    blob(g, 51, 12.5, 5, 2.4, '#a4753f', { flat: true, lw: 1.2 });
+    apoly(g, [[74, 16, 1.5], [82, 15, 1.5], [83, 23, 1], [73, 23, 1]], '#3f2712', { flat: true, lw: 1.4 });
+    // end grain, left
+    blob(g, 16, 36, 8.5, 13, '#c69a63', { lw: 1.7 });
+    g.strokeStyle = 'rgba(120,78,40,0.8)'; g.lineWidth = 0.9;
+    for (let i = 1; i <= 3; i++) {
+      g.beginPath(); g.ellipse(16, 36, 8.5 * i / 4, 13 * i / 4, 0, 0, TAU); g.stroke();
+    }
+    g.strokeStyle = 'rgba(90,55,25,0.8)'; g.lineWidth = 1.1;
+    g.beginPath(); g.moveTo(16, 36); g.lineTo(22, 42); g.stroke();
+  });
+
+  P.logwallv = () => mk(58, 132, (g) => {
+    const body = () => { g.beginPath(); g.roundRect(16, 6, 26, 114, 12); };
+    body(); g.fillStyle = '#5c3a1e'; g.fill();
+    g.save(); body(); g.clip();
+    g.fillStyle = 'rgba(12,5,3,0.28)'; g.fillRect(31, 6, 12, 114);
+    g.fillStyle = 'rgba(255,244,214,0.13)'; g.fillRect(16, 6, 8, 114);
+    g.strokeStyle = 'rgba(26,13,6,0.6)'; g.lineWidth = 1.1;
+    for (let i = 0; i < 6; i++) {
+      g.beginPath(); g.moveTo(18, 20 + i * 18); g.lineTo(40, 22 + i * 18); g.stroke();
+    }
+    g.fillStyle = '#2c3a1e';
+    g.beginPath(); g.ellipse(20, 40, 4.4, 11, 0.1, 0, TAU); g.fill();
+    g.restore();
+    body(); g.lineWidth = 1.9; g.strokeStyle = OUT; g.stroke();
+    // stub branch, right
+    apoly(g, [[40, 52, 1.5], [52, 46, 1.5], [54, 51, 1.5], [42, 58, 1]], '#4a2e16', { flat: true, lw: 1.5 });
+    blob(g, 52.6, 48.4, 2.2, 2.8, '#a4753f', { flat: true, lw: 1 });
+    // end grain facing the camera at the base
+    blob(g, 29, 118, 15, 8.6, '#c69a63', { lw: 1.7 });
+    g.strokeStyle = 'rgba(120,78,40,0.8)'; g.lineWidth = 0.9;
+    for (let i = 1; i <= 3; i++) {
+      g.beginPath(); g.ellipse(29, 118, 15 * i / 4, 8.6 * i / 4, 0, 0, TAU); g.stroke();
+    }
+  });
+
+  P.rockspan = () => mk(124, 66, (g) => {
+    // back ridge
+    apoly(g, [[30, 18, 6], [62, 12, 7], [92, 20, 6], [102, 38, 5], [86, 54, 4], [38, 54, 4], [20, 36, 5]],
+      '#454b52', { rim: RIM_COOL, mid: 'rgba(18,20,24,0.14)', shade: 'rgba(18,20,24,0.24)', lw: 2 });
+    // flanking boulders
+    apoly(g, [[8, 34, 4], [30, 28, 5], [40, 44, 4], [30, 58, 3], [10, 56, 3], [3, 46, 4]],
+      '#3c4148', { mid: 'rgba(14,16,20,0.16)', shade: 'rgba(14,16,20,0.26)', lw: 1.9 });
+    apoly(g, [[94, 36, 4], [116, 40, 4], [119, 54, 3], [98, 60, 3], [88, 48, 3]],
+      '#3a4046', { mid: 'rgba(14,16,20,0.16)', shade: 'rgba(14,16,20,0.26)', lw: 1.9 });
+    // moss caps and cracks
+    blob(g, 56, 16, 9, 3.6, '#2c3a1e', { lw: 1.1 });
+    blob(g, 24, 31, 6, 2.6, '#2c3a1e', { lw: 1 });
+    g.fillStyle = '#4c6030';
+    [[52, 14.4], [61, 15.6], [22, 30]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 1.1, 0, TAU); g.fill();
+    });
+    g.strokeStyle = 'rgba(12,14,18,0.7)'; g.lineWidth = 1.2; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(58, 24); g.lineTo(54, 36); g.lineTo(58, 46); g.stroke();
+    g.beginPath(); g.moveTo(84, 28); g.lineTo(88, 40); g.stroke();
+  });
+
+  P.rockspanv = () => mk(58, 148, (g) => {
+    apoly(g, [[18, 12, 5], [40, 14, 5], [46, 34, 4], [38, 50, 4], [18, 50, 4], [10, 32, 4]],
+      '#454b52', { rim: RIM_COOL, mid: 'rgba(18,20,24,0.14)', shade: 'rgba(18,20,24,0.24)', lw: 1.9 });
+    apoly(g, [[12, 46, 5], [44, 46, 5], [50, 74, 4], [44, 98, 4], [14, 98, 4], [6, 72, 4]],
+      '#3e444b', { mid: 'rgba(14,16,20,0.16)', shade: 'rgba(14,16,20,0.26)', lw: 2 });
+    apoly(g, [[10, 94, 5], [48, 94, 5], [54, 120, 4], [46, 142, 4], [12, 142, 4], [3, 118, 4]],
+      '#3a4046', { mid: 'rgba(14,16,20,0.16)', shade: 'rgba(14,16,20,0.26)', lw: 2 });
+    blob(g, 28, 12, 8, 3.2, '#2c3a1e', { lw: 1 });
+    blob(g, 16, 48, 6, 2.4, '#2c3a1e', { lw: 1 });
+    g.fillStyle = '#4c6030';
+    g.beginPath(); g.arc(25, 10.6, 1.1, 0, TAU); g.fill();
+    g.strokeStyle = 'rgba(12,14,18,0.7)'; g.lineWidth = 1.2; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(28, 54); g.lineTo(24, 72); g.lineTo(28, 88); g.stroke();
+    g.beginPath(); g.moveTo(34, 102); g.lineTo(38, 120); g.stroke();
+  });
+
+  P.slabrock = () => mk(92, 88, (g) => {
+    apoly(g, [[16, 26, 7], [52, 14, 8], [80, 30, 6], [88, 60, 5], [68, 82, 5], [24, 82, 5], [6, 56, 6]],
+      '#474d55', { rim: RIM_COOL, mid: 'rgba(18,20,24,0.14)', shade: 'rgba(18,20,24,0.26)', lw: 2.1 });
+    // flat top plane
+    apoly(g, [[24, 30, 5], [52, 20, 6], [76, 33, 5], [64, 45, 5], [33, 45, 5]],
+      '#5a626c', { flat: true, lw: LW_INT, line: 'rgba(20,22,26,0.6)' });
+    blob(g, 40, 26, 8, 3, 'rgba(226,232,240,0.12)', { flat: true, noline: true });
+    // moss and lichen on the top edge
+    blob(g, 62, 22, 7, 3, '#2c3a1e', { lw: 1 });
+    blob(g, 30, 32, 5, 2.4, '#2c3a1e', { lw: 1 });
+    g.fillStyle = '#4c6030';
+    [[59, 20.6], [66, 22], [28, 30.6]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 1.1, 0, TAU); g.fill();
+    });
+    g.strokeStyle = 'rgba(12,14,18,0.7)'; g.lineWidth = 1.3; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(58, 46); g.lineTo(64, 64); g.lineTo(58, 78); g.stroke();
+    g.beginPath(); g.moveTo(20, 52); g.lineTo(26, 62); g.stroke();
+    // chipped shards at the base
+    poly(g, [[14, 82], [22, 78], [24, 84]], '#3a4046', { lw: 1.2 });
+    poly(g, [[68, 84], [76, 79], [79, 85]], '#3a4046', { lw: 1.2 });
+  });
+
   // ---------------- api ----------------
   function get(name) {
     if (!cache.has(name)) {
