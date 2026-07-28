@@ -534,6 +534,29 @@ function campGrassClump(q, x, y, s, rng) {
   }
 }
 
+// --------------------------------------------------------------- voice ----
+// Camp dialogue rides Voice the same way a run bark does (js/game.js bark()):
+// the words are already on screen, the audio is the optional half, and with no
+// assets at all Voice.available stays false and every call here is a no-op.
+//
+// Two differences from a run bark, both deliberate:
+//   - a line may be the { t, e } portrait shape, so the words are unwrapped
+//     before they are handed over;
+//   - Voice.stop() runs first. The run's priority ladder is for lines that
+//     compete for the same moment; in camp there is only ever one speaker, and
+//     a new line replaces the old one exactly the way the dialog box does.
+// Returns whatever Voice.speak returned (or null), so a caller holding a timed
+// subtitle can stretch it to the audio the way the bark bubble does.
+function campSpeak(speaker, line) {
+  if (typeof Voice === 'undefined' || !Voice || !Voice.available) return null;
+  const text = (line && typeof line === 'object') ? line.t : line;
+  if (typeof text !== 'string' || !text) return null;
+  try {
+    Voice.stop();
+    return Voice.speak(speaker, text, null);
+  } catch (e) { return null; }
+}
+
 // ------------------------------------------------------------------ Camp ---
 class Camp {
   constructor() {
@@ -874,9 +897,16 @@ class Camp {
     META.selected = newId;
     META.save();
     this.selId = newId;
+    // Voice only warms the scout you were already playing, so the incoming
+    // scout's pack is usually not in hand yet and speaking right now would
+    // resolve the line and then find no bytes. Say it in the preload's wake
+    // instead: the subtitle set below is already up for four seconds either
+    // way, and if the swap has been replaced by another one by then, the
+    // stale line stays quiet.
+    let voicePreload = null;
     try {
-      if (typeof Voice !== 'undefined' && Voice && typeof Voice.preload === 'function') Voice.preload(newId);
-    } catch (e) {}
+      if (typeof Voice !== 'undefined' && Voice && typeof Voice.preload === 'function') voicePreload = Voice.preload(newId);
+    } catch (e) { voicePreload = null; }
 
     this.p.x = target.x;
     this.p.y = target.y;
@@ -891,6 +921,14 @@ class Camp {
       });
     }
     this.msg = { text: SELECT_LINES[newId], t: 4 };
+    const msg = this.msg;
+    const say = () => {
+      if (this.msg !== msg) return; // a newer line owns the subtitle now
+      const v = campSpeak(newId, msg.text);
+      if (v && v.dur) msg.t = Math.max(msg.t, v.dur + 0.4);
+    };
+    if (voicePreload && typeof voicePreload.then === 'function') voicePreload.then(say, say);
+    else say();
     return { type: 'select', id: newId };
   }
 
@@ -1459,10 +1497,20 @@ class Camp {
       // older feats.js has no revealLine at all, which reads as nothing to say.
       let ln = null;
       try { if (typeof Totem !== 'undefined' && Totem && Totem.revealLine) ln = Totem.revealLine(META); } catch (e) { ln = null; }
-      if (ln) return { type: 'talk', line: ln, speaker: 'SCOUTMASTER BROCK' };
-      return { type: 'talk', line: brockLine(), speaker: 'SCOUTMASTER BROCK' };
+      if (!ln) ln = brockLine();
+      campSpeak('brock', ln);
+      return { type: 'talk', line: ln, speaker: 'SCOUTMASTER BROCK' };
     }
-    if (id === 'qm') return { type: 'talk', line: quartermasterLine(), speaker: 'THE QUARTERMASTER' };
+    if (id === 'qm') {
+      const ln = quartermasterLine();
+      campSpeak('qm', ln);
+      return { type: 'talk', line: ln, speaker: 'THE QUARTERMASTER' };
+    }
+    // The squirrel is deliberately silent, and should stay that way. Its lines
+    // are a squeak plus a stage direction in brackets, and two of the five are
+    // stage direction only. A speaking voice reading those out loud would give
+    // an unmarked woodland animal a person's voice, which is the one thing this
+    // scene is about it not having. Subtitles carry it, which is all it needs.
     if (id === 'critter') return { type: 'talk', line: critterLine(), speaker: 'A SMALL SQUIRREL' };
     if (id === 'cabindoor') { this.enterCabin(); return null; }
     if (id === 'cabinhint') {

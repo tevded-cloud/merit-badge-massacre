@@ -882,6 +882,10 @@ function showDialog(text, speaker, expression) {
 function closeDialog() {
   if (!App.dialogOpen) return;
   App.dialogOpen = false;
+  // The words are gone, so the voice reading them goes too, rather than
+  // finishing a sentence over an empty screen. A no-asset build has nothing
+  // playing and this is a no-op, same as every other Voice call.
+  try { if (typeof Voice !== 'undefined' && Voice && typeof Voice.stop === 'function') Voice.stop(); } catch (e) {}
   if (dlgTimer) { clearInterval(dlgTimer); dlgTimer = null; }
   $('dialog').classList.add('hidden');
   dlgPortId = null;

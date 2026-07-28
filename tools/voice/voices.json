@@ -71,6 +71,15 @@
     "post": ["saturate", "campfire_slap"]
   },
 
+  "qm": {
+    "_note": "The Quartermaster, the supply stall by the Badge Board. Deliberately the opposite adult to Brock: American rather than British, quicker, and completely dry, with no post chain at all. Brock is a fire; this one is a counter. His lines are not in lines.json yet (dump_lines.cjs collects BARKS, SELECT_LINES, BROCK and BOSSLINES only), so nothing generates for him until that script also collects QUARTERMASTER. The recipe is here so the wiring in js/camp.js has somewhere to land.",
+    "engine": "kokoro",
+    "voice": "am_eric",
+    "speed": 1.08,
+    "pitchSemitones": -1,
+    "post": []
+  },
+
   "hare": {
     "_note": "'any bright voice' per spec: af_sky picked as a bright, energetic placeholder. Swap freely during the recipe evaluation round, no code changes needed.",
     "engine": "kokoro",
