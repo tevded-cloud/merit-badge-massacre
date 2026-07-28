@@ -689,30 +689,51 @@ class Camp {
     return K;
   }
 
+  // Circles push out, then rectangles have the last word. The two rules can
+  // disagree: five keep-outs sit across a walkable edge (the stall barrel and
+  // crate, the Quartermaster, the cooler, one lone pine), and there the
+  // rectangle clamp can park you back inside a circle the push just moved you
+  // out of, so the next frame teleports you.
+  //
+  // Walking, this was never worth seeing: over 1.27 million real steps taken
+  // from legal ground, the worst jump was 0.58 units, and running to a fixed
+  // point takes it to 0.02. Almost free, too, since 98 percent of frames
+  // settle on the first pass and stop.
+  //
+  // It matters for positions set DIRECTLY rather than walked into (a scout
+  // swap, a cabin exit, the arrival point the camp redesign adds). From an
+  // arbitrary coordinate one pass could jump 16 units; this holds it to 7.
+  // Seven is still too many, so the rule for any code that places the player
+  // is to place them somewhere legal, and to check it. This clamp is the net,
+  // not the plan.
   clampWalk(p) {
     const rects = this.walkRects();
-    // circles push first, rects have the last word so asserts stay simple
-    for (const k of this.keepOuts()) {
-      const dx = p.x - k[0], dy = p.y - k[1];
-      const d = Math.hypot(dx, dy);
-      if (d < k[2] && d > 0.001) {
-        p.x = k[0] + dx / d * k[2];
-        p.y = k[1] + dy / d * k[2];
+    const keeps = this.keepOuts();
+    for (let pass = 0; pass < 6; pass++) {
+      const ax = p.x, ay = p.y;
+      for (const k of keeps) {
+        const dx = p.x - k[0], dy = p.y - k[1];
+        const d = Math.hypot(dx, dy);
+        if (d < k[2] && d > 0.001) {
+          p.x = k[0] + dx / d * k[2];
+          p.y = k[1] + dy / d * k[2];
+        }
       }
-    }
-    let insideAny = false;
-    for (const r of rects) {
-      if (p.x >= r[0] && p.x <= r[1] && p.y >= r[2] && p.y <= r[3]) { insideAny = true; break; }
-    }
-    if (!insideAny) {
-      let bx = p.x, by = p.y, best = Infinity;
+      let insideAny = false;
       for (const r of rects) {
-        const cx = clamp(p.x, r[0], r[1]);
-        const cy = clamp(p.y, r[2], r[3]);
-        const d = (cx - p.x) * (cx - p.x) + (cy - p.y) * (cy - p.y);
-        if (d < best) { best = d; bx = cx; by = cy; }
+        if (p.x >= r[0] && p.x <= r[1] && p.y >= r[2] && p.y <= r[3]) { insideAny = true; break; }
       }
-      p.x = bx; p.y = by;
+      if (!insideAny) {
+        let bx = p.x, by = p.y, best = Infinity;
+        for (const r of rects) {
+          const cx = clamp(p.x, r[0], r[1]);
+          const cy = clamp(p.y, r[2], r[3]);
+          const d = (cx - p.x) * (cx - p.x) + (cy - p.y) * (cy - p.y);
+          if (d < best) { best = d; bx = cx; by = cy; }
+        }
+        p.x = bx; p.y = by;
+      }
+      if (Math.abs(p.x - ax) < 0.01 && Math.abs(p.y - ay) < 0.01) return;
     }
   }
 
