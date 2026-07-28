@@ -14,7 +14,91 @@
     return { x: this.player.x + Math.cos(a) * r, y: this.player.y + Math.sin(a) * r };
   };
 
-  Game.prototype.pickSpawn = function (m) {
+  // Heft: one number for what a species costs you to meet, read off the same
+  // table the fight reads. Tuning hp or damage moves the ordering with it,
+  // instead of leaving a hand written list of "the heavy ones" behind.
+  function heftOf(id) {
+    const d = DATA.enemies[id];
+    if (!d) return 0;
+    return (d.hp || 0) * 0.55 + (d.dmg || 0) * 2.2 + (d.xp || 1) * 5;
+  }
+
+  const ROSTER_GUEST = 6;     // base weight a cast-only guest species walks in on
+  const ROSTER_TILT = 0.85;   // how hard early rooms lean light, late rooms heavy
+  const ROSTER_FLOOR = 0.12;  // nothing in an act is ever made impossible
+
+  // The heft range of an act's own roster, cached: the tilt needs to know what
+  // counts as light and heavy in THIS woods, not across the whole game.
+  const actHeftCache = {};
+  function actHeft(act) {
+    if (actHeftCache[act]) return actHeftCache[act];
+    const roster = (DATA.rosters && DATA.rosters[act]) || {};
+    let lo = Infinity, hi = -Infinity;
+    for (const id in roster) {
+      const h = heftOf(id);
+      if (h < lo) lo = h;
+      if (h > hi) hi = h;
+    }
+    if (!(hi > lo)) { lo = 0; hi = 1; }
+    const r = { lo, hi };
+    actHeftCache[act] = r;
+    return r;
+  }
+
+  // Roll one body out of the act's ecosystem. cast is the room's own map of
+  // species to multipliers: it bends the act's weights toward the scene, and a
+  // species the act does not stock at all walks in as a guest at ROSTER_GUEST
+  // so a layout can call for one thing the woods around it does not have.
+  Game.prototype.rosterPick = function (m, cast) {
+    const act = clamp(Math.round(this.act || 1), 1, 3);
+    const roster = (DATA.rosters && DATA.rosters[act]) || null;
+    if (!roster) return null;
+    const range = actHeft(act);
+    const span = range.hi - range.lo;
+    // Where in the act we are: 0 at the first room, 1 at the last.
+    const p = clamp((m - (act - 1) * 4.6) / 4.6, 0, 1);
+
+    const ids = [];
+    for (const id in roster) ids.push(id);
+    if (cast) {
+      for (const id in cast) {
+        if (roster[id] == null && DATA.enemies[id] && ids.indexOf(id) < 0) ids.push(id);
+      }
+    }
+
+    const wts = [];
+    let total = 0;
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i];
+      let w = roster[id] != null ? roster[id] : ROSTER_GUEST;
+      if (cast && cast[id] != null) w *= cast[id];
+      if (!(w > 0)) { wts.push(0); continue; }
+      const h01 = span > 0 ? clamp((heftOf(id) - range.lo) / span, 0, 1) : 0.5;
+      // Light early, heavy late, and the mirror of that for the other half.
+      const tilt = Math.max(ROSTER_FLOOR, 1 + (2 * p - 1) * (2 * h01 - 1) * ROSTER_TILT);
+      w *= tilt;
+      wts.push(w);
+      total += w;
+    }
+    if (!(total > 0)) return ids.length ? ids[0] : null;
+    let roll = Math.random() * total;
+    for (let i = 0; i < ids.length; i++) {
+      roll -= wts[i];
+      if (roll <= 0) return ids[i];
+    }
+    return ids[ids.length - 1];
+  };
+
+  // Rooms draw from their act's ecosystem, tilted by the layout's own cast.
+  // The open field (and the field debug mode) still rolls the flat 1.0 pool on
+  // the wall clock, exactly as it always has. room.js calls this with one
+  // argument, so the room's cast is read from here rather than passed in.
+  Game.prototype.pickSpawn = function (m, cast) {
+    if (this.room) {
+      const c = cast || (this.room.def && this.room.def.cast) || null;
+      const id = this.rosterPick(m, c);
+      if (id) return id;
+    }
     const c = [];
     let total = 0;
     for (const p of DATA.pool) {
@@ -26,7 +110,22 @@
     return c[c.length - 1].id;
   };
 
+  const TALLY_CHANCE = 0.25;  // ... of an early act elite being the collector
+
+  Game.prototype.tallymanLives = function () {
+    for (const o of this.enemies) if (!o.dead && o.tally) return true;
+    return false;
+  };
+
   Game.prototype.spawnEnemy = function (id, x, y, elite) {
+    // THE TALLYMAN walks the first two acts on his own account, in place of
+    // whatever the elite roll came up with. One of him at a time, ever.
+    let tally = false;
+    if (elite && this.room && (this.act || 1) <= 2 && DATA.enemies.raccoon &&
+        Math.random() < TALLY_CHANCE && !this.tallymanLives()) {
+      id = 'raccoon';
+      tally = true;
+    }
     const d = DATA.enemies[id];
     const m = this.threat;
     // Elites get their own linear curve: the quadratic trash curve times 9
@@ -49,7 +148,7 @@
     e.id = this.nextId++;
     if (d.move === 'hop') e.ai = { state: 'idle', t: rand(0.1, 0.5), k: 0, dx: 0, dy: 0, hopSpd: d.hopSpd };
     if (d.move === 'charge') e.ai = { state: 'stalk', t: rand(1, 2.2), dx: 0, dy: 0, chargeSpd: d.chargeSpd };
-    if (d.move === 'ranged') { e.ai = { shotT: rand(1, d.shotCd) }; e.shotCd = d.shotCd; e.shotSpd = d.shotSpd; e.shotDmg = d.shotDmg * DATA.dmgScale(m); }
+    if (d.move === 'ranged') e.ai = { shotT: rand(1, d.shotCd) };
     if (d.move === 'sine' || d.move === 'weave') e.ai = { ph: rand(0, TAU) };
     if (d.move === 'orbit') e.ai = { spin: Math.random() < 0.5 ? 1 : -1, ph: rand(0, TAU) };
     if (d.move === 'burrow') e.ai = { state: 'under', t: rand(0.6, 1) * (d.underT || 2.5) };
@@ -65,8 +164,73 @@
     if (d.leash) { e.leash = true; e.leashGroup = this.leashGroupFor(x, y, id); }
     if (d.onDeath) { e.onDeath = d.onDeath; e._watchDeath = true; e.splitAgain = !!d.splitAgain; }
 
+    // Anything that declares a shot carries the shot fields, whatever its gait.
+    // The owl and the heron stand off and throw; the bog frog spits on landing
+    // out of a hop. Same three numbers, one place that reads them.
+    if (d.shotCd != null) {
+      e.shotCd = d.shotCd;
+      e.shotSpd = d.shotSpd;
+      e.shotDmg = d.shotDmg * DATA.dmgScale(m);
+      if (e.ai.shotT == null) e.ai.shotT = rand(0.6, d.shotCd);
+      if (d.tongue != null) e.tongue = d.tongue;
+      if (d.puff != null) e.puff = d.puff;
+    }
+    if (d.stab) e.stab = true;
+    if (d.trail) e.trail = true;
+    // A guard cycle starts with the plates up and a random offset, so a pack of
+    // badgers is never all shielded on the same beat.
+    if (d.guard) {
+      e.guardCycle = { on: d.guard[0], off: d.guard[1] };
+      // An elite is already nine times the health. Stacking the full plating on
+      // top of that turns the shielded half of its cycle into a wall nothing
+      // can chew through, so an elite's plates are worth half, not six sevenths.
+      const ga = d.guardArmor != null ? d.guardArmor : 0.15;
+      e.guardArmor = elite ? Math.max(0.5, ga) : ga;
+      e.guarding = false;
+      e.guardT = rand(0.2, d.guard[1]);
+    }
+
+    if (tally) this.makeTallyman(e);
+
     this.enemies.push(e);
     return e;
+  };
+
+  // =====================================================================
+  // THE TALLYMAN: the vicar's collector, working the early acts himself.
+  // Everything you have, he considers a loan, and he keeps the book.
+  // =====================================================================
+  Game.prototype.makeTallyman = function (e) {
+    e.name = 'THE TALLYMAN';
+    e.tally = true;
+    e.move = 'bossvicar';
+    e.ai = { ringT: rand(2.5, 4), summonT: rand(10, 16), spiralA: 0 };
+    // No health bump: the elite curve already stands him up, and one more
+    // multiplier on top would put him level with the act boss he works for.
+    e.spd = 62 * (1 + this.threat * 0.012);
+    e.stolen = 0;
+    e.stealT = 0;
+    e.onDeath = 'tally';
+    e._watchDeath = true;
+    this.toast('THE TALLYMAN', '#f4c542');
+    AudioSys.play('roar');
+    return e;
+  };
+
+  // Picking a pocket is not damage, so it does not wait on the hurt frames:
+  // he skims on his own clock for as long as he is standing on you. Never
+  // takes what is not there, so the purse can never go negative.
+  Game.prototype.tallySteal = function (e) {
+    if (this.t < (e.stealT || 0)) return;
+    e.stealT = this.t + 0.9;
+    const take = Math.min(5, this.coins);
+    if (!(take > 0)) return;
+    this.gainCoins(-take);
+    e.stolen = (e.stolen || 0) + take;
+    const p = this.player;
+    this.spawnNum(p.x + rand(-6, 6), p.y - 34, '-' + take, '#f4c542');
+    this.spawnBurst(e.x, e.y - e.r * 0.4, '#f4c542', 5);
+    AudioSys.play('pop', { pitch: 1.4 });
   };
 
   // Pairs and trios are made at spawn by proximity: a new leash critter joins
@@ -585,7 +749,39 @@
           else { c.onDeath = null; c._watchDeath = false; }
         }
         this.spawnPuff(e.x, e.y, 8);
+      } else if (od === 'tally') {
+        // The book closes. Everything he took comes back, plus what he was
+        // charging you to hold it.
+        const pay = (e.stolen || 0) + 10;
+        this.gainCoins(pay);
+        this.spawnBurst(e.x, e.y, '#f4c542', 18);
+        this.spawnNum(e.x, e.y - 26, '+' + pay, '#f4c542', true);
+        this.toast('THE TALLYMAN SETTLES UP', '#f4c542');
+        AudioSys.play('levelup');
       }
+    }
+  };
+
+  // Quarry badgers work a shift: plates down and almost nothing lands, then a
+  // beat where everything does. On a clock, direction free, so it reads from
+  // any angle. The refund below is the same one the stag's plating uses, so it
+  // has to be told where to start counting the moment the plates come down.
+  Game.prototype.tickGuard = function (e, dt) {
+    const g = e.guardCycle;
+    e.guardT -= dt;
+    if (e.guardT > 0) return;
+    if (e.guarding) {
+      e.guarding = false;
+      e.armorMul = null;
+      e.guardT = g.off;
+      this.spawnBurst(e.x, e.y - e.r * 0.4, '#ffd08a', 6);
+      AudioSys.play('pop', { pitch: 0.75 });
+    } else {
+      e.guarding = true;
+      e.armorMul = e.guardArmor;
+      e._hpPrev = e.hp;
+      e.guardT = g.on;
+      this.spawnPuff(e.x, e.y - e.r * 0.4, 4);
     }
   };
 
@@ -1392,6 +1588,10 @@
         }
       }
 
+      // a timed guard runs off the clock, not off the gait, so a staggered
+      // badger still comes out of its shift on schedule
+      if (e.guardCycle) this.tickGuard(e, dt);
+
       // boss upkeep: held health, armour refunds and the phase machine all
       // run even while stunned, so a phase never waits on a stagger
       if (e.boss || e._hpHold != null || e.armorMul != null) this.tickBossHp(e, dt);
@@ -1414,6 +1614,25 @@
           case 'walk': {
             e.x += ux * e.spd * slowMul * dt;
             e.y += uy * e.spd * slowMul * dt;
+            // Sog beavers have learned what the tail is for. Get inside its
+            // reach and the whole room gets shoved off it.
+            if (e.kind === 'beaver' && this.act >= 2) {
+              ai.slapT = (ai.slapT || 0) - dt;
+              if (ai.slapT <= 0 && d < 60) {
+                ai.slapT = 3;
+                this.fireEnemyRing(e.x, e.y, 340, e.dmg * 0.4, 200, e.kind);
+                // A roll through the slap is a roll through it: nothing moves
+                // a player who is not there to be moved.
+                if (!(p.iframe > 0 || p.dashI > 0 || p.god)) {
+                  const kd = Math.max(12, d);
+                  p.x += (p.x - e.x) / kd * 130;
+                  p.y += (p.y - e.y) / kd * 130;
+                }
+                this.spawnPuff(e.x, e.y, 8);
+                this.shakeAdd(4);
+                AudioSys.play('boom', { pitch: 0.7 });
+              }
+            }
             break;
           }
           case 'sine': {
@@ -1426,6 +1645,49 @@
             break;
           }
           case 'weave': {
+            // A fox that has lived past act 1 stops weaving in and starts
+            // taking the distance in one go: a crouch you can read on the
+            // ground, then a lunge you cannot outwalk.
+            if (this.act >= 2) {
+              if (ai.state === 'crouch') {
+                ai.t -= dt;
+                if (ai.t <= 0) {
+                  ai.state = 'pounce';
+                  ai.t = 0.34;
+                  ai.dx = ux; ai.dy = uy;
+                  AudioSys.play('swing', { pitch: 1.15 });
+                }
+                break;
+              }
+              if (ai.state === 'pounce') {
+                ai.t -= dt;
+                e.x += ai.dx * 620 * slowMul * dt;
+                e.y += ai.dy * 620 * slowMul * dt;
+                if (ai.t <= 0) { ai.state = null; ai.pounceT = rand(2.6, 4.2); }
+                break;
+              }
+              if (ai.pounceT == null) ai.pounceT = rand(1.4, 3);
+              ai.pounceT -= dt;
+              if (ai.pounceT <= 0 && d < 260) {
+                // Too close to leap from. It gives ground first, which is the
+                // tell that something worse is coming. Cornered against a wall
+                // it stops waiting and goes anyway.
+                ai.backT = (ai.backT || 0) + dt;
+                if (d < 180 && ai.backT < 1.6) {
+                  e.x -= ux * e.spd * 0.9 * slowMul * dt;
+                  e.y -= uy * e.spd * 0.9 * slowMul * dt;
+                  break;
+                }
+                ai.backT = 0;
+                ai.state = 'crouch';
+                ai.t = 1.2;
+                this.spawnZone({
+                  type: 'cone', x: e.x, y: e.y, r: 300, a: Math.atan2(dy, dx),
+                  arc: 0.34, warn: 1.2, dmg: 0, quiet: true, owner: 'enemy',
+                });
+                break;
+              }
+            }
             const px = -uy, py = ux;
             const s = Math.sin(this.t * 7 + ai.ph) * 0.45;
             let vx = ux + px * s, vy = uy + py * s;
@@ -1435,13 +1697,31 @@
             break;
           }
           case 'hop': {
+            // The tongue. A frog inflates where it landed, and whatever it was
+            // aimed at when it started is where the strike goes.
+            if (e.puffT > 0) {
+              e.puffT -= dt;
+              if (e.puffT <= 0) {
+                e.puffT = 0;
+                this.fireEshot(e.x, e.y - 8, ai.tongueA || 0, e.shotSpd, e.shotDmg, e.kind);
+                AudioSys.play('swing', { pitch: 1.35 });
+              }
+            }
+            if (e.shotCd > 0) ai.shotT -= dt;
+
             const hopSpd = ai.hopSpd * slowMul;
             if (ai.state === 'idle') {
               ai.t -= dt;
               if (ai.t <= 0) {
                 ai.state = 'hop';
                 ai.k = 0;
-                ai.dx = ux; ai.dy = uy;
+                let a = Math.atan2(uy, ux);
+                // Rabbits that have seen an act out learn the feint: near a
+                // third of their hops come down well off where you read them.
+                if (e.kind === 'rabbit' && this.act >= 2 && Math.random() < 0.3) {
+                  a += (Math.random() < 0.5 ? -1 : 1) * Math.PI / 4;
+                }
+                ai.dx = Math.cos(a); ai.dy = Math.sin(a);
               }
             } else if (ai.state === 'hop') {
               ai.k += dt / 0.42;
@@ -1450,6 +1730,12 @@
               if (ai.k >= 1) {
                 ai.state = 'idle';
                 ai.t = rand(0.35, 0.7);
+                // Landed, and it can see you from here.
+                if (e.shotCd > 0 && ai.shotT <= 0 && !(e.puffT > 0) && d < (e.tongue || 320)) {
+                  ai.shotT = e.shotCd;
+                  ai.tongueA = Math.atan2(dy, dx);
+                  e.puffT = e.puff || 0.35;
+                }
               }
             }
             break;
@@ -1528,13 +1814,33 @@
             break;
           }
           case 'ranged': {
+            // Birds that only throw back away when you close. A stabber does
+            // not: closing on it is how you get stabbed, so it holds its
+            // ground and lets you walk in.
+            const backOff = e.stab ? 0 : 175;
             if (d > 270) { e.x += ux * e.spd * slowMul * dt; e.y += uy * e.spd * slowMul * dt; }
-            else if (d < 175) { e.x -= ux * e.spd * slowMul * dt; e.y -= uy * e.spd * slowMul * dt; }
+            else if (d < backOff) { e.x -= ux * e.spd * slowMul * dt; e.y -= uy * e.spd * slowMul * dt; }
             else { e.x += -uy * e.spd * 0.5 * slowMul * dt; e.y += ux * e.spd * 0.5 * slowMul * dt; }
             ai.shotT -= dt;
             if (ai.shotT <= 0 && d < 430) {
               ai.shotT = e.shotCd;
-              this.fireEshot(e.x, e.y - 10, Math.atan2(dy, dx), e.shotSpd, e.shotDmg, e.kind);
+              const sa = Math.atan2(dy, dx);
+              if (e.stab && d < 150) {
+                // Close enough to reach. It does not throw anything: the bill
+                // comes straight down on the ground you are standing on.
+                this.spawnZone({
+                  x: p.x, y: p.y, r: 46, warn: 0.45, dmg: e.shotDmg * 1.3,
+                  knock: 60, kind: e.kind,
+                });
+                AudioSys.play('swing', { pitch: 0.85 });
+              } else if (e.kind === 'owl' && this.act >= 3) {
+                // Burn owls stopped firing one at a time.
+                for (let i = -1; i <= 1; i++) {
+                  this.fireEshot(e.x, e.y - 10, sa + i * 0.22, e.shotSpd, e.shotDmg, e.kind);
+                }
+              } else {
+                this.fireEshot(e.x, e.y - 10, sa, e.shotSpd, e.shotDmg, e.kind);
+              }
             }
             break;
           }
@@ -1550,11 +1856,24 @@
                 ai.state = 'charge';
                 ai.t = 0.75;
                 ai.dx = ux; ai.dy = uy;
+                ai.trailT = 0;
               }
             } else if (ai.state === 'charge') {
               ai.t -= dt;
               e.x += ai.dx * ai.chargeSpd * slowMul * dt;
               e.y += ai.dy * ai.chargeSpd * slowMul * dt;
+              // An elk runs smouldering: the lane it just took catches a beat
+              // after it has gone through, so the safe ground is behind it.
+              if (e.trail) {
+                ai.trailT = (ai.trailT || 0) - dt;
+                if (ai.trailT <= 0) {
+                  ai.trailT += 0.09;
+                  this.spawnZone({
+                    x: e.x, y: e.y, r: 30, warn: 0.55, fire: 0.5,
+                    dmg: e.dmg * 0.35, quiet: true, kind: e.kind,
+                  });
+                }
+              }
               if (ai.t <= 0) { ai.state = 'recover'; ai.t = 0.5; }
             } else {
               ai.t -= dt;
@@ -1563,20 +1882,24 @@
             break;
           }
           case 'bossvicar': {
+            // The same pattern serves the boss and the collector who walks the
+            // early acts with it: thinner rings and fewer hands when it is not
+            // the fight the whole room is built around.
             e.x += ux * e.spd * dt;
             e.y += uy * e.spd * dt;
             ai.ringT -= dt;
             if (ai.ringT <= 0) {
-              ai.ringT = 4;
-              for (let i = 0; i < 10; i++) {
-                this.fireEshot(e.x, e.y - 10, i * TAU / 10 + this.t, 160, e.dmg * 0.55, e.kind);
+              ai.ringT = e.boss ? 4 : 5.5;
+              const n = e.boss ? 10 : 7;
+              for (let i = 0; i < n; i++) {
+                this.fireEshot(e.x, e.y - 10, i * TAU / n + this.t, 160, e.dmg * 0.55, e.kind);
               }
               AudioSys.play('roar');
             }
             ai.summonT -= dt;
             if (ai.summonT <= 0) {
-              ai.summonT = 15;
-              this.summonAround(e, ['raccoon'], 3);
+              ai.summonT = e.boss ? 15 : 20;
+              this.summonAround(e, ['raccoon'], e.boss ? 3 : 2);
             }
             break;
           }
@@ -1657,6 +1980,7 @@
       // contact damage (nothing underground touches you)
       const rr = e.r + p.r;
       if (!e.hidden && dist2(e.x, e.y, p.x, p.y) < rr * rr) {
+        if (e.tally) this.tallySteal(e);
         this.damagePlayer(e.dmg * (e.dmgF || 1), e.x, e.y, e.kind);
       }
 

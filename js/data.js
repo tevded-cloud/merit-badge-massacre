@@ -159,12 +159,48 @@ DATA.enemies = {
   boar:     { hp: 95,  spd: 56,  dmg: 20, r: 16, xp: 5, w: 48, spr: 'boar',     move: 'charge', chargeSpd: 340 },
   fox:      { hp: 70,  spd: 140, dmg: 14, r: 12, xp: 5, w: 40, spr: 'fox',      move: 'weave' },
   beaver:   { hp: 170, spd: 44,  dmg: 18, r: 14, xp: 6, w: 38, spr: 'beaver',   move: 'walk' },
+
+  // ---- the room roster ----------------------------------------------------
+  // Nine species the room run deals and the open field never sees: DATA.pool
+  // below is untouched, so the timed field is exactly the nine above. Every
+  // field here is read by an engine capability that already exists.
+  //   onDeath   'eshot6' bursts, 'split2' halves (director.runDeathEffects)
+  //   leash     joins a pack of up to three by proximity at spawn
+  //   underT    how long a burrower stays down between surfacings
+  //   shotCd/shotDmg/shotSpd  any gait may carry a shot, not just 'ranged'
+  //   tongue    how far a hopper will spit on landing
+  //   puff      inflate telegraph, seconds, before the tongue lands
+  //   stab      a ranged thing that plants a circle instead of firing up close
+  //   trail     a charger that leaves fire in the lane it just ran
+  //   guard     [shielded seconds, exposed seconds] and guardArmor the share of
+  //             damage that gets through while the plates are down
+
+  // The smallest thing in the woods, and it never comes alone.
+  ticktot:        { hp: 4,   spd: 138, dmg: 4,  r: 7,  xp: 1, w: 20, spr: 'ticktot',        move: 'walk' },
+  // Waddles. Bursts. Kill it at arm's length and you wear the seeds.
+  pineconepuffer: { hp: 26,  spd: 40,  dmg: 9,  r: 13, xp: 2, w: 34, spr: 'pineconepuffer', move: 'walk', onDeath: 'eshot6' },
+  // Never one chipmunk. Always the trio, and they will not be separated.
+  chipchoir:      { hp: 16,  spd: 92,  dmg: 7,  r: 10, xp: 2, w: 26, spr: 'chipchoir',      move: 'leash', leash: true },
+  // Hops in, inflates, and the tongue comes out straight.
+  bogfrog:        { hp: 34,  spd: 0,   dmg: 10, r: 13, xp: 3, w: 32, spr: 'bogfrog',        move: 'hop', hopSpd: 260, shotCd: 2.4, shotDmg: 8, shotSpd: 300, tongue: 320, puff: 0.35 },
+  // Stands off and throws. Let it get close and the bill comes down instead.
+  stiltheron:     { hp: 85,  spd: 48,  dmg: 12, r: 13, xp: 5, w: 44, spr: 'stiltheron',     move: 'ranged', shotCd: 2.6, shotDmg: 11, shotSpd: 230, stab: true },
+  // Under the whole time it matters, up for exactly as long as it does not.
+  sapperrat:      { hp: 30,  spd: 78,  dmg: 11, r: 11, xp: 3, w: 28, spr: 'sapperrat',      move: 'burrow', underT: 2.2 },
+  // Runs at you smouldering and the lane stays lit behind it.
+  ashelk:         { hp: 110, spd: 58,  dmg: 19, r: 17, xp: 5, w: 52, spr: 'ashelk',         move: 'charge', chargeSpd: 320, trail: true },
+  // Kill it and there are two. Kill those and there are only two.
+  cindercrow:     { hp: 30,  spd: 104, dmg: 9,  r: 12, xp: 3, w: 30, spr: 'cindercrow',     move: 'sine', onDeath: 'split2', splitAgain: false },
+  // Works a shift: plates down and nothing lands, then a beat where it does.
+  quarrybadger:   { hp: 120, spd: 50,  dmg: 17, r: 15, xp: 5, w: 42, spr: 'quarrybadger',   move: 'walk', guard: [2.5, 1.5], guardArmor: 0.15 },
 };
 
+// Display names only. The ids are save keys and never change: the journal, the
+// codex and Brock's lines all hang off hare / vicar / antlered.
 DATA.bosses = [
-  { id: 'hare',     at: 300, name: 'THE HARE OF PERDITION', hp: 1300, dmg: 16, r: 26, w: 76,  spr: 'rabbit',  move: 'bosshare', hopSpd: 360, xp: 60 },
-  { id: 'vicar',    at: 600, name: 'THE TRASH VICAR',       hp: 3600, dmg: 22, r: 30, w: 88,  spr: 'raccoon', move: 'bossvicar', spd: 58, xp: 120 },
-  { id: 'antlered', at: 840, name: 'THE ANTLERED ONE',      hp: 8500, dmg: 28, r: 32, w: 120, spr: 'stag',    move: 'bossstag', spd: 76, xp: 0, final: true },
+  { id: 'hare',     at: 300, name: 'BRAMBLEBUCK',  hp: 1300, dmg: 16, r: 26, w: 76,  spr: 'rabbit',  move: 'bosshare', hopSpd: 360, xp: 60 },
+  { id: 'vicar',    at: 600, name: 'THE TALLYMAN', hp: 3600, dmg: 22, r: 30, w: 88,  spr: 'raccoon', move: 'bossvicar', spd: 58, xp: 120 },
+  { id: 'antlered', at: 840, name: 'OLD NOBODY',   hp: 8500, dmg: 28, r: 32, w: 120, spr: 'stag',    move: 'bossstag', spd: 76, xp: 0, final: true },
 ];
 
 DATA.pool = [
@@ -178,6 +214,29 @@ DATA.pool = [
   { id: 'fox',      from: 9,    until: 99, wgt: 30 },
   { id: 'beaver',   from: 10.5, until: 99, wgt: 28 },
 ];
+
+// Act ecosystems. A room draws its bodies from the act it is standing in, not
+// from the flat pool above: each act reads as its own woods, and a species that
+// belongs to one act is a guest anywhere else. Numbers are pick weights, not
+// counts, and the director tilts them within the act (see rosterPick in
+// director.js): the first rooms of an act lean on the lighter half of its list
+// and the last rooms lean on the heavier half, so an act opens and closes
+// differently without needing two rosters to say so.
+//
+// The open field never reads this. DATA.pool above still drives that game.
+DATA.rosters = {
+  // THE UNDERSTORY: small, quick, and far too many of them.
+  1: { squirrel: 30, rabbit: 24, doe: 14, bat: 10, ticktot: 14, pineconepuffer: 6, chipchoir: 8 },
+  // THE SOG: wet things that hold ground and shoot from it. The chaff weights
+  // are load bearing, not filler: with only the wet bodies in the list an act 2
+  // room is nothing but 30 to 170 hp targets and takes twice as long to clear
+  // as the layouts were authored for. Beaver is deliberately rare, at 170 hp it
+  // is an event rather than a regular.
+  2: { bogfrog: 24, sapperrat: 18, stiltheron: 7, raccoon: 12, beaver: 6, bat: 16, chipchoir: 14, ticktot: 22 },
+  // THE BURN: everything here is heavy, on fire, or both. The crows and owls
+  // are what keeps it from being a wall of hp.
+  3: { ashelk: 12, cindercrow: 20, quarrybadger: 9, boar: 14, fox: 16, owl: 14, doe: 10 },
+};
 
 DATA.events = [
   { t: 170, name: 'RING OF THE HARE',   spawns: [{ id: 'rabbit', n: 26, mode: 'ring' }] },
@@ -368,6 +427,9 @@ DATA.characters.gus.dodge = {
 DATA.bossTiers = (function () {
   const by = {};
   for (const b of DATA.bosses) by[b.id] = b;
+  // The tier copies carry the display names set above by construction: hare
+  // is BRAMBLEBUCK, vicar is THE TALLYMAN, antlered is OLD NOBODY. One source
+  // of truth, so a rename can never land in one table and not the other.
   return {
     1: [Object.assign({}, by.hare, { tier: 1, act: 1 })],
     2: [Object.assign({}, by.vicar, { tier: 2, act: 2 })],

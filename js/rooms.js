@@ -33,6 +33,13 @@
 //   scatter       { propId: [min, max] } extra props the room seeds at random
 //   spawnMarkers  [{ x, y }] anchors for waves that spawn at 'marker'
 //   waves         [WaveDef] in order, first to last
+//   cast          optional { speciesId: multiplier }. Every 'auto' spawn in the
+//                 room rolls the act's ecosystem (DATA.rosters) and this map
+//                 bends those weights toward the scene: above 1 for what the
+//                 layout is about, below 1 for what it is not. A species the
+//                 act does not stock at all is admitted as a guest at a small
+//                 base weight, which is how THE MAILBOX LANE gets its raccoons
+//                 in act 1 and THE KILL BOWL gets its herd in act 2.
 //   reward        { kind: 'auto' } let the run pick the payout
 //   floor         theme id into DATA.themes: 1, 2, 3, or 'hollow'
 // }
@@ -47,7 +54,9 @@
 //   maxT     seconds after which the wave advances anyway, so a stuck runner
 //            never soft locks a room
 //   spawns   [{ id, n, mode, r?, x?, y? }] where id is an enemy id from
-//            DATA.enemies or 'auto' to roll DATA.pool at the room's threat
+//            DATA.enemies or 'auto' to roll the act's roster at the room's
+//            threat, through the layout's cast (the open field still rolls the
+//            flat DATA.pool, which is why that table is unchanged)
 //            mode 'edge'   just off the room edge, all the way around
 //                 'ring'   a full circle around the player at radius r
 //                 'marker' cycles the room's spawnMarkers
@@ -178,6 +187,7 @@ const ROOMS = {
     // ------------------------------ act 1 ------------------------------
     a1_c_needlefall: {
       id: 'a1_c_needlefall', name: 'NEEDLEFALL', type: 'combat', acts: [1],
+      cast: { pineconepuffer: 3, squirrel: 1.4, ticktot: 1.2, bat: 0.6 },
       size: { w: 1000, h: 700 }, shape: 'rect', lock: 'clear',
       doors: [{ side: 'n', t: 0.55 }, { side: 'e', t: 0.35 }, { side: 'e', t: 0.72 }],
       entry: { side: 'w', t: 0.5 },
@@ -215,6 +225,7 @@ const ROOMS = {
 
     a1_c_kettlehollow: {
       id: 'a1_c_kettlehollow', name: 'KETTLE HOLLOW', type: 'combat', acts: [1],
+      cast: { rabbit: 2.2, doe: 1.4, squirrel: 0.7, chipchoir: 0.6 },
       size: { w: 1080, h: 730 }, shape: 'round', lock: 'clear',
       doors: [{ side: 'n', t: 0.4 }, { side: 'e', t: 0.5 }],
       entry: { side: 's', t: 0.5 },
@@ -251,6 +262,7 @@ const ROOMS = {
 
     a1_c_mailroute: {
       id: 'a1_c_mailroute', name: 'THE MAIL ROUTE', type: 'combat', acts: [1],
+      cast: { chipchoir: 2.4, ticktot: 1.6, bat: 1.4, doe: 0.6, squirrel: 0.8 },
       size: { w: 1130, h: 750 }, shape: 'pillars', lock: 'clear',
       doors: [{ side: 'e', t: 0.3 }, { side: 'e', t: 0.72 }, { side: 's', t: 0.6 }],
       entry: { side: 'w', t: 0.35 },
@@ -291,6 +303,7 @@ const ROOMS = {
 
     a1_c_bramblecut: {
       id: 'a1_c_bramblecut', name: 'THE BRAMBLE CUT', type: 'combat', acts: [1],
+      cast: { rabbit: 2, ticktot: 1.6, squirrel: 1.2, doe: 0.5, bat: 0.5 },
       size: { w: 1040, h: 720 }, shape: 'rect', lock: 'clear',
       doors: [{ side: 's', t: 0.3 }, { side: 's', t: 0.7 }],
       entry: { side: 'n', t: 0.45 },
@@ -328,6 +341,7 @@ const ROOMS = {
     // -- act 1 added variety --
     a1_c_boulderrun: {
       id: 'a1_c_boulderrun', name: 'BOULDER RUN', type: 'combat', acts: [1],
+      cast: { doe: 2, pineconepuffer: 1.5, squirrel: 1.3, bat: 0.5, chipchoir: 0.6 },
       size: { w: 1170, h: 770 }, shape: 'rect', lock: 'clear',
       doors: [{ side: 'n', t: 0.5 }, { side: 'e', t: 0.6 }, { side: 's', t: 0.5 }],
       entry: { side: 'w', t: 0.5 },
@@ -368,6 +382,9 @@ const ROOMS = {
 
     a1_c_mailboxlane: {
       id: 'a1_c_mailboxlane', name: 'THE MAILBOX LANE', type: 'combat', acts: [1],
+      // Raccoon led: the lane is a mail route and something has been working
+      // it. Raccoons are act 2 stock, so they come in here as a guest.
+      cast: { raccoon: 4.5, ticktot: 1.5, squirrel: 0.7, rabbit: 0.6, doe: 0.4, bat: 0.5, pineconepuffer: 0.5, chipchoir: 0.6 },
       size: { w: 1210, h: 700 }, shape: 'rect', lock: 'clear',
       doors: [{ side: 'e', t: 0.3 }, { side: 'e', t: 0.7 }, { side: 'n', t: 0.5 }],
       entry: { side: 'w', t: 0.5 },
@@ -405,6 +422,7 @@ const ROOMS = {
 
     a1_c_stumphenge: {
       id: 'a1_c_stumphenge', name: 'STUMP HENGE', type: 'combat', acts: [1],
+      cast: { chipchoir: 2.6, pineconepuffer: 1.6, squirrel: 1.2, rabbit: 0.6, bat: 0.5 },
       size: { w: 1080, h: 730 }, shape: 'round', lock: 'clear',
       doors: [{ side: 'n', t: 0.5 }, { side: 'e', t: 0.35 }, { side: 'e', t: 0.7 }],
       entry: { side: 's', t: 0.5 },
@@ -445,6 +463,7 @@ const ROOMS = {
     // ------------------------------ act 2 ------------------------------
     a2_c_sluicegate: {
       id: 'a2_c_sluicegate', name: 'THE SLUICE GATE', type: 'combat', acts: [2],
+      cast: { stiltheron: 2.2, bogfrog: 1.8, beaver: 1.6, raccoon: 0.6, ticktot: 0.5, chipchoir: 0.5 },
       size: { w: 1080, h: 730 }, shape: 'pillars', lock: 'clear',
       doors: [{ side: 'e', t: 0.3 }, { side: 'e', t: 0.7 }, { side: 'n', t: 0.5 }],
       entry: { side: 'w', t: 0.4 },
@@ -486,6 +505,7 @@ const ROOMS = {
 
     a2_c_drownedmess: {
       id: 'a2_c_drownedmess', name: 'THE DROWNED MESS', type: 'combat', acts: [2],
+      cast: { bogfrog: 2, sapperrat: 1.8, stiltheron: 1.4, raccoon: 1.2, bat: 0.5 },
       size: { w: 1170, h: 770 }, shape: 'rect', lock: 'clear',
       doors: [{ side: 'n', t: 0.35 }, { side: 'n', t: 0.7 }, { side: 'e', t: 0.5 }],
       entry: { side: 's', t: 0.45 },
@@ -529,6 +549,7 @@ const ROOMS = {
 
     a2_c_cattailrun: {
       id: 'a2_c_cattailrun', name: 'CATTAIL RUN', type: 'combat', acts: [2],
+      cast: { stiltheron: 3, bogfrog: 1.8, bat: 0.6, raccoon: 0.5, beaver: 0.6 },
       size: { w: 1130, h: 750 }, shape: 'round', lock: 'clear',
       doors: [{ side: 'e', t: 0.45 }, { side: 'n', t: 0.55 }],
       entry: { side: 'w', t: 0.5 },
@@ -567,6 +588,7 @@ const ROOMS = {
 
     a2_c_boathouse: {
       id: 'a2_c_boathouse', name: 'THE BOATHOUSE', type: 'combat', acts: [2],
+      cast: { sapperrat: 2.2, raccoon: 1.8, beaver: 1.2, bogfrog: 0.6, stiltheron: 0.5 },
       size: { w: 1210, h: 790 }, shape: 'pillars', lock: 'clear',
       doors: [{ side: 'n', t: 0.3 }, { side: 'n', t: 0.7 }, { side: 'e', t: 0.4 }, { side: 'w', t: 0.4 }],
       entry: { side: 's', t: 0.5 },
@@ -611,6 +633,9 @@ const ROOMS = {
     // -- act 2 added variety --
     a2_c_birdhousegrove: {
       id: 'a2_c_birdhousegrove', name: 'THE BIRDHOUSE GROVE', type: 'combat', acts: [2],
+      // The one dry stand in the Sog, and every small thing in the act has
+      // moved into it. Squirrels are act 1 stock and come in as a guest.
+      cast: { squirrel: 3, ticktot: 2.6, chipchoir: 1.8, bat: 1.4, raccoon: 0.5, sapperrat: 0.4, bogfrog: 0.3, stiltheron: 0.3, beaver: 0.3 },
       size: { w: 1130, h: 750 }, shape: 'pillars', lock: 'clear',
       doors: [{ side: 'n', t: 0.3 }, { side: 'n', t: 0.7 }, { side: 'w', t: 0.5 }],
       entry: { side: 's', t: 0.5 },
@@ -645,6 +670,9 @@ const ROOMS = {
 
     a2_c_killbowl: {
       id: 'a2_c_killbowl', name: 'THE KILL BOWL', type: 'combat', acts: [2],
+      // The herd room. Whatever the bowl is for, the big bodies come to it
+      // from both the act before and the act after: doe, boar, ash elk.
+      cast: { doe: 5, boar: 3.4, ashelk: 2.6, raccoon: 0.4, beaver: 0.4, bogfrog: 0.35, sapperrat: 0.35, stiltheron: 0.3, bat: 0.4, chipchoir: 0.4, ticktot: 0.6 },
       size: { w: 1080, h: 730 }, shape: 'round', lock: 'clear',
       doors: [{ side: 'w', t: 0.5 }, { side: 'n', t: 0.5 }],
       entry: { side: 'e', t: 0.5 },
@@ -686,6 +714,7 @@ const ROOMS = {
     // def.surviveT for real.
     a2_c_pressurebog: {
       id: 'a2_c_pressurebog', name: 'THE PRESSURE BOG', type: 'combat', acts: [2],
+      cast: { bogfrog: 2.4, sapperrat: 2, ticktot: 1.4, stiltheron: 1.2, beaver: 0.5, raccoon: 0.6 },
       size: { w: 1130, h: 720 }, shape: 'rect', lock: 'survive', surviveT: 45,
       doors: [{ side: 'n', t: 0.3 }, { side: 'n', t: 0.7 }, { side: 'e', t: 0.5 }, { side: 's', t: 0.5 }],
       entry: { side: 'w', t: 0.5 },
@@ -717,6 +746,7 @@ const ROOMS = {
     // ------------------------------ act 3 ------------------------------
     a3_c_charline: {
       id: 'a3_c_charline', name: 'THE CHAR LINE', type: 'combat', acts: [3],
+      cast: { ashelk: 2.2, boar: 1.6, cindercrow: 1.2, fox: 0.7, doe: 0.6 },
       size: { w: 1170, h: 770 }, shape: 'rect', lock: 'clear',
       doors: [{ side: 'e', t: 0.3 }, { side: 'e', t: 0.7 }, { side: 's', t: 0.55 }],
       entry: { side: 'w', t: 0.45 },
@@ -760,6 +790,7 @@ const ROOMS = {
 
     a3_c_emberfield: {
       id: 'a3_c_emberfield', name: 'THE EMBER FIELD', type: 'combat', acts: [3],
+      cast: { cindercrow: 2.2, ashelk: 1.8, owl: 1.2, doe: 0.5, quarrybadger: 0.7 },
       size: { w: 1210, h: 790 }, shape: 'round', lock: 'clear',
       doors: [{ side: 'n', t: 0.45 }, { side: 'e', t: 0.5 }],
       entry: { side: 's', t: 0.5 },
@@ -800,6 +831,9 @@ const ROOMS = {
 
     a3_c_snagstand: {
       id: 'a3_c_snagstand', name: 'THE SNAG STAND', type: 'combat', acts: [3],
+      // A rookery. Everything in it has wings, and the bats have come up out
+      // of the Sog to join them.
+      cast: { owl: 2.6, cindercrow: 2.4, bat: 2.4, fox: 0.6, boar: 0.4, quarrybadger: 0.4, ashelk: 0.5, doe: 0.4 },
       size: { w: 1250, h: 830 }, shape: 'pillars', lock: 'clear',
       doors: [{ side: 'e', t: 0.3 }, { side: 'e', t: 0.7 }, { side: 'n', t: 0.5 }, { side: 's', t: 0.5 }],
       entry: { side: 'w', t: 0.4 },
@@ -838,6 +872,7 @@ const ROOMS = {
 
     a3_c_ashpit: {
       id: 'a3_c_ashpit', name: 'THE ASH PIT', type: 'combat', acts: [3],
+      cast: { quarrybadger: 2.4, cindercrow: 1.6, ashelk: 1.2, fox: 0.6, owl: 0.6 },
       size: { w: 1170, h: 800 }, shape: 'rect', lock: 'clear',
       doors: [{ side: 's', t: 0.3 }, { side: 's', t: 0.7 }, { side: 'e', t: 0.5 }],
       entry: { side: 'n', t: 0.5 },
@@ -881,6 +916,7 @@ const ROOMS = {
     // -- act 3 added variety --
     a3_c_twinkilns: {
       id: 'a3_c_twinkilns', name: 'THE TWIN KILNS', type: 'combat', acts: [3],
+      cast: { quarrybadger: 2.2, ashelk: 2, boar: 1.2, owl: 0.6, cindercrow: 0.7 },
       size: { w: 1210, h: 790 }, shape: 'rect', lock: 'clear',
       doors: [{ side: 'e', t: 0.3 }, { side: 'e', t: 0.7 }],
       entry: { side: 'w', t: 0.4 },
@@ -919,6 +955,7 @@ const ROOMS = {
 
     a3_c_barricadealley: {
       id: 'a3_c_barricadealley', name: 'BARRICADE ALLEY', type: 'combat', acts: [3],
+      cast: { boar: 2.2, fox: 2, quarrybadger: 1.2, owl: 0.5, cindercrow: 0.6 },
       size: { w: 1170, h: 740 }, shape: 'pillars', lock: 'clear',
       doors: [{ side: 'n', t: 0.3 }, { side: 'n', t: 0.7 }, { side: 'w', t: 0.5 }],
       entry: { side: 's', t: 0.5 },
@@ -952,6 +989,7 @@ const ROOMS = {
 
     a3_c_kilngrid: {
       id: 'a3_c_kilngrid', name: 'THE KILN GRID', type: 'combat', acts: [3],
+      cast: { quarrybadger: 2, owl: 1.8, cindercrow: 1.4, ashelk: 0.7, doe: 0.5 },
       size: { w: 1250, h: 830 }, shape: 'pillars', lock: 'clear',
       doors: [{ side: 'e', t: 0.3 }, { side: 'e', t: 0.7 }, { side: 'n', t: 0.5 }, { side: 's', t: 0.5 }],
       entry: { side: 'w', t: 0.5 },
@@ -986,6 +1024,7 @@ const ROOMS = {
   elite: {
     a1_e_stumpcourt: {
       id: 'a1_e_stumpcourt', name: 'THE STUMP COURT', type: 'elite', acts: [1],
+      cast: { chipchoir: 2.2, doe: 1.6, pineconepuffer: 1.4, squirrel: 0.6, bat: 0.5 },
       size: { w: 1080, h: 730 }, shape: 'round', lock: 'clear',
       doors: [{ side: 'e', t: 0.4 }, { side: 'n', t: 0.5 }],
       entry: { side: 'w', t: 0.5 },
@@ -1014,6 +1053,7 @@ const ROOMS = {
 
     a2_e_spillway: {
       id: 'a2_e_spillway', name: 'THE SPILLWAY', type: 'elite', acts: [2],
+      cast: { stiltheron: 2.2, bogfrog: 1.8, beaver: 1.6, raccoon: 0.6, ticktot: 0.5 },
       size: { w: 1130, h: 780 }, shape: 'rect', lock: 'clear',
       doors: [{ side: 'e', t: 0.4 }, { side: 's', t: 0.6 }],
       entry: { side: 'w', t: 0.5 },
@@ -1043,6 +1083,7 @@ const ROOMS = {
 
     a3_e_kilnyard: {
       id: 'a3_e_kilnyard', name: 'THE KILN YARD', type: 'elite', acts: [3],
+      cast: { quarrybadger: 2.4, ashelk: 1.8, boar: 1.2, owl: 0.6, doe: 0.5 },
       size: { w: 1210, h: 790 }, shape: 'pillars', lock: 'clear',
       doors: [{ side: 'e', t: 0.4 }, { side: 'n', t: 0.55 }],
       entry: { side: 'w', t: 0.5 },
@@ -1074,6 +1115,7 @@ const ROOMS = {
     // -- one nastier elite per act: tight corridors that never seal a pocket --
     a1_e_thorncorridor: {
       id: 'a1_e_thorncorridor', name: 'THE THORN CORRIDOR', type: 'elite', acts: [1],
+      cast: { rabbit: 2.2, ticktot: 1.8, squirrel: 1.2, bat: 0.5, doe: 0.6 },
       size: { w: 1130, h: 750 }, shape: 'pillars', lock: 'clear',
       doors: [{ side: 'e', t: 0.4 }, { side: 'n', t: 0.5 }],
       entry: { side: 'w', t: 0.5 },
@@ -1103,6 +1145,7 @@ const ROOMS = {
 
     a2_e_causewaycut: {
       id: 'a2_e_causewaycut', name: 'THE CAUSEWAY CUT', type: 'elite', acts: [2],
+      cast: { sapperrat: 2.2, raccoon: 1.8, bogfrog: 1.2, bat: 0.5, chipchoir: 0.6 },
       size: { w: 1170, h: 770 }, shape: 'pillars', lock: 'clear',
       doors: [{ side: 'e', t: 0.4 }, { side: 's', t: 0.6 }],
       entry: { side: 'w', t: 0.5 },
@@ -1132,6 +1175,7 @@ const ROOMS = {
 
     a3_e_cindermaze: {
       id: 'a3_e_cindermaze', name: 'THE CINDER MAZE', type: 'elite', acts: [3],
+      cast: { cindercrow: 2.6, fox: 1.8, quarrybadger: 1.2, owl: 0.6, boar: 0.5 },
       size: { w: 1210, h: 790 }, shape: 'pillars', lock: 'clear',
       doors: [{ side: 'e', t: 0.4 }, { side: 'n', t: 0.55 }],
       entry: { side: 'w', t: 0.5 },
