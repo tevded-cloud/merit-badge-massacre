@@ -238,12 +238,32 @@ const SPR = (() => {
     g.beginPath(); g.arc(x, y + r * 0.12, r * 1.14, Math.PI * 0.26, Math.PI * 0.74); g.stroke();
   }
 
+  // The Token: a stamped tin disc on a bootlace. The sigil is an eye, outer
+  // ring, lens, slit pupil, pressed dark into the metal, with one canonical
+  // punched notch at the lower right rim. Same signature as the old pendant,
+  // so every call site simply gets the new look.
   function pendant(g, x, y, r) {
-    g.strokeStyle = '#453017'; g.lineWidth = 1;
-    g.beginPath(); g.moveTo(x - r * 1.6, y - r * 2.2); g.lineTo(x, y); g.lineTo(x + r * 1.6, y - r * 2.2); g.stroke();
-    blob(g, x, y, r, r, '#e3b341', { lw: 1, flat: true });
-    star5(g, x, y, r * 0.62);
-    g.strokeStyle = '#7c1210'; g.lineWidth = 0.8; g.stroke();
+    g.strokeStyle = '#5a3a1e'; g.lineWidth = 1.1; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(x - r * 1.6, y - r * 2.2); g.lineTo(x, y - r * 0.7); g.lineTo(x + r * 1.6, y - r * 2.2); g.stroke();
+    g.fillStyle = '#3a2513';
+    g.beginPath(); g.arc(x, y - r * 0.95, r * 0.28, 0, TAU); g.fill();
+    blob(g, x, y, r, r, '#b0b6bd', { lw: 1, flat: true });
+    g.strokeStyle = 'rgba(58,64,72,0.9)'; g.lineWidth = Math.max(0.7, r * 0.18);
+    g.beginPath(); g.arc(x, y, r * 0.72, 0, TAU); g.stroke();
+    const alm = () => {
+      g.beginPath();
+      g.moveTo(x - r * 0.52, y);
+      g.quadraticCurveTo(x, y - r * 0.62, x + r * 0.52, y);
+      g.quadraticCurveTo(x, y + r * 0.62, x - r * 0.52, y);
+      g.closePath();
+    };
+    alm(); g.fillStyle = '#c6ccd3'; g.fill();
+    alm(); g.strokeStyle = 'rgba(50,56,64,0.9)'; g.lineWidth = Math.max(0.6, r * 0.14); g.stroke();
+    g.beginPath(); g.ellipse(x, y, r * 0.14, r * 0.34, 0, 0, TAU);
+    g.fillStyle = '#2a2e34'; g.fill();
+    poly(g, [[x + r * 0.58, y + r * 0.4], [x + r * 1.1, y + r * 0.76], [x + r * 0.38, y + r * 0.92]], OUT, { noline: true });
+    g.fillStyle = 'rgba(255,255,255,0.75)';
+    g.beginPath(); g.arc(x - r * 0.42, y - r * 0.52, r * 0.16, 0, TAU); g.fill();
   }
 
   // ---------------- painters ----------------
@@ -750,6 +770,722 @@ const SPR = (() => {
     blob(g, 50, 61, 6, 6, '#e3b341', { lw: 1.4, flat: true });
     star5(g, 50, 61, 4);
     g.strokeStyle = '#7c1210'; g.lineWidth = 1.2; g.stroke();
+  });
+
+  // ---------------- bosses ----------------
+  // The Hare of Perdition grown into itself: four prong antlers threaded
+  // through its ears, hind feet like snowshoes, the Token on a bootlace.
+  P.bramblebuck = () => mk(96, 104, (g, eyes) => {
+    const CRM = '#e6ddcb', CRM_D = '#cfc4b0', CRM_L = '#f2ecdf';
+    const bone = (x0, y0, x1, y1, x2, y2, w) => {
+      g.lineCap = 'round';
+      g.strokeStyle = OUT; g.lineWidth = w + 2.2;
+      g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(x1, y1, x2, y2); g.stroke();
+      g.strokeStyle = '#d8cfc0'; g.lineWidth = w;
+      g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(x1, y1, x2, y2); g.stroke();
+      g.strokeStyle = 'rgba(255,250,235,0.45)'; g.lineWidth = Math.max(1, w * 0.28);
+      g.beginPath(); g.moveTo(x0 - 1, y0 - 1); g.quadraticCurveTo(x1 - 1.5, y1, x2 - 1, y2 + 1); g.stroke();
+    };
+    // antler beams rise behind the ears first
+    bone(38, 44, 34, 34, 32.5, 25, 4);
+    bone(58, 44, 62, 34, 63.5, 25, 4);
+    // ears: long blades, pink inner cores, a torn hole mid blade
+    apoly(g, [[27, 4, 2], [35, 10, 3], [40, 36, 3], [30, 38, 3], [21, 12, 3]], CRM, { rim: RIM_COOL });
+    apoly(g, [[69, 4, 2], [61, 10, 3], [56, 36, 3], [66, 38, 3], [75, 12, 3]], CRM, { rim: RIM_COOL });
+    apoly(g, [[28.5, 7, 1.5], [33.6, 11.5, 1.5], [37.6, 33, 2], [31.6, 34.5, 2], [24.4, 13, 1.5]], '#e8a0a0', { flat: true, noline: true });
+    apoly(g, [[67.5, 7, 1.5], [62.4, 11.5, 1.5], [58.4, 33, 2], [64.4, 34.5, 2], [71.6, 13, 1.5]], '#e8a0a0', { flat: true, noline: true });
+    blob(g, 30, 15, 1.4, 5.5, 'rgba(255,190,184,0.8)', { flat: true, noline: true, rot: 0.12 });
+    blob(g, 66, 15, 1.4, 5.5, 'rgba(255,190,184,0.8)', { flat: true, noline: true, rot: -0.12 });
+    // pierced holes, then the beams thread up through and fork: four prongs
+    blob(g, 31.5, 22, 2.4, 3, '#221108', { flat: true, lw: 1, rot: 0.15 });
+    blob(g, 64.5, 22, 2.4, 3, '#221108', { flat: true, lw: 1, rot: -0.15 });
+    bone(31.5, 22, 28, 12, 25, 3, 3.6);
+    bone(29.5, 14, 21, 10, 14, 9, 2.8);
+    bone(64.5, 22, 68, 12, 71, 3, 3.6);
+    bone(66.5, 14, 75, 10, 82, 9, 2.8);
+    // body: hunched mass, chest fluff
+    apoly(g, [[30, 62, 6], [66, 62, 6], [74, 76, 5], [70, 90, 4], [26, 90, 4], [22, 76, 5]], CRM_D, { rim: RIM_COOL, mid: 'rgba(80,70,58,0.11)', shade: 'rgba(80,70,58,0.2)' });
+    apoly(g, [[24, 70, 4], [34, 67, 4], [36, 79, 4], [31, 88, 3], [24.5, 87, 3], [21.5, 78, 4]], '#c2b6a2', { lw: LW_INT, line: 'rgba(90,80,66,0.55)', flat: true });
+    apoly(g, [[72, 70, 4], [62, 67, 4], [60, 79, 4], [65, 88, 3], [71.5, 87, 3], [74.5, 78, 4]], '#c2b6a2', { lw: LW_INT, line: 'rgba(90,80,66,0.55)', flat: true });
+    furRow(g, 36, 68, 60, 68, 5, 4.6, 5.2, 0, [CRM_L, CRM], { hi: 'rgba(255,255,255,0.5)' });
+    // head: big, cheek fluff breaking the sides, a hard brow
+    clump(g, 27, 47, 4.6, 5, -1.9, CRM_L, { line: OUT, lw: 1.4 });
+    clump(g, 27.5, 52, 4.2, 4.6, -2.15, CRM, { line: OUT, lw: 1.4 });
+    clump(g, 69, 47, 4.6, 5, 1.9, CRM_L, { line: OUT, lw: 1.4 });
+    clump(g, 68.5, 52, 4.2, 4.6, 2.15, CRM, { line: OUT, lw: 1.4 });
+    apoly(g, [[32, 34, 7], [64, 34, 7], [70, 44, 6], [64, 62, 5], [48, 68, 5], [32, 62, 5], [26, 44, 6]], '#eee7d8', { rim: RIM_COOL, mid: 'rgba(80,70,58,0.1)', shade: 'rgba(80,70,58,0.17)' });
+    blob(g, 48, 39, 11, 3.6, 'rgba(255,255,255,0.35)', { flat: true, noline: true });
+    g.strokeStyle = '#6b5a44'; g.lineWidth = 2; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(34, 42.5); g.lineTo(43, 45); g.stroke();
+    g.beginPath(); g.moveTo(62, 42.5); g.lineTo(53, 45); g.stroke();
+    demonEye(g, eyes, 40, 50, 4.2, '#b0a494');
+    demonEye(g, eyes, 56, 50, 4.2, '#b0a494');
+    // nose, whiskers, long buck teeth with a chipped corner
+    apoly(g, [[45.8, 56, 1], [50.2, 56, 1], [48, 59.4, 1]], '#e8a0a0', { flat: true, noline: true });
+    g.fillStyle = 'rgba(255,255,255,0.7)';
+    g.beginPath(); g.arc(47, 56.8, 0.6, 0, TAU); g.fill();
+    g.strokeStyle = '#9a938a'; g.lineWidth = 0.9;
+    g.beginPath(); g.moveTo(42, 58); g.lineTo(31, 56.5); g.moveTo(42, 60); g.lineTo(32, 61.5);
+    g.moveTo(54, 58); g.lineTo(65, 56.5); g.moveTo(54, 60); g.lineTo(64, 61.5); g.stroke();
+    g.fillStyle = '#fffdf6'; g.strokeStyle = OUT; g.lineWidth = 0.8;
+    poly(g, [[43.6, 60], [47.4, 60], [46.8, 66.5], [43.6, 66]], '#fffdf6', { lw: 0.8 });
+    poly(g, [[48.6, 60], [52.4, 60], [52.4, 64], [50.8, 65.8], [48.9, 65.4]], '#fffdf6', { lw: 0.8 });
+    g.fillStyle = 'rgba(255,255,255,0.9)';
+    g.beginPath(); g.arc(45, 61.4, 0.6, 0, TAU); g.fill();
+    g.beginPath(); g.arc(50, 61.4, 0.6, 0, TAU); g.fill();
+    // little forepaws, then the Token
+    apoly(g, [[38, 80, 2], [45, 80, 2], [46, 86, 1.5], [37, 86, 1.5]], '#cfc4b0', { lw: 1.4 });
+    apoly(g, [[51, 80, 2], [58, 80, 2], [59, 86, 1.5], [50, 86, 1.5]], '#cfc4b0', { lw: 1.4 });
+    pendant(g, 48, 77, 4);
+    // comically oversized hind feet, splayed wide
+    apoly(g, [[10, 87, 4], [42, 88, 3], [43, 100, 3], [7, 99, 4]], CRM_L, { mid: 'rgba(80,70,58,0.1)', shade: 'rgba(80,70,58,0.16)' });
+    apoly(g, [[86, 87, 4], [54, 88, 3], [53, 100, 3], [89, 99, 4]], CRM_L, { mid: 'rgba(80,70,58,0.1)', shade: 'rgba(80,70,58,0.16)' });
+    g.strokeStyle = 'rgba(120,110,100,0.6)'; g.lineWidth = 1.2; g.lineCap = 'round';
+    [15, 24, 33].forEach(tx => { g.beginPath(); g.moveTo(tx, 92); g.lineTo(tx - 1, 98.4); g.stroke(); });
+    [63, 72, 81].forEach(tx => { g.beginPath(); g.moveTo(tx, 92); g.lineTo(tx + 1, 98.4); g.stroke(); });
+    claw(g, 13, 99.4, 0.2, 3, BONE); claw(g, 22, 100, 0.1, 3, BONE); claw(g, 31, 100.2, 0, 3, BONE);
+    claw(g, 83, 99.4, -0.2, 3, BONE); claw(g, 74, 100, -0.1, 3, BONE); claw(g, 65, 100.2, 0, 3, BONE);
+  });
+
+  // The star nosed mole, mostly buried: twenty ray nose star, bone shovel
+  // claws, displaced earth, and the only boss that wears a Token.
+  P.mawmole = () => mk(120, 90, (g, eyes) => {
+    // far lip of thrown earth
+    apoly(g, [[10, 74, 5], [24, 56, 7], [60, 48, 8], [96, 56, 7], [110, 74, 5], [104, 84, 4], [16, 84, 4]], '#2c1a0e', { flat: true, lw: 1.8 });
+    furRow(g, 22, 56, 60, 49, 6, 6, 7, -0.2, ['#3a2313', '#2c1a0e'], { line: OUT, lw: 1 });
+    furRow(g, 60, 49, 98, 56, 6, 6, 7, 0.2, ['#3a2313', '#2c1a0e'], { line: OUT, lw: 1 });
+    // velvet body dome
+    apoly(g, [[38, 68, 8], [41, 38, 9], [52, 24, 8], [68, 24, 8], [79, 38, 9], [82, 68, 8]], '#4a3626', { mid: 'rgba(16,8,4,0.16)', shade: 'rgba(16,8,4,0.26)', hi: 'rgba(140,110,90,0.14)' });
+    furRow(g, 46, 34, 74, 34, 5, 4.4, 4.6, 0, ['#54402e', '#4a3626'], null);
+    furRow(g, 44, 46, 76, 46, 5, 4.6, 4.8, 0, ['#443122', '#4a3626'], null);
+    // tiny buried eyes, lidded by fur
+    demonEye(g, eyes, 49, 33, 1.7, '#2c1e14');
+    demonEye(g, eyes, 71, 33, 1.7, '#2c1e14');
+    clump(g, 49, 29.5, 4.4, 3.4, Math.PI, '#4a3626', null);
+    clump(g, 71, 29.5, 4.4, 3.4, Math.PI, '#4a3626', null);
+    // pale snout, then the twenty ray hot pink star
+    blob(g, 60, 44, 8, 7, '#6e523c', { lw: LW_INT });
+    for (let i = 0; i < 20; i++) {
+      const a = i / 20 * TAU;
+      clump(g, 60 + Math.cos(a) * 5.5, 47 + Math.sin(a) * 5, 3.2, 8, a + Math.PI / 2,
+        i % 2 ? '#ff4fa0' : '#e83a8c', { line: OUT, lw: 0.9 });
+    }
+    blob(g, 60, 47, 3.2, 3, '#c22a74', { lw: 0.9 });
+    g.fillStyle = '#3a0a22';
+    g.beginPath(); g.ellipse(58.8, 47, 0.9, 1.3, 0, 0, TAU); g.fill();
+    g.beginPath(); g.ellipse(61.2, 47, 0.9, 1.3, 0, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.75)';
+    [[60, 40.5], [54.5, 44], [65.5, 44], [57, 52], [63, 52]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 0.7, 0, TAU); g.fill();
+    });
+    // bone shovel claws, splayed at the mound edges
+    for (const s of [-1, 1]) {
+      const hx = 60 + s * 38;
+      apoly(g, [[hx - s * 10, 52, 4], [hx + s * 8, 48, 4], [hx + s * 13, 62, 4], [hx + s * 6, 72, 4], [hx - s * 8, 66, 4]], '#bd9a86', { mid: 'rgba(90,50,30,0.14)', shade: 'rgba(90,50,30,0.22)' });
+      blob(g, hx + s * 2, 57, 4, 3, 'rgba(255,220,200,0.3)', { flat: true, noline: true });
+      claw(g, hx + s * 11, 66, s * 0.75, 11, BONE);
+      claw(g, hx + s * 8, 70, s * 0.4, 13, BONE);
+      claw(g, hx + s * 2, 72, s * 0.1, 12, BONE);
+      claw(g, hx - s * 4, 70, -s * 0.15, 9, BONE);
+    }
+    // near rim of displaced earth over the body base
+    apoly(g, [[4, 80, 5], [20, 68, 6], [44, 73, 6], [62, 66, 7], [84, 73, 6], [102, 68, 6], [116, 80, 5], [110, 88, 4], [10, 88, 4]], '#4a2c16', { mid: 'rgba(12,5,3,0.2)', shade: 'rgba(12,5,3,0.3)', hi: 'rgba(200,140,80,0.12)' });
+    furRow(g, 16, 70, 58, 69, 7, 5.4, 6, -0.1, ['#5a3a1e', '#3a2313'], { line: OUT, lw: 0.9 });
+    furRow(g, 62, 69, 106, 70, 7, 5.4, 6, 0.1, ['#5a3a1e', '#3a2313'], { line: OUT, lw: 0.9 });
+    blob(g, 26, 80, 3.2, 2.2, '#3c4148', { lw: 1, line: '#14161a' });
+    blob(g, 94, 82, 2.6, 1.8, '#3c4148', { lw: 1, line: '#14161a' });
+    blob(g, 52, 84, 2.2, 1.5, '#5a5a52', { lw: 0.9, line: '#14161a' });
+    g.fillStyle = 'rgba(20,10,4,0.5)';
+    [[36, 78], [70, 76], [84, 82], [18, 82]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 1.1, 0, TAU); g.fill();
+    });
+    pendant(g, 60, 74, 3.6);
+  });
+
+  // The Behind: the deliberate hole in the art style. Near black, matte,
+  // almost no highlight, no face, exactly two pale glints. It should look
+  // wrong standing next to everything else.
+  P.behind = () => mk(80, 130, (g) => {
+    const VOID = '#0b0912';
+    // long arms hang past where knees would be, three fingers each
+    apoly(g, [[27, 22, 3], [33, 26, 3], [26, 68, 2.5], [20, 96, 2], [15, 96, 2], [19, 64, 2.5]], VOID, { flat: true });
+    apoly(g, [[53, 22, 3], [47, 26, 3], [54, 68, 2.5], [60, 96, 2], [65, 96, 2], [61, 64, 2.5]], VOID, { flat: true });
+    g.lineCap = 'round';
+    for (const s of [-1, 1]) {
+      const wx = 40 + s * 23, wy = 96;
+      [[-5 * s, 17], [0, 20], [4 * s, 15]].forEach(f => {
+        g.strokeStyle = OUT; g.lineWidth = 3.4;
+        g.beginPath(); g.moveTo(wx, wy); g.lineTo(wx + f[0], wy + f[1]); g.stroke();
+        g.strokeStyle = '#0e0c15'; g.lineWidth = 2;
+        g.beginPath(); g.moveTo(wx, wy); g.lineTo(wx + f[0], wy + f[1]); g.stroke();
+      });
+    }
+    // the body: one tapered silhouette, head tilted a little off center
+    apoly(g, [[35, 6, 9], [47, 7, 9], [52, 20, 7], [54, 40, 6], [48, 78, 6], [43, 122, 3], [37, 122, 3], [32, 78, 6], [26, 40, 6], [28, 20, 7]], VOID, { flat: true });
+    blob(g, 40, 52, 8, 20, 'rgba(34,38,48,0.16)', { flat: true, noline: true });
+    // exactly two pale glints, uneven, nothing else
+    g.fillStyle = 'rgba(216,224,232,0.9)';
+    g.beginPath(); g.arc(35, 16, 1.15, 0, TAU); g.fill();
+    g.beginPath(); g.arc(46, 17.2, 1, 0, TAU); g.fill();
+  });
+
+  // Old Nobody: a void dark stag with a long pale skull, eyes where eyes
+  // should not be, and a crown of antlers built from bone and lost things:
+  // a tent pole, a fishing rod, a bicycle frame piece, one red neckerchief.
+  P.oldnobody = () => mk(180, 200, (g, eyes) => {
+    const boneStk = (w, x0, y0, x1, y1, x2, y2) => {
+      g.lineCap = 'round';
+      g.strokeStyle = OUT; g.lineWidth = w + 2.4;
+      g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(x1, y1, x2, y2); g.stroke();
+      g.strokeStyle = '#cfc4b2'; g.lineWidth = w;
+      g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(x1, y1, x2, y2); g.stroke();
+    };
+    // bone lattice: eleven branches, asymmetric, left side sweeping wider
+    boneStk(4.6, 80, 66, 52, 40, 34, 14);   // 1 left main beam
+    boneStk(3.4, 66, 48, 56, 46, 48, 32);   // 2
+    boneStk(3, 52, 32, 40, 24, 30, 26);     // 3
+    boneStk(2.6, 44, 22, 38, 10, 44, 4);    // 4
+    boneStk(3, 76, 58, 66, 60, 56, 64);     // 5 brow tine
+    boneStk(4.4, 100, 66, 126, 44, 142, 22); // 6 right main beam
+    boneStk(3, 116, 50, 124, 40, 120, 30);  // 7
+    boneStk(2.8, 130, 36, 142, 32, 150, 40); // 8
+    boneStk(2.6, 138, 28, 140, 16, 134, 8); // 9
+    boneStk(2.8, 92, 60, 94, 44, 88, 34);   // 10 crown spike
+    boneStk(2.8, 98, 58, 104, 46, 110, 36); // 11 crown spike
+    // 12 tent pole, lashed across the left beam
+    g.lineCap = 'round';
+    g.strokeStyle = OUT; g.lineWidth = 6;
+    g.beginPath(); g.moveTo(28, 36); g.lineTo(66, 16); g.stroke();
+    g.strokeStyle = '#9aa0a8'; g.lineWidth = 4;
+    g.beginPath(); g.moveTo(28, 36); g.lineTo(66, 16); g.stroke();
+    g.strokeStyle = '#5c626a'; g.lineWidth = 4;
+    g.beginPath(); g.moveTo(46, 26.6); g.lineTo(50, 24.5); g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,0.4)'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(30, 34); g.lineTo(63, 16.6); g.stroke();
+    g.strokeStyle = '#5a3a1e'; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(38, 26); g.lineTo(44, 34); g.moveTo(44, 26); g.lineTo(38, 34); g.stroke();
+    // 13 fishing rod off the right beam, line hanging with a hook
+    g.strokeStyle = OUT; g.lineWidth = 4.6;
+    g.beginPath(); g.moveTo(140, 24); g.quadraticCurveTo(158, 28, 172, 42); g.stroke();
+    g.strokeStyle = '#8a6138'; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(140, 24); g.quadraticCurveTo(158, 28, 172, 42); g.stroke();
+    g.strokeStyle = '#a4753f'; g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(162, 33); g.lineTo(172, 42); g.stroke();
+    g.strokeStyle = 'rgba(230,235,240,0.55)'; g.lineWidth = 0.9;
+    g.beginPath(); g.moveTo(172, 42); g.quadraticCurveTo(174, 54, 170, 64); g.stroke();
+    g.beginPath(); g.arc(168.6, 65.5, 2, Math.PI * 1.7, Math.PI * 0.9); g.stroke();
+    // 14 bicycle frame piece hung in the left lattice, rusted
+    g.strokeStyle = OUT; g.lineWidth = 5;
+    g.beginPath(); g.moveTo(40, 46); g.lineTo(62, 38); g.lineTo(56, 56); g.closePath(); g.stroke();
+    g.strokeStyle = '#6e6a62'; g.lineWidth = 3.2;
+    g.beginPath(); g.moveTo(40, 46); g.lineTo(62, 38); g.lineTo(56, 56); g.closePath(); g.stroke();
+    blob(g, 40, 46, 2.6, 2.6, '#54504a', { flat: true, lw: 1 });
+    blob(g, 52, 42, 2, 1.4, '#7a4a30', { flat: true, noline: true, rot: 0.4 });
+    blob(g, 58, 50, 1.8, 1.2, '#7a4a30', { flat: true, noline: true, rot: -0.5 });
+    // 15 the neckerchief: one bright red readable thing, tied on and hanging
+    blob(g, 120, 30, 3, 2.4, '#d4402c', { lw: 1.1 });
+    apoly(g, [[113, 32, 1.5], [127, 32, 1.5], [120.5, 49, 1]], '#d4402c', { lw: 1.2, mid: 'rgba(90,10,6,0.2)', shade: 'rgba(90,10,6,0.3)' });
+    g.strokeStyle = '#8c1f14'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(117, 34); g.lineTo(120, 44); g.stroke();
+    blob(g, 117.5, 34.5, 2, 1, 'rgba(255,255,255,0.25)', { flat: true, noline: true, rot: 0.5 });
+    // tattered ears, thin void body, stilt legs
+    blob(g, 74, 66, 4.4, 7, '#241f28', { rot: -0.55, lw: 1.6 });
+    blob(g, 106, 66, 4.4, 7, '#241f28', { rot: 0.55, lw: 1.6 });
+    g.lineCap = 'round';
+    [[74, 160, 66, 194], [86, 164, 82, 197], [94, 164, 98, 197], [106, 160, 114, 194]].forEach(l => {
+      const kx = (l[0] + l[2]) / 2 + 2, ky = (l[1] + l[3]) / 2;
+      g.strokeStyle = OUT; g.lineWidth = 6.2;
+      g.beginPath(); g.moveTo(l[0], l[1]); g.lineTo(kx, ky); g.lineTo(l[2], l[3]); g.stroke();
+      g.strokeStyle = '#14101a'; g.lineWidth = 4.6;
+      g.beginPath(); g.moveTo(l[0], l[1]); g.lineTo(kx, ky); g.lineTo(l[2], l[3] - 1.5); g.stroke();
+      g.strokeStyle = OUT; g.lineWidth = 5;
+      g.beginPath(); g.moveTo(l[2], l[3] - 2.2); g.lineTo(l[2], l[3]); g.stroke();
+    });
+    apoly(g, [[64, 110, 10], [116, 110, 10], [122, 140, 9], [112, 166, 7], [68, 166, 7], [58, 140, 9]], '#17131c', { mid: 'rgba(0,0,0,0.22)', shade: 'rgba(0,0,0,0.3)', hi: 'rgba(120,130,160,0.08)' });
+    g.strokeStyle = 'rgba(150,160,180,0.12)'; g.lineWidth = 1.2;
+    for (let i = 0; i < 3; i++) {
+      g.beginPath(); g.arc(90, 118 + i * 10, 20 - i * 2, Math.PI * 0.25, Math.PI * 0.75); g.stroke();
+    }
+    apoly(g, [[80, 88, 4], [100, 88, 4], [104, 116, 4], [76, 116, 4]], '#1d1824', { flat: true, noline: true });
+    // the long pale skull, hung low
+    apoly(g, [[76, 62, 8], [104, 62, 8], [108, 84, 6], [102, 100, 5], [78, 100, 5], [72, 84, 6]], '#e6ded0', { rim: RIM_COOL, mid: 'rgba(90,84,70,0.12)', shade: 'rgba(90,84,70,0.2)' });
+    apoly(g, [[82, 98, 4], [98, 98, 4], [95, 126, 3], [85, 126, 3]], '#d8cfc0', { mid: 'rgba(90,84,70,0.12)', shade: 'rgba(90,84,70,0.2)' });
+    g.strokeStyle = 'rgba(70,60,46,0.5)'; g.lineWidth = 1; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(84, 70); g.lineTo(88, 76); g.lineTo(86, 82); g.stroke();
+    g.beginPath(); g.moveTo(98, 92); g.lineTo(95, 100); g.stroke();
+    blob(g, 84, 80, 5, 6, '#1a1410', { flat: true, noline: true });
+    blob(g, 96, 80, 5, 6, '#1a1410', { flat: true, noline: true });
+    poly(g, [[90, 110], [86.6, 120], [93.4, 120]], '#221a10', { lw: 1 });
+    g.fillStyle = '#efe8da'; g.strokeStyle = OUT; g.lineWidth = 0.7;
+    [85.4, 88.4, 91.4, 94.4].forEach(tx => {
+      g.fillRect(tx, 123, 2.2, 3.4); g.strokeRect(tx, 123, 2.2, 3.4);
+    });
+    // six eyes scattered where they should not be
+    demonEye(g, eyes, 84, 80, 3.6, '#b8ab94');
+    demonEye(g, eyes, 96, 80, 3.6, '#b8ab94');
+    demonEye(g, eyes, 90, 67.5, 2.2, '#b8ab94');
+    demonEye(g, eyes, 76.5, 91, 1.8, '#b8ab94');
+    demonEye(g, eyes, 103, 92, 1.6, '#b8ab94');
+    demonEye(g, eyes, 88, 106, 1.5, '#b8ab94');
+  });
+
+  // ---------------- late game species ----------------
+  P.ticktot = () => mk(34, 30, (g, eyes) => {
+    // six thin legs, jointed, three a side
+    g.lineCap = 'round';
+    const leg = (x0, y0, x1, y1, x2, y2) => {
+      g.strokeStyle = OUT; g.lineWidth = 2.8;
+      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+      g.strokeStyle = '#4a3421'; g.lineWidth = 1.4;
+      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    };
+    leg(9, 12, 3, 8, 1, 15); leg(8, 16, 2, 16, 1, 23); leg(10, 20, 4, 23, 4, 28);
+    leg(25, 12, 31, 8, 33, 15); leg(26, 16, 32, 16, 33, 23); leg(24, 20, 30, 23, 30, 28);
+    // round body with a darker scutum near the head
+    blob(g, 17, 15, 10.5, 9, '#6b4a2e', { rim: RIM_WARM, mid: 'rgba(38,24,10,0.15)', shade: 'rgba(38,24,10,0.26)' });
+    blob(g, 17, 19.5, 5.5, 3.2, '#503722', { flat: true, noline: true });
+    g.fillStyle = 'rgba(38,24,10,0.4)';
+    [[11, 12], [23, 12], [14, 8.5], [20, 8.5]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 0.8, 0, TAU); g.fill();
+    });
+    // the gold back dot: accent and cult tell in one
+    blob(g, 17, 10.5, 3, 3, '#f4c542', { lw: 1, flat: true });
+    g.fillStyle = 'rgba(255,252,235,0.9)';
+    g.beginPath(); g.arc(16, 9.5, 0.9, 0, TAU); g.fill();
+    // little head tucked at the front
+    blob(g, 17, 24.5, 4.6, 3.6, '#5a3a24', { lw: 1.6, mid: 'rgba(30,18,8,0.16)', shade: 'rgba(30,18,8,0.24)' });
+    demonEye(g, eyes, 14.6, 24, 1.7, '#3a2413');
+    demonEye(g, eyes, 19.4, 24, 1.7, '#3a2413');
+    g.strokeStyle = '#2c1c0e'; g.lineWidth = 1.2; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(15.4, 27.6); g.lineTo(16.4, 29.2); g.stroke();
+    g.beginPath(); g.moveTo(18.6, 27.6); g.lineTo(17.6, 29.2); g.stroke();
+  });
+
+  P.pineconepuffer = () => mk(40, 46, (g, eyes) => {
+    // stubby feet first
+    apoly(g, [[10, 40, 2], [17, 40, 2], [18, 45, 1.5], [9, 45, 1.5]], '#8a6138', { lw: 1.4 });
+    apoly(g, [[23, 40, 2], [30, 40, 2], [31, 45, 1.5], [22, 45, 1.5]], '#8a6138', { lw: 1.4 });
+    g.strokeStyle = 'rgba(60,36,16,0.6)'; g.lineWidth = 1; g.lineCap = 'round';
+    [12, 14.8, 25.2, 28].forEach(tx => { g.beginPath(); g.moveTo(tx, 42); g.lineTo(tx, 44.4); g.stroke(); });
+    // cone body: dark base egg, then downward scale rows bottom to top
+    apoly(g, [[13, 8, 5], [27, 8, 5], [33, 25, 6], [28, 41, 4], [12, 41, 4], [7, 25, 6]], '#4a2c12', { mid: 'rgba(20,10,4,0.18)', shade: 'rgba(20,10,4,0.28)' });
+    furRow(g, 11, 40, 29, 40, 5, 6.6, 8, Math.PI, ['#8a5a34', '#6e4526'], { line: OUT, lw: 1, hi: 'rgba(240,200,150,0.35)' });
+    furRow(g, 9.5, 33, 30.5, 33, 5, 6.8, 8.4, Math.PI, ['#6e4526', '#8a5a34'], { line: OUT, lw: 1 });
+    furRow(g, 10, 26, 30, 26, 4, 6.6, 8, Math.PI, ['#8a5a34', '#5f3a1e'], { line: OUT, lw: 1, hi: 'rgba(240,200,150,0.35)' });
+    furRow(g, 12, 19, 28, 19, 4, 6, 7.4, Math.PI, ['#6e4526', '#8a5a34'], { line: OUT, lw: 1 });
+    furRow(g, 14.5, 13, 25.5, 13, 3, 5.6, 6.8, Math.PI, ['#8a5a34', '#6e4526'], { line: OUT, lw: 1, hi: 'rgba(240,200,150,0.3)' });
+    // one eye peeking from between the scales
+    blob(g, 25, 22, 3.6, 2.8, '#2c1a0c', { flat: true, noline: true });
+    demonEye(g, eyes, 25, 21.5, 2.6, '#4a3018');
+    clump(g, 27.5, 26.5, 5.4, 6.6, Math.PI - 0.25, '#6e4526', { line: OUT, lw: 1 });
+    // the accent: a live green sprout on top
+    g.strokeStyle = '#4a7c3a'; g.lineWidth = 1.6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(20, 9); g.quadraticCurveTo(19.5, 5, 20.5, 2); g.stroke();
+    clump(g, 18.5, 4, 3.2, 4.6, -0.85, '#7ea34c', { line: OUT, lw: 0.9, hi: 'rgba(220,255,170,0.5)' });
+    clump(g, 22.5, 3.6, 3, 4.2, 0.85, '#5f8c3a', { line: OUT, lw: 0.9 });
+  });
+
+  P.chipchoir = () => mk(44, 40, (g, eyes) => {
+    // flat little tail up behind
+    apoly(g, [[32, 30, 3], [39, 19, 3], [42, 25, 2], [39, 34, 2], [32, 36, 2]], '#c06026', { rim: RIM_WARM });
+    g.strokeStyle = '#4a2c12'; g.lineWidth = 1.6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(35, 31); g.quadraticCurveTo(38.5, 27, 39.5, 22.5); g.stroke();
+    // small body with flank stripes
+    apoly(g, [[14, 24, 5], [30, 24, 5], [33, 32, 4], [28, 38, 3], [16, 38, 3], [11, 32, 4]], '#c06026', { rim: RIM_WARM, mid: 'rgba(70,28,8,0.14)', shade: 'rgba(70,28,8,0.24)' });
+    blob(g, 22, 33, 5.4, 4, '#e8cfa5', { flat: true, noline: true });
+    g.lineCap = 'round';
+    g.strokeStyle = '#4a2c12'; g.lineWidth = 1.8;
+    g.beginPath(); g.moveTo(13.5, 27); g.quadraticCurveTo(12.5, 32, 14.5, 36.5); g.stroke();
+    g.beginPath(); g.moveTo(30.5, 27); g.quadraticCurveTo(31.5, 32, 29.5, 36.5); g.stroke();
+    g.strokeStyle = '#e8cfa5'; g.lineWidth = 1.1;
+    g.beginPath(); g.moveTo(15.5, 27); g.quadraticCurveTo(14.6, 32, 16.4, 36); g.stroke();
+    g.beginPath(); g.moveTo(28.5, 27); g.quadraticCurveTo(29.4, 32, 27.6, 36); g.stroke();
+    // ears with the pink accent
+    apoly(g, [[12, 2.5, 1.5], [18, 8.5, 2], [10.5, 9.5, 2]], '#cc6d2c');
+    apoly(g, [[32, 2.5, 1.5], [26, 8.5, 2], [33.5, 9.5, 2]], '#cc6d2c');
+    apoly(g, [[12.6, 4.6, 0.8], [16.4, 8.2, 1], [11.8, 8.8, 1]], PINK, { flat: true, noline: true });
+    apoly(g, [[31.4, 4.6, 0.8], [27.6, 8.2, 1], [32.2, 8.8, 1]], PINK, { flat: true, noline: true });
+    // big head over the body
+    apoly(g, [[12, 6, 6], [32, 6, 6], [36, 14, 5], [30, 24, 4], [14, 24, 4], [8, 14, 5]], '#cc6d2c', { rim: RIM_WARM, mid: 'rgba(70,28,8,0.12)', shade: 'rgba(70,28,8,0.2)' });
+    blob(g, 22, 9.5, 7, 2.6, 'rgba(255,236,200,0.25)', { flat: true, noline: true });
+    // chipmunk face stripes through the eye line
+    g.strokeStyle = '#4a2c12'; g.lineWidth = 1.4;
+    g.beginPath(); g.moveTo(10.5, 13); g.lineTo(15.4, 13); g.moveTo(28.6, 13); g.lineTo(33.5, 13); g.stroke();
+    g.strokeStyle = '#e8cfa5'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(10.5, 10.8); g.lineTo(15, 10.8); g.moveTo(29, 10.8); g.lineTo(33.5, 10.8); g.stroke();
+    // stuffed cheek pouches bulging out of the head silhouette
+    blob(g, 11.5, 19, 5, 4.6, '#e8cfa5', { lw: 1.2, line: 'rgba(120,70,30,0.6)', mid: 'rgba(120,70,30,0.1)', shade: 'rgba(120,70,30,0.16)' });
+    blob(g, 32.5, 19, 5, 4.6, '#e8cfa5', { lw: 1.2, line: 'rgba(120,70,30,0.6)', mid: 'rgba(120,70,30,0.1)', shade: 'rgba(120,70,30,0.16)' });
+    blob(g, 10, 17.5, 1.8, 1.3, 'rgba(255,255,255,0.5)', { flat: true, noline: true });
+    blob(g, 31, 17.5, 1.8, 1.3, 'rgba(255,255,255,0.5)', { flat: true, noline: true });
+    demonEye(g, eyes, 18, 13, 2.6, '#7c3a13');
+    demonEye(g, eyes, 26, 13, 2.6, '#7c3a13');
+    // tiny pink nose and a little round singing mouth
+    apoly(g, [[21, 16.4, 0.7], [23, 16.4, 0.7], [22, 17.8, 0.7]], '#e8a0a0', { flat: true, noline: true });
+    blob(g, 22, 20.5, 1.8, 2.3, '#3a1408', { flat: true, lw: 0.8 });
+    g.fillStyle = '#fffdf6';
+    g.fillRect(21.2, 18.9, 1.6, 1.3);
+    // paws at the sides, then the Token
+    apoly(g, [[14.5, 29, 1.5], [19.5, 29, 1.5], [20, 33.4, 1.2], [14, 33.4, 1.2]], '#9c4a1c', { lw: 1.2 });
+    apoly(g, [[24.5, 29, 1.5], [29.5, 29, 1.5], [30, 33.4, 1.2], [24, 33.4, 1.2]], '#9c4a1c', { lw: 1.2 });
+    pendant(g, 22, 27, 2.4);
+  });
+
+  P.bogfrog = () => mk(52, 40, (g, eyes) => {
+    // folded haunches with webbed toes
+    for (const s of [-1, 1]) {
+      const hx = 26 + s * 20;
+      apoly(g, [[hx - s * 3, 22, 4], [hx + s * 6, 18, 4], [hx + s * 9, 30, 3], [hx + s * 3, 36, 3], [hx - s * 4, 30, 3]], '#42522f', { mid: 'rgba(20,28,12,0.16)', shade: 'rgba(20,28,12,0.26)' });
+      g.strokeStyle = '#33402a'; g.lineWidth = 1.8; g.lineCap = 'round';
+      [[0, 0], [3, 1], [6, 0]].forEach(t => {
+        g.beginPath(); g.moveTo(hx + s * 3, 35); g.lineTo(hx + s * (t[0] - 2), 38.6 - t[1]); g.stroke();
+      });
+    }
+    // wide low body
+    apoly(g, [[8, 14, 7], [44, 14, 7], [49, 26, 5], [42, 36, 4], [10, 36, 4], [3, 26, 5]], '#4a5c3a', { rim: RIM_GREEN, mid: 'rgba(20,28,12,0.14)', shade: 'rgba(20,28,12,0.24)' });
+    g.fillStyle = 'rgba(30,40,20,0.5)';
+    [[14, 18], [36, 17], [42, 24], [10, 24], [30, 21]].forEach(d => {
+      g.beginPath(); g.ellipse(d[0], d[1], 1.9, 1.3, 0.3, 0, TAU); g.fill();
+    });
+    // top mounted eye turrets breaking the upper silhouette
+    blob(g, 15, 11.5, 6, 5, '#4a5c3a', { lw: LW_SIL, mid: 'rgba(20,28,12,0.12)', shade: 'rgba(20,28,12,0.2)' });
+    blob(g, 37, 11.5, 6, 5, '#4a5c3a', { lw: LW_SIL, mid: 'rgba(20,28,12,0.12)', shade: 'rgba(20,28,12,0.2)' });
+    demonEye(g, eyes, 15, 10, 3, '#33402a');
+    demonEye(g, eyes, 37, 10, 3, '#33402a');
+    // the wide mouth and nostrils
+    g.strokeStyle = '#22301a'; g.lineWidth = 1.6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(9, 21); g.quadraticCurveTo(26, 26, 43, 21); g.stroke();
+    g.fillStyle = '#22301a';
+    g.beginPath(); g.arc(23.5, 16.5, 0.7, 0, TAU); g.fill();
+    g.beginPath(); g.arc(28.5, 16.5, 0.7, 0, TAU); g.fill();
+    // inflatable throat sac: a pale under layer with a hot translucent core
+    blob(g, 26, 31.5, 13, 7, '#d8cba0', { lw: 1.2, line: 'rgba(40,44,22,0.55)' });
+    blob(g, 26, 30.5, 7, 4, 'rgba(255,178,168,0.55)', { flat: true, noline: true });
+    g.strokeStyle = 'rgba(120,110,70,0.5)'; g.lineWidth = 1;
+    g.beginPath(); g.arc(26, 29, 9.5, Math.PI * 0.2, Math.PI * 0.8); g.stroke();
+    // front feet under the sac edge
+    g.strokeStyle = '#33402a'; g.lineWidth = 1.8;
+    [[17, 37.5], [35, 37.5]].forEach(f => {
+      [-3, 0, 3].forEach(o => {
+        g.beginPath(); g.moveTo(f[0], f[1] - 1.5); g.lineTo(f[0] + o, f[1] + 1.8); g.stroke();
+      });
+    });
+  });
+
+  P.stiltheron = () => mk(50, 110, (g, eyes) => {
+    // absurd stilt legs, backward knees, long toes
+    g.lineCap = 'round';
+    const leg = (hx, hy, kx, ky, fx, fy) => {
+      g.strokeStyle = OUT; g.lineWidth = 4;
+      g.beginPath(); g.moveTo(hx, hy); g.lineTo(kx, ky); g.lineTo(fx, fy); g.stroke();
+      g.strokeStyle = '#5a5c4a'; g.lineWidth = 2.4;
+      g.beginPath(); g.moveTo(hx, hy); g.lineTo(kx, ky); g.lineTo(fx, fy); g.stroke();
+      g.strokeStyle = 'rgba(20,18,12,0.6)'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(kx - 1.4, ky); g.lineTo(kx + 1.4, ky); g.stroke();
+      g.strokeStyle = '#4a4c3c'; g.lineWidth = 1.6;
+      [[-5, 2], [0, 3], [4, 2]].forEach(t => {
+        g.beginPath(); g.moveTo(fx, fy); g.lineTo(fx + t[0], fy + t[1]); g.stroke();
+      });
+    };
+    leg(23, 60, 27, 82, 19, 103);
+    leg(29, 62, 34, 84, 33, 105);
+    // tail wisp, then the compact body with a folded wing plane
+    clump(g, 12, 58, 4.4, 7, -2.3, '#6e7a88', { line: OUT, lw: 1.2 });
+    apoly(g, [[14, 44, 6], [34, 42, 6], [40, 52, 5], [34, 64, 5], [18, 64, 5], [10, 54, 5]], '#8a95a3', { rim: RIM_COOL, mid: 'rgba(30,36,44,0.13)', shade: 'rgba(30,36,44,0.22)' });
+    apoly(g, [[22, 46, 4], [35, 45, 4], [38, 53, 4], [32, 62, 3], [24, 60, 4]], '#6e7a88', { lw: LW_INT, line: 'rgba(30,36,44,0.55)' });
+    furRow(g, 27, 58, 35, 51, 3, 3.4, 4.4, 2.5, ['#5e6a78', '#6e7a88'], { line: OUT, lw: 1 });
+    furRow(g, 15, 52, 20, 60, 3, 3.4, 4, -0.4, ['#d8d4ca', '#c4c0b4'], { hi: 'rgba(255,255,255,0.4)' });
+    // the S neck, one continuous stroke
+    const neck = () => {
+      g.beginPath(); g.moveTo(19, 50);
+      g.quadraticCurveTo(4, 40, 13, 27);
+      g.quadraticCurveTo(20, 17, 27, 13);
+    };
+    g.strokeStyle = OUT; g.lineWidth = 8; neck(); g.stroke();
+    g.strokeStyle = '#98a4b2'; g.lineWidth = 6; neck(); g.stroke();
+    g.strokeStyle = 'rgba(240,244,248,0.35)'; g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(16, 46); g.quadraticCurveTo(7, 39, 14, 28); g.stroke();
+    // head, black crest, dagger beak in gold
+    blob(g, 30, 11, 6.5, 5.5, '#98a4b2', { lw: LW_SIL, mid: 'rgba(30,36,44,0.12)', shade: 'rgba(30,36,44,0.2)' });
+    clump(g, 25, 7, 3, 6.4, -2, '#2c3038', { line: OUT, lw: 1 });
+    clump(g, 27, 5.4, 2.6, 5.6, -1.75, '#3a4048', { line: OUT, lw: 1 });
+    poly(g, [[34, 8.6], [49, 12.6], [34, 14.6]], '#e0a83c', { lw: 1.2 });
+    g.strokeStyle = 'rgba(255,236,170,0.8)'; g.lineWidth = 0.8;
+    g.beginPath(); g.moveTo(35, 11.4); g.lineTo(46, 12.4); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.8)';
+    g.beginPath(); g.arc(47.2, 12.4, 0.6, 0, TAU); g.fill();
+    demonEye(g, eyes, 27.5, 10, 2.4, '#5c6878');
+    demonEye(g, eyes, 33, 10.6, 2, '#5c6878');
+  });
+
+  P.sapperrat = () => mk(44, 34, (g, eyes) => {
+    // tail snaking on the surface behind
+    g.strokeStyle = OUT; g.lineWidth = 3.6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(33, 23); g.quadraticCurveTo(40, 19, 43, 22); g.stroke();
+    g.strokeStyle = '#4a2e1a'; g.lineWidth = 2.2;
+    g.beginPath(); g.moveTo(33, 23); g.quadraticCurveTo(40, 19, 43, 22); g.stroke();
+    // wet slicked body hump with spiked fur breaks along the back
+    apoly(g, [[8, 18, 5], [20, 11, 6], [32, 15, 5], [37, 24, 4], [8, 27, 4]], '#5a3a24', { mid: 'rgba(24,12,6,0.16)', shade: 'rgba(24,12,6,0.26)', hi: 'rgba(210,230,240,0.22)' });
+    clump(g, 16, 11.5, 3.4, 4.6, -0.5, '#4a2e1a', { line: OUT, lw: 1 });
+    clump(g, 22, 11, 3.4, 4.8, -0.15, '#54341e', { line: OUT, lw: 1 });
+    clump(g, 28, 13, 3.2, 4.2, 0.25, '#4a2e1a', { line: OUT, lw: 1 });
+    // head, wet brow shine, round ears
+    blob(g, 10, 7.5, 2.6, 2.6, '#4a2e1a', { lw: 1.4 });
+    blob(g, 19, 6, 2.6, 2.6, '#4a2e1a', { lw: 1.4 });
+    blob(g, 10.6, 7.8, 1.1, 1.1, 'rgba(24,10,4,0.5)', { flat: true, noline: true });
+    blob(g, 19.4, 6.4, 1.1, 1.1, 'rgba(24,10,4,0.5)', { flat: true, noline: true });
+    apoly(g, [[6, 9, 4], [20, 7, 5], [26, 13, 4], [23, 21, 4], [8, 22, 4], [2, 15, 4]], '#654328', { mid: 'rgba(30,16,6,0.14)', shade: 'rgba(30,16,6,0.22)', hi: 'rgba(210,230,240,0.25)' });
+    blob(g, 13, 10.5, 4.4, 1.8, 'rgba(220,238,248,0.3)', { flat: true, noline: true, rot: -0.15 });
+    demonEye(g, eyes, 11, 14, 2.4, '#3f2917');
+    demonEye(g, eyes, 19, 14, 2.4, '#3f2917');
+    // wet nose, whiskers, little incisors
+    blob(g, 5.4, 18, 1.7, 1.4, '#221108', { flat: true, noline: true });
+    g.fillStyle = 'rgba(255,255,255,0.8)';
+    g.beginPath(); g.arc(5, 17.5, 0.6, 0, TAU); g.fill();
+    g.strokeStyle = 'rgba(200,205,210,0.5)'; g.lineWidth = 0.8; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(6, 19); g.lineTo(1, 18); g.moveTo(6.5, 20); g.lineTo(1.5, 21); g.stroke();
+    g.fillStyle = '#fffdf6'; g.strokeStyle = OUT; g.lineWidth = 0.6;
+    g.fillRect(6.5, 20.2, 1.5, 2.2); g.strokeRect(6.5, 20.2, 1.5, 2.2);
+    // the accent: a pondweed strand draped over head and back
+    g.strokeStyle = '#4a8c3a'; g.lineWidth = 1.8; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(9, 6); g.quadraticCurveTo(17, 9, 24, 8); g.quadraticCurveTo(29, 8, 31, 12); g.stroke();
+    clump(g, 24, 8.5, 2.8, 4, 1.9, '#5fa348', { line: OUT, lw: 0.8 });
+    clump(g, 30, 11.5, 2.6, 3.6, 2.4, '#4a8c3a', { line: OUT, lw: 0.8 });
+    // the waterline: dark bog water across the base, ripples, glints
+    apoly(g, [[0, 25, 2], [44, 25, 2], [44, 34, 0], [0, 34, 0]], '#20342c', { flat: true, noline: true });
+    g.strokeStyle = 'rgba(126,200,232,0.4)'; g.lineWidth = 1.2; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(0, 25.5); g.quadraticCurveTo(8, 24.2, 14, 25.5);
+    g.quadraticCurveTo(22, 26.8, 30, 25.3); g.quadraticCurveTo(37, 24.4, 44, 25.6); g.stroke();
+    g.strokeStyle = 'rgba(126,200,232,0.28)'; g.lineWidth = 1;
+    g.beginPath(); g.ellipse(20, 27.5, 14, 2, 0, 0.15, Math.PI - 0.3); g.stroke();
+    g.beginPath(); g.ellipse(21, 30, 18, 2.6, 0, 0.3, Math.PI - 0.5); g.stroke();
+    g.fillStyle = 'rgba(190,230,248,0.4)';
+    [[7, 28], [34, 28.5], [26, 31.5]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 0.8, 0, TAU); g.fill();
+    });
+  });
+
+  P.ashelk = () => mk(80, 90, (g, eyes) => {
+    // blackened branch antlers with ember tips
+    g.lineCap = 'round';
+    const char = (x0, y0, x1, y1, x2, y2, w, ember) => {
+      g.strokeStyle = OUT; g.lineWidth = w + 1.8;
+      g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(x1, y1, x2, y2); g.stroke();
+      g.strokeStyle = '#241a12'; g.lineWidth = w;
+      g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(x1, y1, x2, y2); g.stroke();
+      if (ember) {
+        g.fillStyle = 'rgba(255,74,32,0.35)';
+        g.beginPath(); g.arc(x2, y2, 2.6, 0, TAU); g.fill();
+        g.fillStyle = '#ff8c28';
+        g.beginPath(); g.arc(x2, y2, 1.1, 0, TAU); g.fill();
+      }
+    };
+    char(31, 20, 18, 12, 10, 3, 3, true);
+    char(24, 13, 15, 12, 8, 16, 2.4, true);
+    char(20, 8, 20, 3, 25, 1, 2, true);
+    char(49, 20, 62, 12, 70, 3, 3, true);
+    char(56, 13, 65, 12, 72, 16, 2.4, true);
+    char(60, 8, 60, 3, 55, 1, 2, true);
+    // ears, segmented legs with charred lower halves
+    blob(g, 27, 16, 3.6, 5, '#6e6e6c', { rot: -0.5, lw: 1.6 });
+    blob(g, 53, 16, 3.6, 5, '#6e6e6c', { rot: 0.5, lw: 1.6 });
+    [[26, 62, 24, 87], [54, 62, 56, 87], [33, 65, 32, 88], [47, 65, 48, 88]].forEach(l => {
+      const kx = (l[0] + l[2]) / 2 + 1.4, ky = (l[1] + l[3]) / 2;
+      g.strokeStyle = OUT; g.lineWidth = 5.4;
+      g.beginPath(); g.moveTo(l[0], l[1]); g.lineTo(kx, ky); g.lineTo(l[2], l[3]); g.stroke();
+      g.strokeStyle = '#6e6e6c'; g.lineWidth = 4;
+      g.beginPath(); g.moveTo(l[0], l[1]); g.lineTo(kx, ky); g.stroke();
+      g.strokeStyle = '#3a3a38'; g.lineWidth = 4;
+      g.beginPath(); g.moveTo(kx, ky); g.lineTo(l[2], l[3] - 1.8); g.stroke();
+      g.strokeStyle = OUT; g.lineWidth = 4.4;
+      g.beginPath(); g.moveTo(l[2], l[3] - 2.2); g.lineTo(l[2], l[3]); g.stroke();
+    });
+    // neck, then the humped shoulder body
+    apoly(g, [[33, 26, 4], [47, 26, 4], [50, 40, 4], [30, 40, 4]], '#7c7c7a', { flat: true, noline: true });
+    apoly(g, [[16, 40, 7], [30, 30, 8], [46, 32, 8], [62, 40, 6], [66, 54, 5], [56, 66, 5], [24, 66, 5], [12, 54, 6]], '#8a8a88', { rim: RIM_COOL, mid: 'rgba(30,30,30,0.14)', shade: 'rgba(30,30,30,0.24)' });
+    furRow(g, 24, 42, 56, 42, 6, 4, 4.6, 0, ['#9a9a98', '#8a8a88'], { hi: 'rgba(230,230,225,0.35)' });
+    // ash flecks drifting on the back
+    g.fillStyle = 'rgba(222,222,216,0.55)';
+    [[26, 36], [42, 34], [56, 44], [34, 47]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 0.9, 0, TAU); g.fill();
+    });
+    // the accent: glowing ember seam cracks across shoulder and haunch
+    const crack = pts => {
+      g.strokeStyle = 'rgba(255,74,32,0.35)'; g.lineWidth = 3.2; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+      g.stroke();
+      g.strokeStyle = '#ff4a20'; g.lineWidth = 1.3;
+      g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+      g.stroke();
+    };
+    crack([[24, 48], [30, 54], [28, 61]]);
+    crack([[48, 42], [54, 48], [52, 56], [57, 61]]);
+    crack([[38, 56], [43, 60]]);
+    g.fillStyle = '#ffdc8c';
+    [[30, 54], [54, 48], [52, 56]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 0.7, 0, TAU); g.fill();
+    });
+    // head with a charred muzzle and chin beard
+    apoly(g, [[30, 12, 5], [50, 12, 5], [53, 21, 4], [47, 30, 4], [33, 30, 4], [27, 21, 4]], '#8a8a88', { rim: RIM_COOL, mid: 'rgba(30,30,30,0.12)', shade: 'rgba(30,30,30,0.2)' });
+    blob(g, 36, 14.5, 3.4, 1.8, 'rgba(240,240,235,0.3)', { flat: true, noline: true });
+    apoly(g, [[34, 24.5, 3], [46, 24.5, 3], [44.5, 32.5, 3], [35.5, 32.5, 3]], '#4a4644', { lw: LW_INT });
+    g.fillStyle = '#221e1c';
+    g.beginPath(); g.ellipse(37.6, 28.6, 1.1, 1.6, 0, 0, TAU); g.fill();
+    g.beginPath(); g.ellipse(42.4, 28.6, 1.1, 1.6, 0, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.4)';
+    g.beginPath(); g.arc(37.2, 27.8, 0.5, 0, TAU); g.fill();
+    clump(g, 40, 33.5, 3.4, 4.4, Math.PI, '#5c5c5a', { line: OUT, lw: 1 });
+    demonEye(g, eyes, 34.5, 18.5, 3, '#5c5c5a');
+    demonEye(g, eyes, 45.5, 18.5, 3, '#5c5c5a');
+  });
+
+  P.cindercrow = () => mk(48, 34, (g, eyes) => {
+    // half spread wings dipping down and out: the W silhouette
+    for (const s of [-1, 1]) {
+      g.save(); g.translate(23, 0); g.scale(s, 1);
+      const wingPts = [[-2, 12, 3], [-14, 18, 2.5], [-20, 27, 1.5], [-14.5, 24, 1.5], [-15, 31, 1.5], [-9.5, 26.5, 1.5], [-8.5, 32, 1.5], [-4, 26, 2], [-1, 18, 3]];
+      apoly(g, wingPts, '#26242a', { mid: 'rgba(8,8,12,0.2)', shade: 'rgba(8,8,12,0.3)', hi: 'rgba(130,140,165,0.14)' });
+      g.strokeStyle = 'rgba(130,140,160,0.3)'; g.lineWidth = 0.9; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(-4, 15); g.lineTo(-16, 24); g.stroke();
+      g.beginPath(); g.moveTo(-3, 18); g.lineTo(-11, 27); g.stroke();
+      g.restore();
+    }
+    // tail fan behind the body
+    apoly(g, [[19, 24, 2], [27, 24, 2], [30, 32, 1.5], [25.5, 30, 1.5], [23, 33, 1.5], [20.5, 30, 1.5], [16, 32, 1.5]], '#1e1c22', { flat: true, lw: 1.4 });
+    // body with the ember throat glow
+    g.fillStyle = 'rgba(255,74,32,0.28)';
+    g.beginPath(); g.ellipse(23, 17, 6.5, 7, 0, 0, TAU); g.fill();
+    apoly(g, [[17, 9, 5], [29, 9, 5], [32, 19, 4], [26, 27, 3], [20, 27, 3], [14, 19, 4]], '#2c2a30', { rim: RIM_COOL, mid: 'rgba(8,8,12,0.18)', shade: 'rgba(8,8,12,0.28)' });
+    blob(g, 23, 17.5, 4.2, 5, '#3a1408', { flat: true, noline: true });
+    g.strokeStyle = '#ff8c28'; g.lineWidth = 1.2; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(21, 14); g.lineTo(23, 17.5); g.lineTo(22, 21); g.stroke();
+    g.beginPath(); g.moveTo(25.5, 15); g.lineTo(24.5, 19.5); g.stroke();
+    g.fillStyle = '#ffdc8c';
+    g.beginPath(); g.arc(23, 17.5, 0.8, 0, TAU); g.fill();
+    // charcoal head with a faint cool sheen
+    blob(g, 22, 8, 6, 5.5, '#26242a', { lw: LW_SIL, mid: 'rgba(8,8,12,0.16)', shade: 'rgba(8,8,12,0.26)' });
+    g.strokeStyle = 'rgba(152,196,246,0.22)'; g.lineWidth = 1.4; g.lineCap = 'round';
+    g.beginPath(); g.arc(22, 8, 4.2, Math.PI * 1.05, Math.PI * 1.6); g.stroke();
+    // beak with an ember seam
+    poly(g, [[27, 5.6], [38, 8.4], [27, 10.8]], '#1a181e', { lw: 1.1 });
+    g.strokeStyle = '#ff8c28'; g.lineWidth = 0.8;
+    g.beginPath(); g.moveTo(29, 8.3); g.lineTo(35, 8.4); g.stroke();
+    demonEye(g, eyes, 18.5, 7, 2.2, '#3a3742');
+    demonEye(g, eyes, 24.5, 6.6, 2.2, '#3a3742');
+    // tucked feet
+    g.strokeStyle = '#1a181e'; g.lineWidth = 1.6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(20, 27.5); g.lineTo(19, 30.5); g.stroke();
+    g.beginPath(); g.moveTo(26, 27.5); g.lineTo(27, 30.5); g.stroke();
+  });
+
+  P.quarrybadger = () => mk(60, 44, (g, eyes) => {
+    // tail stub behind
+    clump(g, 53, 26, 5, 6.6, 1.9, '#5c584f', { line: OUT, lw: 1.3 });
+    // long low body
+    apoly(g, [[8, 20, 6], [24, 13, 7], [44, 15, 6], [54, 23, 5], [55, 33, 4], [46, 40, 4], [12, 40, 4], [4, 30, 5]], '#6e6a62', { rim: RIM_COOL, mid: 'rgba(28,26,22,0.14)', shade: 'rgba(28,26,22,0.24)' });
+    furRow(g, 18, 17, 46, 19, 5, 4.2, 4.8, -0.1, ['#7c7870', '#6e6a62'], null);
+    // badger stripes surviving on the rear flank
+    g.lineCap = 'round';
+    g.strokeStyle = '#3a3630'; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(40, 17); g.quadraticCurveTo(48, 22, 51, 30); g.stroke();
+    g.strokeStyle = '#d8d4ca'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(45, 16.5); g.quadraticCurveTo(52, 21, 54, 28); g.stroke();
+    // stub legs, long bone digger claws on the front pair
+    [[14, 37], [26, 38], [38, 38], [48, 37]].forEach((f, i) => {
+      apoly(g, [[f[0] - 3.2, f[1], 1.2], [f[0] + 3.2, f[1], 1.2], [f[0] + 2.6, f[1] + 5, 1], [f[0] - 2.6, f[1] + 5, 1]], '#33302c', { flat: true, lw: 1.2 });
+      if (i < 2) {
+        claw(g, f[0] - 2, f[1] + 5, 0.15, 3.6, BONE);
+        claw(g, f[0], f[1] + 5.4, 0, 4, BONE);
+        claw(g, f[0] + 2, f[1] + 5, -0.15, 3.6, BONE);
+      }
+    });
+    // tiny ears above the plate line
+    blob(g, 20, 11.5, 2.4, 2.6, '#5c584f', { lw: 1.3 });
+    blob(g, 38, 11.5, 2.4, 2.6, '#5c584f', { lw: 1.3 });
+    // head mass, then the riveted tin face plate strapped over it
+    apoly(g, [[16, 14, 5], [42, 14, 5], [45, 26, 4], [38, 37, 4], [22, 37, 4], [13, 26, 4]], '#7c786e', { mid: 'rgba(28,26,22,0.12)', shade: 'rgba(28,26,22,0.2)' });
+    g.strokeStyle = '#3a2513'; g.lineWidth = 2.4;
+    g.beginPath(); g.moveTo(21, 15); g.quadraticCurveTo(29, 11, 37, 15); g.stroke();
+    apoly(g, [[19, 16, 3], [39, 16, 3], [42, 26, 2], [35, 35, 2], [23, 35, 2], [16, 26, 2]], '#9aa0a8', { lw: 1.9, mid: 'rgba(30,34,40,0.14)', shade: 'rgba(30,34,40,0.22)', hi: 'rgba(255,255,255,0.16)' });
+    g.strokeStyle = 'rgba(40,44,50,0.6)'; g.lineWidth = LW_INT;
+    g.beginPath(); g.moveTo(29, 17); g.lineTo(29, 22); g.moveTo(29, 29); g.lineTo(29, 34); g.stroke();
+    g.beginPath(); g.moveTo(22, 31); g.lineTo(26, 33.5); g.stroke();
+    // the eye slot: one demon eye burning through, the other side empty
+    apoly(g, [[21, 23.4, 1.2], [37, 23.4, 1.2], [37, 27.6, 1.2], [21, 27.6, 1.2]], '#14100c', { flat: true, lw: 1.1 });
+    demonEye(g, eyes, 25.5, 25.5, 2.6, '#0f0c0a');
+    // brass rivets: the accent, six around the plate edge
+    [[21, 18.5], [37, 18.5], [18.5, 26], [39.5, 26], [24, 33], [34, 33]].forEach(rv => {
+      g.fillStyle = '#e3b341';
+      g.beginPath(); g.arc(rv[0], rv[1], 1.1, 0, TAU); g.fill();
+      g.strokeStyle = 'rgba(90,60,10,0.7)'; g.lineWidth = 0.6; g.stroke();
+      g.fillStyle = 'rgba(255,252,235,0.85)';
+      g.beginPath(); g.arc(rv[0] - 0.35, rv[1] - 0.35, 0.35, 0, TAU); g.fill();
+    });
+    // tin snout wedge with nostril holes
+    apoly(g, [[26.5, 32.5, 1.5], [31.5, 32.5, 1.5], [30.5, 37.5, 1.2], [27.5, 37.5, 1.2]], '#7e848c', { lw: 1.2 });
+    g.fillStyle = '#14100c';
+    g.beginPath(); g.arc(28, 35.5, 0.7, 0, TAU); g.fill();
+    g.beginPath(); g.arc(30, 35.5, 0.7, 0, TAU); g.fill();
+  });
+
+  // The rescued squirrel: the restyled squirrel body, warm brown cute eyes,
+  // no token anywhere. Pure comfort. Mirrors P.squirrel deliberately.
+  P.critter_free = () => mk(56, 52, (g) => {
+    const warmEye = (x, y, r) => {
+      g.beginPath(); g.arc(x, y, r * 1.15, 0, TAU); g.fillStyle = '#6b4423'; g.fill();
+      g.lineWidth = LW_INT; g.strokeStyle = OUT; g.stroke();
+      g.beginPath(); g.arc(x + r * 0.1, y + r * 0.15, r * 0.62, 0, TAU); g.fillStyle = '#241a10'; g.fill();
+      g.beginPath(); g.arc(x - r * 0.35, y - r * 0.4, r * 0.4, 0, TAU); g.fillStyle = 'rgba(255,255,255,0.92)'; g.fill();
+      g.beginPath(); g.arc(x + r * 0.38, y + r * 0.42, r * 0.2, 0, TAU); g.fillStyle = 'rgba(255,255,255,0.8)'; g.fill();
+      g.strokeStyle = 'rgba(255,236,205,0.55)'; g.lineWidth = Math.max(0.6, r * 0.2); g.lineCap = 'round';
+      g.beginPath(); g.arc(x, y + r * 0.12, r * 1.14, Math.PI * 0.26, Math.PI * 0.74); g.stroke();
+    };
+    const tailPts = [
+      [6, 46, 3], [3, 33, 6], [6, 18, 5], [13, 6, 4], [21, 3, 3], [26, 8, 3],
+      [23, 12.5, 2], [25, 16.5, 2], [20, 19.5, 2], [21.5, 25, 2], [16.5, 30, 2],
+      [18, 37, 2], [13, 46, 3],
+    ];
+    apoly(g, tailPts, FUR, { rim: RIM_WARM, mid: 'rgba(70,28,8,0.16)', shade: 'rgba(70,28,8,0.26)' });
+    g.save(); apath(g, tailPts); g.clip();
+    furRow(g, 9, 41, 6.5, 24, 4, 4.4, 8, -2.1, ['#8f3f18', '#9c4a1c'], null);
+    furRow(g, 11, 28, 13, 12, 4, 4.2, 8, -1.7, ['#cc6d2c', '#c06026'], { hi: 'rgba(255,214,160,0.45)' });
+    furRow(g, 16, 9, 22, 7, 3, 3.8, 7, -0.7, ['#dd7f36', '#cc6d2c'], { hi: 'rgba(255,224,178,0.5)' });
+    g.restore();
+    apath(g, tailPts); g.lineWidth = LW_SIL; g.strokeStyle = OUT; g.stroke();
+    apoly(g, [[20, 28, 5], [31, 25, 6], [42, 29, 5], [46, 36, 4], [44, 44, 3], [36, 48, 3], [24, 48, 4], [17, 42, 4], [16, 33, 4]], FUR, { rim: RIM_WARM });
+    apoly(g, [[21, 32, 5], [29, 30, 5], [33.5, 38, 5], [29.5, 46, 4], [21, 46, 4], [16.5, 39, 5]], '#ad5120', { lw: LW_INT, line: 'rgba(24,10,4,0.55)' });
+    clump(g, 24, 31.5, 4, 4.5, -0.5, '#c06026', { hi: 'rgba(255,214,160,0.4)' });
+    clump(g, 28.5, 30.5, 4, 4.5, -0.2, '#cc6d2c', null);
+    blob(g, 35, 36.5, 7, 2.4, 'rgba(60,24,8,0.22)', { flat: true, noline: true });
+    blob(g, 34.5, 41, 6.5, 5, '#e8cfa5', { flat: true, noline: true });
+    blob(g, 32.5, 39, 3.4, 2.2, 'rgba(255,250,232,0.5)', { flat: true, noline: true });
+    apoly(g, [[27.5, 2.5, 1.5], [33, 11, 2], [24.5, 11.5, 2]], FUR);
+    apoly(g, [[45, 2.5, 1.5], [40, 11, 2], [48.5, 11.5, 2]], FUR);
+    apoly(g, [[28, 4.8, 0.8], [31.4, 10, 1], [26.4, 10.2, 1]], PINK, { flat: true, noline: true });
+    apoly(g, [[44.6, 4.8, 0.8], [41.6, 10, 1], [46.6, 10.2, 1]], PINK, { flat: true, noline: true });
+    blob(g, 28.8, 6.8, 1, 1.6, 'rgba(255,186,176,0.75)', { flat: true, noline: true, rot: 0.2 });
+    blob(g, 44.2, 6.8, 1, 1.6, 'rgba(255,186,176,0.75)', { flat: true, noline: true, rot: -0.2 });
+    clump(g, 25, 21, 4.4, 5, -1.9, FUR_L, { line: OUT, lw: 1.4 });
+    clump(g, 25.5, 24.5, 4, 4.4, -2.2, '#c06026', { line: OUT, lw: 1.4 });
+    apoly(g, [[26, 9, 6], [38, 7.5, 5], [46, 12, 4], [48.5, 19, 3.5], [44, 26, 3], [34, 29, 4], [26.5, 26.5, 4], [23.5, 17, 5]], FUR_L, { rim: RIM_WARM });
+    blob(g, 36, 12.5, 8, 3.6, 'rgba(255,236,200,0.2)', { flat: true, noline: true });
+    blob(g, 31, 24, 5.5, 3.4, 'rgba(90,40,14,0.14)', { flat: true, noline: true });
+    blob(g, 42, 23.5, 5, 3.6, '#e8cfa5', { flat: true, noline: true });
+    g.strokeStyle = '#8a5a3c'; g.lineWidth = LW_INT;
+    g.beginPath(); g.moveTo(43, 24.8); g.quadraticCurveTo(44.6, 26, 46, 24.9); g.stroke();
+    apoly(g, [[44.6, 20.6, 0.9], [47.6, 21.8, 0.9], [45.2, 23.4, 0.9]], '#221108', { flat: true, noline: true });
+    g.fillStyle = 'rgba(255,255,255,0.75)';
+    g.beginPath(); g.arc(45.4, 21.5, 0.55, 0, TAU); g.fill();
+    g.fillStyle = '#fffdf6'; g.strokeStyle = OUT; g.lineWidth = 0.6;
+    g.fillRect(43.4, 25.6, 1.9, 2.3); g.strokeRect(43.4, 25.6, 1.9, 2.3);
+    warmEye(32, 16.5, 3);
+    warmEye(41.5, 16.5, 3);
+    apoly(g, [[24, 42.5, 2], [30.5, 42.5, 2], [31.5, 47.5, 1.5], [23, 47.5, 1.5]], '#9c4a1c', { lw: 1.4 });
+    apoly(g, [[34.5, 42, 2], [41, 42, 2], [42, 47, 1.5], [33.5, 47, 1.5]], '#9c4a1c', { lw: 1.4 });
+    claw(g, 25.6, 47, 0.15, 2.6, BONE); claw(g, 28.6, 47.3, 0, 2.6, BONE);
+    claw(g, 36.2, 46.5, 0.15, 2.6, BONE); claw(g, 39.2, 46.8, 0, 2.6, BONE);
   });
 
   // ---------------- scouts ----------------
@@ -1524,22 +2260,48 @@ const SPR = (() => {
     g.fillStyle = 'rgba(216,207,192,0.5)';
     [[4, 4.6], [5, 7.4], [17, 2.6], [18, 5.4]].forEach(d => { g.beginPath(); g.arc(d[0], d[1], 1.8, 0, TAU); g.fill(); });
   });
+  // The Sign: a ring of eight short axe blaze scratches around a stamped eye
+  // sigil, thin scratch marks radiating between the blazes. Ground art, same
+  // alpha discipline as the old pentagram ring.
   P.rune = () => mk(170, 170, (g) => {
     const c = 85;
-    g.strokeStyle = 'rgba(150,26,18,0.34)'; g.lineWidth = 3;
-    g.beginPath(); g.arc(c, c, 74, 0, TAU); g.stroke();
-    g.lineWidth = 1.4;
-    g.beginPath(); g.arc(c, c, 62, 0, TAU); g.stroke();
-    star5(g, c, c, 70, -Math.PI / 2);
-    g.strokeStyle = 'rgba(150,26,18,0.3)'; g.lineWidth = 2; g.stroke();
-    for (let i = 0; i < 5; i++) {
-      const a = -Math.PI / 2 + i * TAU / 5;
-      const x = c + Math.cos(a) * 74, y = c + Math.sin(a) * 74;
+    g.lineCap = 'round';
+    for (let i = 0; i < 8; i++) {
+      const a = -Math.PI / 2 + i * TAU / 8;
+      const ux = Math.cos(a), uy = Math.sin(a);
+      const px = c + ux * 71, py = c + uy * 71;
+      g.strokeStyle = 'rgba(150,26,18,0.34)'; g.lineWidth = 3.2;
+      g.beginPath();
+      g.moveTo(px - ux * 8, py - uy * 8); g.lineTo(px + ux * 8, py + uy * 8);
+      g.stroke();
+      g.strokeStyle = 'rgba(150,26,18,0.3)'; g.lineWidth = 2;
+      g.beginPath();
+      g.moveTo(px - uy * 4 - ux * 4, py + ux * 4 - uy * 4);
+      g.lineTo(px - uy * 4 + ux * 5, py + ux * 4 + uy * 5);
+      g.stroke();
       g.fillStyle = 'rgba(232,161,60,0.55)';
-      g.beginPath(); g.arc(x, y, 3, 0, TAU); g.fill();
-      g.fillStyle = 'rgba(255,220,150,0.5)';
-      g.beginPath(); g.arc(x, y - 3, 1.4, 0, TAU); g.fill();
+      g.beginPath(); g.arc(px + uy * 6, py - ux * 6, 2.4, 0, TAU); g.fill();
     }
+    g.strokeStyle = 'rgba(150,26,18,0.3)'; g.lineWidth = 1.4;
+    for (let i = 0; i < 8; i++) {
+      const a = -Math.PI / 2 + (i + 0.5) * TAU / 8;
+      const ux = Math.cos(a), uy = Math.sin(a);
+      g.beginPath();
+      g.moveTo(c + ux * 42, c + uy * 42); g.lineTo(c + ux * 58, c + uy * 58);
+      g.stroke();
+    }
+    g.strokeStyle = 'rgba(150,26,18,0.34)'; g.lineWidth = 3;
+    g.beginPath(); g.arc(c, c, 33, 0, TAU); g.stroke();
+    g.strokeStyle = 'rgba(150,26,18,0.32)'; g.lineWidth = 2.6;
+    g.beginPath();
+    g.moveTo(c - 24, c);
+    g.quadraticCurveTo(c, c - 15, c + 24, c);
+    g.quadraticCurveTo(c, c + 15, c - 24, c);
+    g.closePath(); g.stroke();
+    g.fillStyle = 'rgba(150,26,18,0.4)';
+    g.beginPath(); g.ellipse(c, c, 3.6, 9.5, 0, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(232,161,60,0.5)';
+    g.beginPath(); g.arc(c, c - 3.4, 1.6, 0, TAU); g.fill();
   });
 
   // ---------------- world dressing painters ----------------
@@ -1791,6 +2553,697 @@ const SPR = (() => {
     // chipped shards at the base
     poly(g, [[14, 82], [22, 78], [24, 84]], '#3a4046', { lw: 1.2 });
     poly(g, [[68, 84], [76, 79], [79, 85]], '#3a4046', { lw: 1.2 });
+  });
+
+  // ---------------- camp and world ----------------
+  // Camp furniture and the two camp people. Same fidelity bar as the cast:
+  // apoly carrying forms, baked five level lighting, two tier outlines, one
+  // saturated accent each.
+
+  P.picnictable = () => mk(92, 48, (g) => {
+    blob(g, 46, 45, 40, 3.2, 'rgba(8,6,3,0.28)', { flat: true, noline: true });
+    // far bench peeking over the table edge
+    apoly(g, [[10, 20, 1.5], [82, 20, 1.5], [82, 24.5, 1.5], [10, 24.5, 1.5]], '#5f3c20', { flat: true, lw: 1.4 });
+    // crossed A frame legs under the top
+    for (const s of [-1, 1]) {
+      const lx = 46 + s * 26;
+      apoly(g, [[lx - s * 8, 17, 1.2], [lx - s * 3, 17, 1.2], [lx + s * 9, 44, 1.2], [lx + s * 4, 44, 1.2]], '#6e4526', { flat: true, lw: 1.5 });
+      apoly(g, [[lx + s * 8, 17, 1.2], [lx + s * 3, 17, 1.2], [lx - s * 9, 44, 1.2], [lx - s * 4, 44, 1.2]], '#5c3a1e', { flat: true, lw: 1.5 });
+    }
+    // near bench on stub feet
+    apoly(g, [[16, 40, 1], [20, 40, 1], [20, 45, 1], [16, 45, 1]], '#5c3a1e', { flat: true, lw: 1.3 });
+    apoly(g, [[72, 40, 1], [76, 40, 1], [76, 45, 1], [72, 45, 1]], '#5c3a1e', { flat: true, lw: 1.3 });
+    apoly(g, [[6, 32, 2], [86, 32, 2], [86, 39.5, 2], [6, 39.5, 2]], '#7c5630', { lw: 1.8, mid: 'rgba(20,10,4,0.14)', shade: 'rgba(20,10,4,0.2)' });
+    g.fillStyle = 'rgba(255,196,110,0.22)'; g.fillRect(8, 33.2, 76, 2);
+    // table top: two planks, grain ticks, sun strip along the front edge
+    apoly(g, [[2, 6, 2.5], [90, 6, 2.5], [90, 17.5, 2.5], [2, 17.5, 2.5]], '#8a6138', { lw: LW_SIL, mid: 'rgba(20,10,4,0.12)', shade: 'rgba(20,10,4,0.18)', hi: 'rgba(255,236,190,0.2)' });
+    g.strokeStyle = 'rgba(24,16,8,0.5)'; g.lineWidth = LW_INT; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(4, 11.8); g.lineTo(88, 11.8); g.stroke();
+    g.strokeStyle = 'rgba(70,42,18,0.5)';
+    [[14, 8.4], [60, 8.6], [34, 14.6], [78, 14.2]].forEach(k => {
+      g.beginPath(); g.moveTo(k[0], k[1]); g.lineTo(k[0] + 9, k[1]); g.stroke();
+    });
+    g.fillStyle = 'rgba(255,196,110,0.28)'; g.fillRect(4, 7, 84, 2.2);
+    // tin plate, then the enamel mug: the one saturated accent
+    blob(g, 30, 6.5, 7, 2.6, '#c9ccd4', { flat: true, lw: 1.1 });
+    blob(g, 30, 6.2, 4, 1.4, '#e2e6ea', { flat: true, noline: true });
+    apoly(g, [[60, 0.5, 1.2], [68, 0.5, 1.2], [67.4, 6.5, 1.2], [60.6, 6.5, 1.2]], '#4a76a8', { lw: 1.2, hi: 'rgba(255,255,255,0.25)' });
+    g.strokeStyle = '#4a76a8'; g.lineWidth = 1.6;
+    g.beginPath(); g.arc(69.4, 3.4, 2.2, -Math.PI * 0.45, Math.PI * 0.45); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(61.4, 1.4, 1.6, 4.2);
+  });
+
+  P.cooler = () => mk(36, 30, (g) => {
+    blob(g, 18, 28.4, 15, 2.6, 'rgba(8,6,3,0.3)', { flat: true, noline: true });
+    // boxy blue body under a cream lid that overhangs
+    apoly(g, [[3, 10, 2.5], [33, 10, 2.5], [32, 28, 2.5], [4, 28, 2.5]], '#4a76a8', { lw: LW_SIL, mid: 'rgba(14,26,44,0.2)', shade: 'rgba(14,26,44,0.3)', hi: 'rgba(220,240,255,0.2)' });
+    g.strokeStyle = 'rgba(20,34,56,0.55)'; g.lineWidth = LW_INT; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(5, 23); g.lineTo(31, 23); g.stroke();
+    g.fillStyle = 'rgba(230,244,255,0.3)'; g.fillRect(5.4, 11.5, 8, 11);
+    apoly(g, [[1.5, 4.5, 2.5], [34.5, 4.5, 2.5], [34, 11.5, 2.5], [2, 11.5, 2.5]], '#e9e4da', { lw: 1.8, mid: 'rgba(90,84,70,0.14)', shade: 'rgba(90,84,70,0.2)', hi: 'rgba(255,255,255,0.3)' });
+    g.strokeStyle = 'rgba(120,112,96,0.5)'; g.lineWidth = LW_INT;
+    g.beginPath(); g.moveTo(4, 8); g.lineTo(32, 8); g.stroke();
+    // latch and the side handles
+    apoly(g, [[15.6, 9.5, 1], [20.4, 9.5, 1], [20, 14.5, 1], [16, 14.5, 1]], '#c9ccd4', { flat: true, lw: 1.1 });
+    g.fillStyle = 'rgba(255,255,255,0.6)'; g.fillRect(16.6, 10.4, 1.2, 2.6);
+    g.strokeStyle = '#31537a'; g.lineWidth = 2; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(3.4, 15); g.quadraticCurveTo(0.6, 17, 3.2, 19); g.stroke();
+    g.beginPath(); g.moveTo(32.6, 15); g.quadraticCurveTo(35.4, 17, 32.8, 19); g.stroke();
+    // a bottlecap dropped by the corner
+    blob(g, 31, 28.6, 1.6, 1.1, '#e3b341', { flat: true, lw: 0.8 });
+  });
+
+  // Strung lanterns for the camp. Drawn once by camp.js at width 200 with a
+  // runtime pulse glow landing on seven fixed points, so the paper bodies
+  // are placed exactly under those points. Wire ends level so it can tile.
+  P.lanternstring = () => mk(200, 40, (g) => {
+    g.lineCap = 'round';
+    g.strokeStyle = '#2c2318'; g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(0, 10); g.quadraticCurveTo(100, 30, 200, 10); g.stroke();
+    for (let i = 0; i < 7; i++) {
+      const t = (i + 0.5) / 7;
+      const x = 200 * t;
+      const y = 14 + (1 - Math.abs(t - 0.5) * 2) * 16;
+      const wy = 10 + 40 * t * (1 - t);
+      g.strokeStyle = '#2c2318'; g.lineWidth = 1.1;
+      g.beginPath(); g.moveTo(x, wy); g.lineTo(x, y - 5); g.stroke();
+      const paper = i % 2 ? '#e8b45a' : '#e2d8bc';
+      blob(g, x, y, 4.2, 5, paper, { lw: 1.2, mid: 'rgba(90,60,20,0.16)', shade: 'rgba(90,60,20,0.24)', hi: 'rgba(255,255,240,0.3)' });
+      g.strokeStyle = 'rgba(90,60,20,0.4)'; g.lineWidth = 0.8;
+      g.beginPath(); g.ellipse(x, y, 2.6, 4.6, 0, 0, TAU); g.stroke();
+      g.beginPath(); g.ellipse(x, y, 1.2, 4.4, 0, 0, TAU); g.stroke();
+      // caps top and bottom, and the warm heart the runtime glow sits on
+      g.fillStyle = '#5a4326';
+      g.fillRect(x - 1.6, y - 6.2, 3.2, 1.8); g.fillRect(x - 1.3, y + 4.6, 2.6, 1.5);
+      g.fillStyle = 'rgba(255,214,140,0.85)';
+      g.beginPath(); g.arc(x, y, 1.5, 0, TAU); g.fill();
+    }
+  });
+
+  P.canoe = () => mk(88, 30, (g) => {
+    const hull = () => {
+      g.beginPath();
+      g.moveTo(2, 8);
+      g.quadraticCurveTo(14, 24, 44, 25);
+      g.quadraticCurveTo(74, 24, 86, 8);
+      g.quadraticCurveTo(80, 13, 70, 14.5);
+      g.quadraticCurveTo(44, 18, 18, 14.5);
+      g.quadraticCurveTo(8, 13, 2, 8);
+      g.closePath();
+    };
+    hull(); g.fillStyle = '#8f3f18'; g.fill();
+    g.save(); hull(); g.clip();
+    g.fillStyle = 'rgba(20,8,4,0.24)'; g.fillRect(0, 19, 88, 11);
+    g.fillStyle = 'rgba(255,196,110,0.18)'; g.fillRect(4, 8, 40, 5);
+    g.strokeStyle = '#5c2c12'; g.lineWidth = 1.1;
+    g.beginPath(); g.moveTo(8, 14); g.quadraticCurveTo(44, 22.5, 80, 14); g.stroke();
+    g.beginPath(); g.moveTo(12, 17); g.quadraticCurveTo(44, 25, 76, 17); g.stroke();
+    // the painted bow band: the one blue accent
+    g.strokeStyle = '#4a76a8'; g.lineWidth = 2.6;
+    g.beginPath(); g.moveTo(6, 10.5); g.quadraticCurveTo(16, 20, 30, 22.6); g.stroke();
+    g.restore();
+    hull(); g.lineWidth = LW_SIL; g.strokeStyle = OUT; g.stroke();
+    // the open interior with a bench thwart
+    const inner = () => {
+      g.beginPath();
+      g.moveTo(14, 11.6);
+      g.quadraticCurveTo(44, 16.5, 74, 11.6);
+      g.quadraticCurveTo(70, 15.5, 60, 16.8);
+      g.quadraticCurveTo(44, 18.6, 28, 16.8);
+      g.quadraticCurveTo(18, 15.5, 14, 11.6);
+      g.closePath();
+    };
+    inner(); g.fillStyle = '#421c0a'; g.fill();
+    inner(); g.lineWidth = 1.2; g.strokeStyle = 'rgba(18,8,3,0.8)'; g.stroke();
+    apoly(g, [[40, 13.4, 1], [48, 13.4, 1], [47.4, 16.8, 1], [40.6, 16.8, 1]], '#b85a24', { flat: true, lw: 1 });
+    // gunwale sun, prow wraps, a paddle laid across the near side
+    g.strokeStyle = 'rgba(255,196,110,0.5)'; g.lineWidth = 1.4; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(56, 12.6); g.quadraticCurveTo(74, 11, 84, 8.6); g.stroke();
+    g.strokeStyle = '#5c2c12'; g.lineWidth = 1.4;
+    g.beginPath(); g.moveTo(3.5, 8.5); g.lineTo(6.5, 12); g.stroke();
+    g.beginPath(); g.moveTo(84.5, 8.5); g.lineTo(81.5, 12); g.stroke();
+    g.strokeStyle = '#8a6138'; g.lineWidth = 2.2;
+    g.beginPath(); g.moveTo(50, 6); g.lineTo(64, 20); g.stroke();
+    blob(g, 66.5, 22, 3, 5.4, '#8a6138', { rot: 0.8, lw: 1.1 });
+    g.strokeStyle = 'rgba(255,224,170,0.4)'; g.lineWidth = 0.9;
+    g.beginPath(); g.moveTo(52, 7.5); g.lineTo(61, 16.5); g.stroke();
+  });
+
+  // Dock planks, tileable vertically: plank rows repeat every 12 units and
+  // the post pairs repeat every 48, so stacked tiles continue cleanly.
+  P.dock = () => mk(56, 96, (g) => {
+    g.fillStyle = '#1c2a26'; g.fillRect(0, 0, 56, 96);
+    for (let i = 0; i < 8; i++) {
+      const y = i * 12;
+      apoly(g, [[1, y + 0.8, 1.5], [55, y + 0.8, 1.5], [55, y + 11, 1.5], [1, y + 11, 1.5]], i % 2 ? '#8a6138' : '#7c5630', { flat: true, lw: 1.3 });
+      g.fillStyle = 'rgba(255,196,110,0.16)'; g.fillRect(3, y + 2, 50, 2.2);
+      g.fillStyle = 'rgba(20,10,4,0.28)'; g.fillRect(3, y + 8.8, 50, 1.6);
+      g.strokeStyle = 'rgba(70,42,18,0.5)'; g.lineWidth = 0.9; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(10 + (i % 3) * 14, y + 4); g.lineTo(20 + (i % 3) * 14, y + 4.6); g.stroke();
+    }
+    // post tops on a 48 unit rhythm
+    for (const py of [6, 54]) {
+      for (const px of [5, 51]) {
+        blob(g, px, py, 4.2, 4.2, '#5c3a20', { lw: 1.6, hi: 'rgba(255,196,110,0.25)' });
+        g.strokeStyle = 'rgba(30,16,6,0.7)'; g.lineWidth = 0.9;
+        g.beginPath(); g.arc(px, py, 2, 0, TAU); g.stroke();
+        g.fillStyle = 'rgba(255,196,110,0.3)';
+        g.beginPath(); g.arc(px - 1.2, py - 1.2, 1.2, 0, TAU); g.fill();
+      }
+    }
+    // nail dots along the plank edges
+    g.fillStyle = 'rgba(24,14,6,0.6)';
+    for (let i = 0; i < 8; i++) {
+      g.beginPath(); g.arc(8, i * 12 + 6, 0.8, 0, TAU); g.fill();
+      g.beginPath(); g.arc(48, i * 12 + 6, 0.8, 0, TAU); g.fill();
+    }
+  });
+
+  // The log cabin front. The lit window sits at painter coords (30.5, 84.5)
+  // because camp.js draws this at x 520 yB -300 w 220 and lands its runtime
+  // window glow at world (458, -340): keep those aligned if either moves.
+  P.cabin = () => mk(140, 110, (g) => {
+    blob(g, 70, 108, 62, 3.6, 'rgba(8,6,3,0.3)', { flat: true, noline: true });
+    // six log courses with butt ends left and right
+    for (let i = 5; i >= 0; i--) {
+      const ly = 58 + i * 8.66;
+      apoly(g, [[10, ly + 0.4, 4], [130, ly + 0.4, 4], [130, ly + 9, 4], [10, ly + 9, 4]], i % 2 ? '#6e4526' : '#5f3c20', { flat: true, lw: 1.6 });
+      g.fillStyle = 'rgba(255,196,110,0.13)'; g.fillRect(14, ly + 1.6, 112, 2.2);
+      g.fillStyle = 'rgba(20,10,4,0.3)'; g.fillRect(14, ly + 7.4, 112, 1.4);
+    }
+    for (let i = 0; i < 6; i++) {
+      const cy = 58 + i * 8.66 + 4.6;
+      for (const ex of [10, 130]) {
+        blob(g, ex, cy, 4.6, 4.2, '#8a6138', { lw: 1.4 });
+        g.strokeStyle = '#5c3a20'; g.lineWidth = 0.8;
+        g.beginPath(); g.arc(ex, cy, 2.2, 0, TAU); g.stroke();
+      }
+    }
+    // gable roof in two shingle planes with a warm lit edge
+    apoly(g, [[2, 62, 2], [70, 16, 3], [138, 62, 2], [130, 66, 2], [70, 26, 2], [10, 66, 2]], '#3d3126', { flat: true, lw: LW_SIL });
+    apoly(g, [[8, 60, 2], [70, 20, 3], [132, 60, 2]], '#54432f', { flat: true, lw: 1.4 });
+    g.strokeStyle = 'rgba(24,16,8,0.55)'; g.lineWidth = LW_INT; g.lineCap = 'round';
+    for (let i = 1; i < 4; i++) {
+      const t = i / 4;
+      g.beginPath();
+      g.moveTo(8 + 62 * t, 60 - 40 * t); g.lineTo(132 - 62 * t, 60 - 40 * t);
+      g.stroke();
+    }
+    g.strokeStyle = 'rgba(255,196,110,0.4)'; g.lineWidth = 1.8;
+    g.beginPath(); g.moveTo(6, 60); g.lineTo(66, 20.6); g.stroke();
+    // stone chimney through the right slope
+    apoly(g, [[96, 26, 2], [112, 26, 2], [112, 52, 2], [96, 46, 2]], '#7a8494', { lw: 1.8, mid: 'rgba(24,28,34,0.16)', shade: 'rgba(24,28,34,0.24)' });
+    apoly(g, [[93.5, 20, 1.5], [114.5, 20, 1.5], [113.5, 26.5, 1.5], [94.5, 26.5, 1.5]], '#5f6b7a', { flat: true, lw: 1.6 });
+    g.fillStyle = '#98a4b2';
+    [[100, 31], [107, 34], [101, 39], [108, 42]].forEach(st => {
+      g.beginPath(); g.arc(st[0], st[1], 2.6, 0, TAU); g.fill();
+    });
+    g.fillStyle = 'rgba(255,196,110,0.2)'; g.fillRect(95.5, 21.4, 8, 2.4);
+    // the lit window with a mullion cross and a sill
+    apoly(g, [[20.5, 76.5, 1.5], [40.5, 76.5, 1.5], [40.5, 92.5, 1.5], [20.5, 92.5, 1.5]], '#ffca6e', { flat: true, lw: LW_SIL });
+    g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(22, 78, 7, 6);
+    g.strokeStyle = '#3a2513'; g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(30.5, 77); g.lineTo(30.5, 92); g.moveTo(21, 84.5); g.lineTo(40, 84.5); g.stroke();
+    apoly(g, [[18.5, 92.5, 1], [42.5, 92.5, 1], [41.5, 95.5, 1], [19.5, 95.5, 1]], '#8a6138', { flat: true, lw: 1.2 });
+    // the readable door: dark planks, timber frame, gold knob, porch step
+    apoly(g, [[58, 70, 2.5], [82, 70, 2.5], [82, 108, 1.5], [58, 108, 1.5]], '#241708', { lw: LW_SIL });
+    g.strokeStyle = '#8a6138'; g.lineWidth = 1.6;
+    g.beginPath(); g.roundRect(60.5, 72.5, 19, 33.5, 2); g.stroke();
+    g.strokeStyle = 'rgba(138,97,56,0.55)'; g.lineWidth = 1;
+    [66, 71.5, 76].forEach(px => { g.beginPath(); g.moveTo(px, 74); g.lineTo(px, 105); g.stroke(); });
+    g.fillStyle = '#e3b341';
+    g.beginPath(); g.arc(78, 90, 1.9, 0, TAU); g.fill();
+    g.strokeStyle = 'rgba(90,60,10,0.7)'; g.lineWidth = 0.7; g.stroke();
+    g.fillStyle = 'rgba(255,252,235,0.85)';
+    g.beginPath(); g.arc(77.4, 89.4, 0.6, 0, TAU); g.fill();
+    apoly(g, [[54, 107, 1.5], [86, 107, 1.5], [84, 110, 1], [56, 110, 1]], '#7c5630', { flat: true, lw: 1.3 });
+  });
+
+  // The quartermaster: stout, grey bun, reading glasses low on her nose,
+  // the ledger clipboard she never puts down. Kind eyes, zero nonsense.
+  P.npc_quartermaster = () => mk(48, 58, (g) => {
+    const cx = 24;
+    for (const s of [-1, 1]) {
+      const lx = cx + s * 6;
+      apoly(g, [[lx - 2.2, 46, 1], [lx + 2.2, 46, 1], [lx + 1.9, 52.5, 1], [lx - 1.9, 52.5, 1]], '#d7a45f', { flat: true, lw: 1.3 });
+      g.strokeStyle = '#e8e0cc'; g.lineWidth = 1.8; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(lx - 1.8, 50.6); g.lineTo(lx + 1.8, 50.6); g.stroke();
+      const pts = s > 0
+        ? [[lx - 3, 52, 1.2], [lx + 3, 52, 1.2], [lx + 5.6, 55, 1], [lx + 5.6, 57, 1], [lx - 3, 57, 1.2]]
+        : [[lx + 3, 52, 1.2], [lx - 3, 52, 1.2], [lx - 5.6, 55, 1], [lx - 5.6, 57, 1], [lx + 3, 57, 1.2]];
+      apoly(g, pts, '#3a2e20', { flat: true, lw: 1.3 });
+    }
+    // stout khaki uniform: shoulders in, belly proud, skirt hem
+    apoly(g, [[cx - 10, 22, 4], [cx + 10, 22, 4], [cx + 14.5, 38, 4], [cx + 13, 47, 3], [cx - 13, 47, 3], [cx - 14.5, 38, 4]], '#c9a86a', { lw: LW_SIL, rim: 'rgba(255,240,200,0.35)', mid: 'rgba(60,42,18,0.13)', shade: 'rgba(60,42,18,0.2)' });
+    g.strokeStyle = 'rgba(40,26,12,0.4)'; g.lineWidth = LW_INT; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(cx - 12.6, 43.5); g.lineTo(cx + 12.6, 43.5); g.stroke();
+    // belt riding the belly, brass buckle
+    apoly(g, [[cx - 13.6, 35.5, 1.5], [cx + 13.6, 35.5, 1.5], [cx + 14, 39.5, 1.5], [cx - 14, 39.5, 1.5]], '#5c4326', { flat: true, lw: 1.4 });
+    g.fillStyle = '#e3b341'; g.fillRect(cx - 2.6, 35, 5.2, 5);
+    g.strokeStyle = OUT; g.lineWidth = 0.9; g.strokeRect(cx - 2.6, 35, 5.2, 5);
+    // pocket flap, then the service sash: the one saturated accent
+    g.strokeStyle = 'rgba(40,26,12,0.45)'; g.lineWidth = LW_INT;
+    g.strokeRect(cx + 3, 28.5, 5, 3.6);
+    g.strokeStyle = '#8a2f23'; g.lineWidth = 4.6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(cx - 9, 24); g.lineTo(cx + 10, 37); g.stroke();
+    const bc = ['#f4c542', '#7ec87e', '#7ec8e8', '#e9e4da'];
+    for (let i = 0; i < 4; i++) {
+      g.fillStyle = bc[i];
+      g.beginPath(); g.arc(cx - 6.4 + i * 5, 26 + i * 3.2, 1.5, 0, TAU); g.fill();
+    }
+    // arms: one on the hip, one holding the clipboard out front
+    blob(g, cx - 12.5, 30, 3, 6.4, '#c9a86a', { rot: 0.5, lw: 1.6 });
+    blob(g, cx - 13.8, 35.8, 2.4, 2.2, '#d7a45f', { lw: 1.2 });
+    blob(g, cx + 12.5, 31, 3, 6.6, '#c9a86a', { rot: -0.55, lw: 1.6 });
+    g.save(); g.translate(cx + 15, 38.5); g.rotate(0.18);
+    apoly(g, [[-5, -7.5, 1.5], [5, -7.5, 1.5], [5, 8, 1.5], [-5, 8, 1.5]], '#8a6138', { flat: true, lw: 1.5 });
+    g.fillStyle = '#e9e4da'; g.fillRect(-3.6, -5.6, 7.2, 12);
+    g.fillStyle = '#c9ccd4'; g.fillRect(-2.4, -8.6, 4.8, 3);
+    g.strokeStyle = OUT; g.lineWidth = 0.8; g.strokeRect(-2.4, -8.6, 4.8, 3);
+    g.strokeStyle = '#8d947f'; g.lineWidth = 0.7;
+    for (let i = 0; i < 5; i++) { g.beginPath(); g.moveTo(-2.4, -3.4 + i * 2.3); g.lineTo(2.6, -3.4 + i * 2.3); g.stroke(); }
+    g.restore();
+    blob(g, cx + 13.2, 44.6, 2.4, 2.2, '#d7a45f', { lw: 1.2 });
+    // kerchief over the collar
+    apoly(g, [[cx - 8.4, 21.4, 1.5], [cx + 8.4, 21.4, 1.5], [cx, 30.5, 1]], '#c0392b', { lw: 1.6 });
+    apoly(g, [[cx - 1.8, 22.4, 1], [cx + 1.8, 22.4, 1], [cx + 1.4, 25.6, 1], [cx - 1.4, 25.6, 1]], '#c0392b', { flat: true, lw: 1.1 });
+    // head: round cheeks, warm forehead light
+    apoly(g, [[cx - 8.6, 6, 6], [cx + 8.6, 6, 6], [cx + 7.6, 20.6, 5.5], [cx - 7.6, 20.6, 5.5]], '#d7a45f', { rim: RIM_WARM, hi: 'rgba(255,244,214,0.22)', mid: 'rgba(120,66,30,0.1)', shade: 'rgba(120,66,30,0.16)' });
+    // grey hair: parted crown, temple sweeps, the bun riding high
+    apoly(g, [[cx - 9, 6.8, 3], [cx - 2, 3.2, 3], [cx + 6, 4, 3], [cx + 9, 7.4, 2.5], [cx + 7, 8.8, 2], [cx, 6.6, 2.5], [cx - 6.6, 9.4, 2]], '#c3c8ce', { lw: 1.5, mid: 'rgba(70,76,84,0.15)', shade: 'rgba(70,76,84,0.22)' });
+    blob(g, cx + 7.8, 3.6, 4.4, 3.8, '#c3c8ce', { lw: 1.6, mid: 'rgba(70,76,84,0.16)', shade: 'rgba(70,76,84,0.24)', hi: 'rgba(255,255,255,0.25)' });
+    g.strokeStyle = 'rgba(80,86,94,0.6)'; g.lineWidth = 0.8; g.lineCap = 'round';
+    g.beginPath(); g.arc(cx + 7.8, 3.6, 2.4, Math.PI * 0.2, Math.PI * 1.3); g.stroke();
+    // wire glasses, kind eyes behind them
+    g.strokeStyle = '#8a8f96'; g.lineWidth = 1;
+    g.beginPath(); g.arc(cx - 3.6, 14, 2.6, 0, TAU); g.stroke();
+    g.beginPath(); g.arc(cx + 3.6, 14, 2.6, 0, TAU); g.stroke();
+    g.beginPath(); g.moveTo(cx - 1, 14); g.lineTo(cx + 1, 14); g.stroke();
+    cuteEye(g, cx - 3.6, 14, 1.5);
+    cuteEye(g, cx + 3.6, 14, 1.5);
+    // grey brows, soft smile, blush
+    g.strokeStyle = '#c3c8ce'; g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(cx - 5.6, 10.6); g.lineTo(cx - 1.8, 10.2); g.stroke();
+    g.beginPath(); g.moveTo(cx + 5.6, 10.6); g.lineTo(cx + 1.8, 10.2); g.stroke();
+    g.strokeStyle = '#8a5a3c'; g.lineWidth = 1.1;
+    g.beginPath(); g.moveTo(cx - 1.8, 18.4); g.quadraticCurveTo(cx, 19.6, cx + 1.8, 18.4); g.stroke();
+    blob(g, cx - 6, 16.6, 1.6, 1, 'rgba(232,120,100,0.4)', { flat: true, noline: true });
+    blob(g, cx + 6, 16.6, 1.6, 1, 'rgba(232,120,100,0.4)', { flat: true, noline: true });
+  });
+
+  // The mail carrier: wiry, all elbows, flat cap, the blue mail satchel
+  // stuffed with letters. Built to look mid errand even standing still.
+  P.npc_mailcarrier = () => mk(40, 58, (g) => {
+    const cx = 20;
+    for (const s of [-1, 1]) {
+      const lx = cx + s * 4;
+      apoly(g, [[lx - 1.5, 42, 1], [lx + 1.5, 42, 1], [lx + 1.3, 52.5, 1], [lx - 1.3, 52.5, 1]], '#e8b384', { flat: true, lw: 1.2 });
+      g.strokeStyle = '#e8e0cc'; g.lineWidth = 1.5; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(lx - 1.3, 49); g.lineTo(lx + 1.3, 49); g.stroke();
+      g.beginPath(); g.moveTo(lx - 1.3, 50.8); g.lineTo(lx + 1.3, 50.8); g.stroke();
+      const pts = s > 0
+        ? [[lx - 2.2, 52, 1], [lx + 2.2, 52, 1], [lx + 4.6, 54.6, 1], [lx + 4.6, 56.6, 1], [lx - 2.2, 56.6, 1]]
+        : [[lx + 2.2, 52, 1], [lx - 2.2, 52, 1], [lx - 4.6, 54.6, 1], [lx - 4.6, 56.6, 1], [lx + 2.2, 56.6, 1]];
+      apoly(g, pts, '#3a2e20', { flat: true, lw: 1.2 });
+    }
+    // shorts and a narrow tucked shirt
+    apoly(g, [[cx - 6, 36.5, 2], [cx + 6, 36.5, 2], [cx + 6.6, 43, 1.5], [cx + 1.2, 43, 1], [cx, 41, 1], [cx - 1.2, 43, 1], [cx - 6.6, 43, 1.5]], '#4a3a2c', { lw: 1.6 });
+    apoly(g, [[cx - 7, 24, 3], [cx + 7, 24, 3], [cx + 5.6, 37.5, 2], [cx - 5.6, 37.5, 2]], '#5c7248', { lw: LW_SIL, rim: 'rgba(230,255,190,0.3)', mid: 'rgba(24,34,16,0.14)', shade: 'rgba(24,34,16,0.2)' });
+    g.strokeStyle = 'rgba(20,28,12,0.4)'; g.lineWidth = LW_INT; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(cx - 5.4, 35); g.lineTo(cx + 5.4, 35); g.stroke();
+    g.strokeRect(cx - 4.6, 28, 3.6, 3);
+    // strap across the chest, then the stuffed satchel on the hip
+    g.strokeStyle = '#31537a'; g.lineWidth = 3.2;
+    g.beginPath(); g.moveTo(cx - 6, 25); g.lineTo(cx + 7.4, 36.5); g.stroke();
+    g.strokeStyle = 'rgba(160,200,240,0.35)'; g.lineWidth = 0.9;
+    g.beginPath(); g.moveTo(cx - 5.6, 26.2); g.lineTo(cx + 6.6, 36.6); g.stroke();
+    // wiry arms: one swinging free, one pinning the satchel
+    blob(g, cx - 9, 29.5, 2.2, 6, '#5c7248', { rot: 0.35, lw: 1.4 });
+    blob(g, cx - 10.6, 34.8, 1.9, 1.9, '#e8b384', { lw: 1.1 });
+    blob(g, cx + 8.6, 30, 2.2, 5.6, '#5c7248', { rot: -0.3, lw: 1.4 });
+    // letters poking out behind the flap, then the satchel front
+    g.save(); g.translate(cx + 7.6, 37.4); g.rotate(-0.18);
+    g.fillStyle = '#e9e4da'; g.fillRect(0, -3.4, 4.6, 3.6);
+    g.strokeStyle = OUT; g.lineWidth = 0.8; g.strokeRect(0, -3.4, 4.6, 3.6);
+    g.restore();
+    g.save(); g.translate(cx + 11.2, 36.8); g.rotate(0.14);
+    g.fillStyle = '#d8cfc0'; g.fillRect(0, -3, 4.2, 3.2);
+    g.strokeStyle = OUT; g.lineWidth = 0.8; g.strokeRect(0, -3, 4.2, 3.2);
+    g.restore();
+    apoly(g, [[cx + 4.6, 37, 2.5], [cx + 14.6, 37, 2.5], [cx + 13.8, 47.5, 2.5], [cx + 5.4, 47.5, 2.5]], '#4a76a8', { lw: LW_SIL, mid: 'rgba(14,26,44,0.2)', shade: 'rgba(14,26,44,0.3)', hi: 'rgba(220,240,255,0.2)' });
+    apoly(g, [[cx + 4.6, 37, 2.5], [cx + 14.6, 37, 2.5], [cx + 14, 41.5, 2], [cx + 5.2, 41.5, 2]], '#3d6390', { flat: true, lw: 1.4 });
+    g.fillStyle = '#e3b341';
+    g.beginPath(); g.arc(cx + 9.6, 41.5, 1.2, 0, TAU); g.fill();
+    g.strokeStyle = OUT; g.lineWidth = 0.7; g.stroke();
+    blob(g, cx + 9.4, 45.4, 1.9, 1.9, '#e8b384', { lw: 1.1 });
+    // kerchief
+    apoly(g, [[cx - 5.8, 23, 1.2], [cx + 5.8, 23, 1.2], [cx, 30, 1]], '#d8722f', { lw: 1.5 });
+    apoly(g, [[cx - 1.5, 23.6, 0.8], [cx + 1.5, 23.6, 0.8], [cx + 1.2, 26.2, 0.8], [cx - 1.2, 26.2, 0.8]], '#d8722f', { flat: true, lw: 1 });
+    // narrow head, big ears, freckles
+    apoly(g, [[cx - 7, 7, 5.5], [cx + 7, 7, 5.5], [cx + 6.2, 21.4, 5], [cx - 6.2, 21.4, 5]], '#e8b384', { rim: RIM_WARM, hi: 'rgba(255,244,214,0.22)', mid: 'rgba(120,66,30,0.1)', shade: 'rgba(120,66,30,0.16)' });
+    blob(g, cx - 7.4, 14.5, 1.7, 2.4, '#e8b384', { lw: 1.3 });
+    blob(g, cx + 7.4, 14.5, 1.7, 2.4, '#e8b384', { lw: 1.3 });
+    cuteEye(g, cx - 3.2, 13.5, 1.6);
+    cuteEye(g, cx + 3.2, 13.5, 1.6);
+    g.strokeStyle = '#5c422e'; g.lineWidth = 1; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(cx - 4.8, 10.4); g.lineTo(cx - 1.8, 9.9); g.stroke();
+    g.beginPath(); g.moveTo(cx + 4.8, 10.4); g.lineTo(cx + 1.8, 9.9); g.stroke();
+    g.strokeStyle = '#8a5a3c'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(cx - 1.4, 18.2); g.quadraticCurveTo(cx + 0.4, 19.4, cx + 2, 18); g.stroke();
+    g.fillStyle = 'rgba(150,90,50,0.5)';
+    [[cx - 4.6, 16.2], [cx - 2.8, 17], [cx + 2.8, 17], [cx + 4.6, 16.2]].forEach(f => {
+      g.beginPath(); g.arc(f[0], f[1], 0.55, 0, TAU); g.fill();
+    });
+    // flat cap tipped back, brim out front, one escaping forelock
+    apoly(g, [[cx - 8, 7.6, 3], [cx - 3, 2.6, 3.5], [cx + 5, 2.4, 3.5], [cx + 8.4, 7, 2.5], [cx + 5, 8.6, 2], [cx - 4, 9, 2]], '#8a6138', { lw: 1.6, rim: RIM_WARM });
+    lens(g, cx + 6.8, 8.2, 4.6, 1.4, '#6e4526', 1.2);
+    g.strokeStyle = '#5c3a20'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(cx - 2, 3.6); g.lineTo(cx + 1, 8); g.stroke();
+    g.strokeStyle = '#3a2e20'; g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(cx - 6.4, 8.6); g.quadraticCurveTo(cx - 7.4, 10.2, cx - 6.6, 11.8); g.stroke();
+  });
+
+  // Where a found thing waits: a low mossy sitting stone with a soft gold
+  // seat glow, humbler than the ruin pedestal on purpose.
+  P.findpedestal = () => mk(44, 30, (g) => {
+    blob(g, 22, 27.5, 18, 2.8, 'rgba(8,6,3,0.3)', { flat: true, noline: true });
+    apoly(g, [[8, 12, 5], [34, 11, 6], [40, 20, 4], [36, 27, 3], [9, 27, 3], [4, 20, 4]], '#5a5f58', { lw: LW_SIL, rim: RIM_COOL, mid: 'rgba(18,20,18,0.16)', shade: 'rgba(18,20,18,0.26)' });
+    // the worn seat plane
+    blob(g, 22, 13.5, 12, 4, '#767b72', { lw: LW_INT, line: 'rgba(24,26,24,0.6)' });
+    blob(g, 19, 12.6, 5.4, 1.7, 'rgba(230,235,225,0.2)', { flat: true, noline: true });
+    // moss creeping up the shaded side, lichen freckles
+    blob(g, 9.5, 21, 4.6, 3.2, '#2c3a1e', { lw: 1, rot: 0.3 });
+    blob(g, 14, 25, 3.4, 2.2, '#33432a', { lw: 0.9 });
+    clump(g, 7.5, 17.6, 3.4, 3.6, -0.9, '#3c5026', { line: OUT, lw: 0.9 });
+    g.fillStyle = '#4c6030';
+    [[31, 15.4], [35, 18.6], [12, 15]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 1, 0, TAU); g.fill();
+    });
+    g.strokeStyle = 'rgba(20,22,20,0.6)'; g.lineWidth = 1.1; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(30, 20); g.lineTo(33.6, 25); g.stroke();
+    // the soft gold waiting glow pooled on the seat
+    const gr = g.createRadialGradient(22, 12.5, 1, 22, 12.5, 13);
+    gr.addColorStop(0, 'rgba(255,232,166,0.6)');
+    gr.addColorStop(0.55, 'rgba(244,197,66,0.2)');
+    gr.addColorStop(1, 'rgba(244,197,66,0)');
+    g.fillStyle = gr;
+    g.beginPath(); g.ellipse(22, 12.5, 13, 6.4, 0, 0, TAU); g.fill();
+  });
+
+  // ---------------- nature clusters ----------------
+  // Vignette clusters: each composes several plants or stones with internal
+  // overlap and a shared contact shadow. No eyes, no tokens, pure forest.
+
+  P.fernclump = () => mk(46, 36, (g) => {
+    blob(g, 23, 33.5, 19, 2.8, 'rgba(8,10,5,0.3)', { flat: true, noline: true });
+    // a frond: arcing midrib with paired leaflets shrinking toward the tip
+    const frond = (x, y, ang, len, col, hi) => {
+      g.save(); g.translate(x, y); g.rotate(ang);
+      for (let i = 1; i <= 6; i++) {
+        const t = i / 7;
+        const px = (2 * t * (1 - t) * 0.14 + t * t * 0.42) * len;
+        const py = -(2 * t * (1 - t) * 0.62 + t * t) * len;
+        const sz = 1 - t * 0.7;
+        clump(g, px, py, 2.8 * sz, 5.6 * sz, -1.25 + t * 0.9, col, hi && i % 2 === 0 ? { hi: 'rgba(214,255,150,0.35)' } : null);
+        clump(g, px, py, 2.8 * sz, 5.2 * sz, 1.05 + t * 0.9, col, null);
+      }
+      g.strokeStyle = col; g.lineWidth = 1.2; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(len * 0.14, -len * 0.62, len * 0.42, -len); g.stroke();
+      clump(g, len * 0.42, -len, 2, 4.4, 0.35, col, null);
+      g.restore();
+    };
+    frond(21, 33, -0.85, 24, '#233617', false);
+    frond(25, 33, 0.8, 22, '#233617', false);
+    frond(20, 33, -0.45, 28, '#2c4420', false);
+    frond(26, 33, 0.42, 27, '#2c4420', false);
+    frond(23, 33, -0.12, 30, '#35511f', true);
+    frond(22, 33, 0.16, 26, '#3c5a28', true);
+    // one young fiddlehead curling up at the front
+    g.strokeStyle = '#4c6c34'; g.lineWidth = 1.5; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(29, 33); g.quadraticCurveTo(31.5, 27, 30, 23.5); g.stroke();
+    g.beginPath(); g.arc(29, 23, 1.8, -0.4, Math.PI * 1.35); g.stroke();
+  });
+
+  P.flowerpatch = () => mk(44, 30, (g) => {
+    blob(g, 22, 27.5, 18, 2.6, 'rgba(8,10,5,0.3)', { flat: true, noline: true });
+    // the grass bed the flowers stand in
+    g.lineCap = 'round'; g.lineWidth = 1.4;
+    [[6, -2], [12, 2], [19, -3], [26, 2], [33, -2], [38, 2]].forEach((b, i) => {
+      g.strokeStyle = i % 2 ? '#2b4023' : '#22331d';
+      g.beginPath(); g.moveTo(b[0], 28); g.quadraticCurveTo(b[0] + b[1], 21, b[0] + b[1] * 1.8, 15); g.stroke();
+    });
+    // species one: nodding harebells on thin stems, the blue accent
+    const bell = (x, y, lean) => {
+      g.strokeStyle = '#3d4d2e'; g.lineWidth = 1.1;
+      g.beginPath(); g.moveTo(x, 28); g.quadraticCurveTo(x + lean, (28 + y) / 2, x + lean * 1.6, y); g.stroke();
+      g.save(); g.translate(x + lean * 1.6, y); g.rotate(lean * 0.12);
+      apoly(g, [[-2.6, 0, 1], [2.6, 0, 1], [3, 4.6, 0.8], [1.4, 3.6, 0.8], [0, 4.8, 0.8], [-1.4, 3.6, 0.8], [-3, 4.6, 0.8]], '#7ea8d8', { lw: 1, mid: 'rgba(24,40,70,0.2)', shade: 'rgba(24,40,70,0.28)', hi: 'rgba(230,242,255,0.35)' });
+      g.restore();
+    };
+    bell(8, 8, 1.6); bell(14, 12, -1.2); bell(35, 9, -1.8);
+    // species two: white daisies with gold hearts, faces tilted apart
+    const daisy = (x, y, r, tilt) => {
+      g.strokeStyle = '#3d4d2e'; g.lineWidth = 1.2;
+      g.beginPath(); g.moveTo(x + tilt * 2, 28); g.quadraticCurveTo(x + tilt, (28 + y) / 2, x, y + r); g.stroke();
+      for (let i = 0; i < 8; i++) {
+        const a = tilt * 0.3 + i / 8 * TAU;
+        clump(g, x + Math.cos(a) * r * 0.55, y + Math.sin(a) * r * 0.5, r * 0.5, r * 0.95, a + Math.PI / 2, i % 2 ? '#e9e4da' : '#f6f2e9', { line: 'rgba(90,90,70,0.45)', lw: 0.7 });
+      }
+      blob(g, x, y, r * 0.42, r * 0.4, '#f4c542', { lw: 0.9 });
+      g.fillStyle = 'rgba(255,252,235,0.9)';
+      g.beginPath(); g.arc(x - r * 0.14, y - r * 0.14, r * 0.14, 0, TAU); g.fill();
+    };
+    daisy(20, 10, 5, -0.5);
+    daisy(29, 15, 4.2, 0.6);
+    daisy(12, 18, 3.4, 0.2);
+    // a couple of leaves at the stems
+    clump(g, 17, 24, 2.8, 5, -0.9, '#33512a', null);
+    clump(g, 31, 23, 2.8, 4.6, 0.8, '#2c4420', null);
+  });
+
+  P.mushroomring = () => mk(52, 34, (g) => {
+    blob(g, 26, 30, 22, 3, 'rgba(8,10,5,0.28)', { flat: true, noline: true });
+    // the faint trodden circle inside the ring
+    g.strokeStyle = 'rgba(50,64,36,0.4)'; g.lineWidth = 3;
+    g.beginPath(); g.ellipse(26, 21, 15, 5.6, 0, 0, TAU); g.stroke();
+    const shroom = (x, y, s) => {
+      blob(g, x, y + s * 0.6, s * 1.3, s * 0.5, 'rgba(8,10,5,0.3)', { flat: true, noline: true });
+      g.fillStyle = '#d8cfba'; g.strokeStyle = '#140a08'; g.lineWidth = 0.9;
+      g.beginPath(); g.roundRect(x - s * 0.32, y - s * 0.9, s * 0.64, s * 1.5, s * 0.3); g.fill(); g.stroke();
+      g.fillStyle = 'rgba(120,104,80,0.5)';
+      g.fillRect(x - s * 0.32, y - s * 0.05, s * 0.64, s * 0.35);
+      blob(g, x, y - s, s * 1.15, s * 0.72, s > 4.4 ? '#c23322' : '#d4402c', { lw: 1.1, line: '#140a08', mid: 'rgba(60,8,4,0.18)', shade: 'rgba(60,8,4,0.28)', hi: 'rgba(255,150,120,0.25)' });
+      g.fillStyle = 'rgba(240,230,210,0.9)';
+      [[-0.5, -1.25], [0.3, -1.45], [0.75, -1]].forEach(d => {
+        g.beginPath(); g.arc(x + d[0] * s, y + d[1] * s, s * 0.14, 0, TAU); g.fill();
+      });
+    };
+    // seven caps on a partial ellipse, the ring open toward the front
+    const ring = [];
+    for (const a of [Math.PI * 0.78, Math.PI * 1.02, Math.PI * 1.28, Math.PI * 1.52, Math.PI * 1.76, Math.PI * 0.02, Math.PI * 0.24]) {
+      ring.push([26 + Math.cos(a) * 19, 21 + Math.sin(a) * 7]);
+    }
+    ring.sort((p, q) => p[1] - q[1]);
+    ring.forEach(p => shroom(p[0], p[1], 3.2 + (p[1] - 14) * 0.32));
+    // grass tufts breaking up the circle
+    g.lineCap = 'round'; g.strokeStyle = '#2b4023'; g.lineWidth = 1.2;
+    [[16, 25], [37, 24], [26, 18]].forEach(t => {
+      g.beginPath(); g.moveTo(t[0], t[1]); g.quadraticCurveTo(t[0] + 1.5, t[1] - 4, t[0] + 1, t[1] - 6.5); g.stroke();
+      g.beginPath(); g.moveTo(t[0] + 2, t[1]); g.quadraticCurveTo(t[0] + 3.5, t[1] - 3, t[0] + 4.4, t[1] - 5); g.stroke();
+    });
+  });
+
+  P.rockcluster = () => mk(56, 40, (g) => {
+    blob(g, 28, 36.5, 24, 3.2, 'rgba(8,6,3,0.3)', { flat: true, noline: true });
+    // the big mossy one behind
+    apoly(g, [[14, 12, 6], [34, 8, 7], [46, 18, 5], [43, 32, 4], [18, 33, 4], [8, 22, 5]], '#474d55', { lw: LW_SIL, rim: RIM_COOL, mid: 'rgba(18,20,24,0.15)', shade: 'rgba(18,20,24,0.26)' });
+    g.strokeStyle = 'rgba(14,16,20,0.6)'; g.lineWidth = 1.1; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(30, 12); g.lineTo(35, 22); g.lineTo(32, 30); g.stroke();
+    // its moss cap sliding down the shaded side
+    blob(g, 20, 12.5, 8, 3.6, '#2c3a1e', { lw: 1, rot: -0.14 });
+    clump(g, 13.5, 15, 4, 4.4, -1.35, '#33432a', { line: OUT, lw: 0.9 });
+    blob(g, 27, 10.4, 4, 1.8, '#3c5026', { flat: true, noline: true });
+    g.fillStyle = '#4c6030';
+    [[24, 15], [17, 19], [30, 13.6]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 1, 0, TAU); g.fill();
+    });
+    // two smaller stones tucked against its foot, overlapping
+    apoly(g, [[6, 26, 3.5], [18, 24, 4], [22, 31, 3], [17, 37, 2.5], [6, 36.5, 2.5], [2, 31, 3]], '#565d66', { lw: 1.9, mid: 'rgba(18,20,24,0.14)', shade: 'rgba(18,20,24,0.24)', hi: 'rgba(220,228,240,0.16)' });
+    apoly(g, [[36, 27, 3], [48, 25, 3.5], [53, 32, 2.5], [49, 37.5, 2.5], [38, 37.5, 2.5], [33, 32, 3]], '#3c4148', { lw: 1.9, mid: 'rgba(12,14,18,0.16)', shade: 'rgba(12,14,18,0.26)', hi: 'rgba(200,210,225,0.14)' });
+    // contact shadows tucked where stone meets stone
+    blob(g, 20, 26.5, 5, 1.6, 'rgba(8,8,10,0.35)', { flat: true, noline: true });
+    blob(g, 38, 28.5, 5, 1.6, 'rgba(8,8,10,0.35)', { flat: true, noline: true });
+    // lichen freckles on the near faces
+    g.fillStyle = 'rgba(200,208,190,0.5)';
+    [[10, 30], [14, 33], [44, 30], [48, 33.6]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 0.9, 0, TAU); g.fill();
+    });
+  });
+
+  P.mosslog = () => mk(64, 36, (g) => {
+    blob(g, 32, 33, 28, 3, 'rgba(8,6,3,0.3)', { flat: true, noline: true });
+    // the fallen trunk, settled into the ground
+    apoly(g, [[4, 14, 5], [56, 12, 5], [60, 17, 4], [60, 26, 4], [56, 31, 4], [6, 32, 4], [2, 25, 4]], '#4a3018', { lw: LW_SIL, mid: 'rgba(14,7,3,0.18)', shade: 'rgba(14,7,3,0.28)', hi: 'rgba(160,110,60,0.14)' });
+    g.strokeStyle = 'rgba(20,10,4,0.55)'; g.lineWidth = 1.1; g.lineCap = 'round';
+    [[10, 17, 46, 2], [12, 22, 40, -1.5], [16, 27, 36, 1]].forEach(f => {
+      g.beginPath(); g.moveTo(f[0], f[1]); g.quadraticCurveTo(f[0] + f[2] / 2, f[1] + f[3], f[0] + f[2], f[1]); g.stroke();
+    });
+    // sawn end with rings
+    blob(g, 58, 21.5, 4.6, 7.4, '#c9a86a', { lw: 1.8 });
+    g.strokeStyle = '#8a6138'; g.lineWidth = 0.9;
+    g.beginPath(); g.ellipse(58, 21.5, 2.9, 4.8, 0, 0, TAU); g.stroke();
+    g.beginPath(); g.ellipse(58, 21.5, 1.3, 2.3, 0, 0, TAU); g.stroke();
+    // the moss blanket draped over the top, bark still owning the belly
+    apoly(g, [[4, 13.5, 4], [56, 11.5, 4], [58, 15.5, 3], [40, 17.5, 4], [20, 18.5, 4], [4, 17.5, 4]], '#2c3a1e', { lw: 1.4, mid: 'rgba(12,18,8,0.2)', shade: 'rgba(12,18,8,0.26)', hi: 'rgba(150,190,90,0.16)' });
+    furRow(g, 7, 17.6, 55, 15.4, 11, 3.2, 3.6, Math.PI, ['#33432a', '#2c3a1e'], null);
+    furRow(g, 12, 14.2, 50, 12.6, 7, 3, 3.2, Math.PI - 0.2, ['#3c5026', '#33432a'], { hi: 'rgba(170,210,110,0.3)' });
+    g.fillStyle = '#4c6030';
+    [[14, 15.6], [28, 14.8], [42, 14]].forEach(d => {
+      g.beginPath(); g.arc(d[0], d[1], 1, 0, TAU); g.fill();
+    });
+    // tiny mushrooms sheltering against the trunk
+    const nub = (x, y, s, cap) => {
+      g.fillStyle = '#d8cfba'; g.strokeStyle = '#140a08'; g.lineWidth = 0.8;
+      g.beginPath(); g.roundRect(x - s * 0.3, y - s, s * 0.6, s, s * 0.28); g.fill(); g.stroke();
+      blob(g, x, y - s, s * 0.95, s * 0.6, cap, { lw: 0.9, line: '#140a08' });
+      g.fillStyle = 'rgba(240,230,210,0.85)';
+      g.beginPath(); g.arc(x - s * 0.25, y - s * 1.15, s * 0.14, 0, TAU); g.fill();
+    };
+    nub(12, 32.5, 4, '#a83226');
+    nub(19, 33.5, 3, '#d4402c');
+    nub(48, 32, 3.4, '#b98a3c');
+    // a few grass blades against the shade side
+    g.strokeStyle = '#2b4023'; g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(6, 32); g.quadraticCurveTo(4.5, 26, 6, 21.5); g.stroke();
+    g.beginPath(); g.moveTo(52, 31); g.quadraticCurveTo(54, 26.5, 53, 23); g.stroke();
+  });
+
+  // Standalone pines for room interiors: full trees, y sorted with the
+  // cast, dense layered canopy over a narrow trunk footprint.
+  P.conifer1 = () => mk(90, 150, (g) => {
+    blob(g, 45, 146.5, 20, 3.4, 'rgba(8,10,5,0.32)', { flat: true, noline: true });
+    // trunk and root flare first, the canopy hangs over it
+    apoly(g, [[40, 90, 2], [50, 90, 2], [52, 138, 2], [58, 147, 1.5], [47, 143.5, 2], [43, 147, 2], [39, 143.5, 2], [32, 147, 1.5], [38, 138, 2]], '#33200f', { lw: 1.9, mid: 'rgba(8,4,2,0.2)', shade: 'rgba(8,4,2,0.3)', hi: 'rgba(120,80,40,0.14)' });
+    g.strokeStyle = 'rgba(10,6,3,0.6)'; g.lineWidth = 1; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(43, 96); g.lineTo(42, 136); g.stroke();
+    g.beginPath(); g.moveTo(47.5, 94); g.lineTo(48.5, 134); g.stroke();
+    g.strokeStyle = 'rgba(255,170,90,0.12)'; g.lineWidth = 1.4;
+    g.beginPath(); g.moveTo(40.6, 98); g.lineTo(39.8, 134); g.stroke();
+    // four canopy tiers, wide to narrow: carrying shape, inner shadow mass,
+    // a soft inner fringe, then the outlined skirt fringe
+    const tier = (cy, half, rise, col, dark, edge) => {
+      apoly(g, [[45, cy - rise, 3], [45 + half, cy, 3], [45 + half * 0.55, cy + 4, 4], [45, cy + 2, 4], [45 - half * 0.55, cy + 4, 4], [45 - half, cy, 3]], col, { lw: 1.9, mid: 'rgba(6,10,4,0.16)', shade: 'rgba(6,10,4,0.26)' });
+      blob(g, 45 - half * 0.3, cy - rise * 0.16, half * 0.38, rise * 0.24, dark, { flat: true, noline: true });
+      blob(g, 45 + half * 0.32, cy - rise * 0.08, half * 0.34, rise * 0.2, dark, { flat: true, noline: true });
+      furRow(g, 45 - half * 0.76, cy - 3, 45 + half * 0.76, cy - 3, edge, 4.8, 5.6, Math.PI, [dark, col], null);
+      furRow(g, 45 - half * 0.9, cy + 1.5, 45 + half * 0.9, cy + 1.5, edge + 4, 4.8, 6, Math.PI, [col, dark], { line: OUT, lw: 0.9 });
+    };
+    tier(104, 38, 30, '#16240f', '#0d1608', 9);
+    tier(82, 31, 26, '#1a2b11', '#101c0a', 8);
+    tier(60, 24, 22, '#1f3113', '#13230c', 7);
+    tier(40, 17, 18, '#243617', '#16290f', 5);
+    // the leader spike on top
+    apoly(g, [[45, 5, 1.5], [54, 27, 2.5], [45, 23.5, 2.5], [36, 27, 2.5]], '#243617', { lw: 1.9, mid: 'rgba(6,10,4,0.14)', shade: 'rgba(6,10,4,0.22)' });
+    // moonlit arcs along the west shoulder of each tier
+    g.strokeStyle = 'rgba(190,224,130,0.18)'; g.lineWidth = 1.8; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(12, 102); g.quadraticCurveTo(22, 88, 40, 78); g.stroke();
+    g.beginPath(); g.moveTo(19, 80); g.quadraticCurveTo(27, 68, 41, 60); g.stroke();
+    g.beginPath(); g.moveTo(26, 58); g.quadraticCurveTo(32, 48, 42, 41); g.stroke();
+    g.beginPath(); g.moveTo(38, 25); g.quadraticCurveTo(41, 15, 45, 9); g.stroke();
+  });
+
+  P.conifer2 = () => mk(70, 120, (g) => {
+    blob(g, 35, 117, 16, 3, 'rgba(8,10,5,0.32)', { flat: true, noline: true });
+    apoly(g, [[31.5, 72, 2], [39.5, 72, 2], [41, 110, 2], [46, 118, 1.5], [37, 114.5, 2], [33, 118, 2], [25, 116, 1.5], [30, 110, 2]], '#2c1c10', { lw: 1.8, mid: 'rgba(8,4,2,0.2)', shade: 'rgba(8,4,2,0.3)', hi: 'rgba(120,80,40,0.13)' });
+    g.strokeStyle = 'rgba(10,6,3,0.6)'; g.lineWidth = 1; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(34, 78); g.lineTo(33.4, 108); g.stroke();
+    // three tiers with a slight lean in the leader
+    const tier = (cy, half, rise, lean, col, dark, edge) => {
+      apoly(g, [[35 + lean, cy - rise, 3], [35 + half, cy, 3], [35 + half * 0.52, cy + 3.6, 3.5], [35, cy + 1.8, 3.5], [35 - half * 0.52, cy + 3.6, 3.5], [35 - half, cy, 3]], col, { lw: 1.8, mid: 'rgba(6,10,4,0.16)', shade: 'rgba(6,10,4,0.26)' });
+      blob(g, 35 - half * 0.28, cy - rise * 0.16, half * 0.36, rise * 0.24, dark, { flat: true, noline: true });
+      blob(g, 35 + half * 0.3, cy - rise * 0.08, half * 0.32, rise * 0.2, dark, { flat: true, noline: true });
+      furRow(g, 35 - half * 0.74, cy - 2.6, 35 + half * 0.74, cy - 2.6, edge, 4.4, 5, Math.PI, [dark, col], null);
+      furRow(g, 35 - half * 0.88, cy + 1.2, 35 + half * 0.88, cy + 1.2, edge + 3, 4.4, 5.4, Math.PI, [col, dark], { line: OUT, lw: 0.85 });
+    };
+    tier(82, 30, 26, 2, '#15230e', '#0d1608', 8);
+    tier(60, 23, 21, 3, '#1a2b11', '#101c0a', 6);
+    tier(40, 16, 17, 3, '#213314', '#13230c', 5);
+    apoly(g, [[39, 4, 1.5], [46, 25, 2.5], [38, 21.5, 2.5], [30, 25, 2.5]], '#243617', { lw: 1.8, mid: 'rgba(6,10,4,0.14)', shade: 'rgba(6,10,4,0.22)' });
+    g.strokeStyle = 'rgba(190,224,130,0.17)'; g.lineWidth = 1.6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(9, 80); g.quadraticCurveTo(18, 66, 32, 58); g.stroke();
+    g.beginPath(); g.moveTo(16, 58); g.quadraticCurveTo(23, 47, 33, 41); g.stroke();
+    g.beginPath(); g.moveTo(31, 22); g.quadraticCurveTo(34, 13, 38, 7); g.stroke();
+    // one dead orange branch low on the shade side
+    g.strokeStyle = '#5a3a1e'; g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(44, 86); g.quadraticCurveTo(52, 84, 57, 88); g.stroke();
+    clump(g, 55, 88.5, 3, 4, 2.3, '#7a5024', { line: OUT, lw: 0.8 });
+  });
+
+  P.tallgrass = () => mk(40, 40, (g) => {
+    blob(g, 20, 37.5, 15, 2.4, 'rgba(8,10,5,0.28)', { flat: true, noline: true });
+    g.lineCap = 'round';
+    const blade = (x, lean, hgt, col, w) => {
+      g.strokeStyle = col; g.lineWidth = w;
+      g.beginPath(); g.moveTo(x, 38);
+      g.quadraticCurveTo(x + lean * 0.5, 38 - hgt * 0.6, x + lean, 38 - hgt);
+      g.stroke();
+    };
+    // back rank darkest, mid rank, then seed stalks catching light
+    [[8, -4, 26], [13, 2, 30], [18, -2, 33], [23, 3, 31], [28, -3, 28], [33, 4, 25]].forEach(b => blade(b[0], b[1], b[2], '#1e2d1a', 1.8));
+    [[10, 3, 24], [15, -3, 28], [20, 4, 30], [25, -4, 27], [30, 2, 23]].forEach(b => blade(b[0], b[1], b[2], '#2b4023', 1.7));
+    for (const s of [[14, 5, 32], [26, -5, 34]]) {
+      blade(s[0], s[1], s[2], '#54622e', 1.3);
+      const tx = s[0] + s[1], ty = 38 - s[2];
+      g.strokeStyle = '#8c9448'; g.lineWidth = 2.4;
+      g.beginPath(); g.moveTo(tx, ty + 6); g.lineTo(tx + s[1] * 0.2, ty); g.stroke();
+      g.strokeStyle = 'rgba(230,235,180,0.5)'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(tx - 0.5, ty + 5); g.lineTo(tx + s[1] * 0.2 - 0.5, ty + 1); g.stroke();
+    }
+    // front rank lit, plus one long bent stem
+    [[12, -2, 20], [17, 3, 24], [22, -3, 26], [27, 4, 22], [32, -2, 18]].forEach(b => blade(b[0], b[1], b[2], '#3c5a28', 1.6));
+    g.strokeStyle = '#4c6c34'; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(20, 38); g.quadraticCurveTo(24, 24, 33, 21); g.stroke();
+    clump(g, 33.5, 21, 2, 3.4, 1.85, '#4c6c34', null);
+  });
+
+  P.sunflowerclump = () => mk(44, 60, (g) => {
+    blob(g, 22, 57, 17, 2.8, 'rgba(8,10,5,0.3)', { flat: true, noline: true });
+    const stem = (x0, x1, y1, w) => {
+      g.strokeStyle = '#3d5226'; g.lineWidth = w; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(x0, 58); g.quadraticCurveTo((x0 + x1) / 2 + 2, (58 + y1) / 2, x1, y1); g.stroke();
+    };
+    const leaf = (x, y, ang, s, col) => clump(g, x, y, s, s * 1.8, ang, col, { line: OUT, lw: 1 });
+    const bloom = (x, y, r, face) => {
+      for (let i = 0; i < 12; i++) {
+        const a = face * 0.25 + i / 12 * TAU;
+        clump(g, x + Math.cos(a) * r * 0.62, y + Math.sin(a) * r * 0.58, r * 0.42, r * 0.85, a + Math.PI / 2, i % 3 ? '#f4c542' : '#e3b341', { line: 'rgba(110,74,10,0.55)', lw: 0.8, hi: i % 4 === 0 ? 'rgba(255,244,190,0.5)' : null });
+      }
+      blob(g, x, y, r * 0.5, r * 0.48, '#4a3018', { lw: 1.2, mid: 'rgba(14,8,3,0.2)', shade: 'rgba(14,8,3,0.3)' });
+      g.fillStyle = 'rgba(120,80,36,0.8)';
+      for (let i = 0; i < 8; i++) {
+        const a = i / 8 * TAU + face;
+        g.beginPath(); g.arc(x + Math.cos(a) * r * 0.28, y + Math.sin(a) * r * 0.26, r * 0.05 + 0.3, 0, TAU); g.fill();
+      }
+      g.fillStyle = 'rgba(255,236,190,0.5)';
+      g.beginPath(); g.arc(x - r * 0.18, y - r * 0.18, r * 0.14, 0, TAU); g.fill();
+    };
+    // back bloom: smaller, turned aside
+    stem(27, 33, 16, 2);
+    leaf(31, 38, 1.2, 3.4, '#33512a');
+    bloom(33, 14, 6.4, 2);
+    // the side profile bud looking away
+    stem(17, 9.5, 24, 1.8);
+    leaf(12, 40, -1.1, 3.2, '#2c4420');
+    g.save(); g.translate(9.5, 23); g.rotate(-0.5);
+    clump(g, 4.6, 1.2, 3, 4.2, 2, '#33512a', { line: OUT, lw: 0.9 });
+    lens(g, 0, 0, 5.6, 2.6, '#e3b341', 1);
+    blob(g, -4.4, 0, 2.4, 2.6, '#4a3018', { lw: 1.1 });
+    g.restore();
+    // front bloom: the big face
+    stem(21, 20, 32, 2.4);
+    leaf(16, 46, -0.9, 4, '#3c5a28');
+    leaf(25, 43, 0.95, 3.6, '#33512a');
+    bloom(20, 30, 8.6, 0);
   });
 
   // ---------------- api ----------------
