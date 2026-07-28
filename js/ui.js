@@ -982,12 +982,29 @@ function showOver(won) {
 }
 
 // ---------------- level up ----------------
-// A locked fight banks rank ups: three cards in the middle of a wave is a
-// freeze frame nobody asked for. A cleared room, a shop, a rest stop or the
-// old open field all resolve them the moment they land.
+// RANK UPS RESOLVE THE MOMENT THEY LAND, mid fight and all.
+//
+// This used to bank them until a locked room was cleared, on the reasoning that
+// three cards in the middle of a wave is a freeze frame nobody asked for. That
+// reasoning was wrong about where the pleasure is. Teddy, playing it: waiting
+// until the end does not feel good. The card IS the reward, and holding it back
+// moves the payoff away from the moment that earned it, which is the whole
+// engine of the genre. Every survivors-like this game answers to stops the
+// world and deals you cards, and they do it because it works.
+//
+// The queue below it stays, because two levels can still land in one breath and
+// the second card should follow the first rather than be lost. And the phase
+// check at the call site still refuses to open during a room transition, where
+// the world is empty and there would be nothing to come back to.
+//
+// Two things to watch in play, neither of them a reason to go back: a rank up
+// during a boss telegraph freezes the tell along with everything else, and a
+// rank up while surrounded hands you a free look at a bad situation. Both are
+// true of the genre and both read as relief rather than exploit, but if either
+// starts feeling cheap, the fix is a short delay before the cards appear, not a
+// return to banking.
 function banksLevelups(g) {
-  const r = g && g.room;
-  return !!(r && r.lock === 'clear' && r.state === 'active');
+  return false;
 }
 
 function catOf(c) {

@@ -201,6 +201,30 @@
   },
   {
     "speaker": "brock",
+    "category": "blink",
+    "slot": "0",
+    "text": "\"That bug follows you everywhere now. I do not name wildlife. If I did, which I do not, that one is Blink.\"",
+    "spokenText": "That bug follows you everywhere now. I do not name wildlife. If I did, which I do not, that one is Blink.",
+    "hash8": "c7733c6f"
+  },
+  {
+    "speaker": "brock",
+    "category": "blink",
+    "slot": "1",
+    "text": "\"Your firefly sat on my ledger hand for an hour last night. Got nothing done. It can stay.\"",
+    "spokenText": "Your firefly sat on my ledger hand for an hour last night. Got nothing done. It can stay.",
+    "hash8": "a6b105ae"
+  },
+  {
+    "speaker": "brock",
+    "category": "blink",
+    "slot": "2",
+    "text": "\"Thirty years on this ridge and the woods finally sent us something that is not trying to eat anyone. Do not tell it I said that.\"",
+    "spokenText": "Thirty years on this ridge and the woods finally sent us something that is not trying to eat anyone. Do not tell it I said that.",
+    "hash8": "f9177a34"
+  },
+  {
+    "speaker": "brock",
     "category": "dawn",
     "slot": "0",
     "text": "\"You saw the dawn. Thirty years I have run this camp and I can count dawn-watchers on one paw.\" He salutes with the coffee.",
@@ -242,10 +266,29 @@
   {
     "speaker": "brock",
     "category": "died",
-    "slot": "boar",
-    "text": "\"Boars telegraph the charge. Big exclamation of intent. Step LEFT, {scout}.\"",
-    "spokenText": "Boars telegraph the charge. Big exclamation of intent. Step LEFT, {scout}.",
-    "hash8": "8bd4033c"
+    "slot": "boar_gus",
+    "text": "\"Boars telegraph the charge. Big exclamation of intent. Step LEFT, big fella.\"",
+    "spokenText": "Boars telegraph the charge. Big exclamation of intent. Step LEFT, big fella.",
+    "hash8": "5d115548",
+    "scout": "gus"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "boar_junie",
+    "text": "\"Boars telegraph the charge. Big exclamation of intent. Step LEFT, the fire hazard.\"",
+    "spokenText": "Boars telegraph the charge. Big exclamation of intent. Step LEFT, the fire hazard.",
+    "hash8": "4ae2bbfe",
+    "scout": "junie"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "boar_max",
+    "text": "\"Boars telegraph the charge. Big exclamation of intent. Step LEFT, squad leader.\"",
+    "spokenText": "Boars telegraph the charge. Big exclamation of intent. Step LEFT, squad leader.",
+    "hash8": "ab65ea43",
+    "scout": "max"
   },
   {
     "speaker": "brock",
@@ -266,10 +309,29 @@
   {
     "speaker": "brock",
     "category": "died",
-    "slot": "generic",
-    "text": "\"Back again, {scout}. The forest keeps score, and so do I. Spend some badges before you go back out.\"",
-    "spokenText": "Back again, {scout}. The forest keeps score, and so do I. Spend some badges before you go back out.",
-    "hash8": "93039fab"
+    "slot": "generic_gus",
+    "text": "\"Back again, big fella. The forest keeps score, and so do I. Spend some badges before you go back out.\"",
+    "spokenText": "Back again, big fella. The forest keeps score, and so do I. Spend some badges before you go back out.",
+    "hash8": "bd86c803",
+    "scout": "gus"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "generic_junie",
+    "text": "\"Back again, the fire hazard. The forest keeps score, and so do I. Spend some badges before you go back out.\"",
+    "spokenText": "Back again, the fire hazard. The forest keeps score, and so do I. Spend some badges before you go back out.",
+    "hash8": "4c82b71e",
+    "scout": "junie"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "generic_max",
+    "text": "\"Back again, squad leader. The forest keeps score, and so do I. Spend some badges before you go back out.\"",
+    "spokenText": "Back again, squad leader. The forest keeps score, and so do I. Spend some badges before you go back out.",
+    "hash8": "4be6f503",
+    "scout": "max"
   },
   {
     "speaker": "brock",
@@ -290,10 +352,29 @@
   {
     "speaker": "brock",
     "category": "died",
-    "slot": "rabbit",
-    "text": "\"A rabbit got you. They hop, {scout}. You can see the whole attack coming from the air.\"",
-    "spokenText": "A rabbit got you. They hop, {scout}. You can see the whole attack coming from the air.",
-    "hash8": "dc8ad920"
+    "slot": "rabbit_gus",
+    "text": "\"A rabbit got you. They hop, big fella. You can see the whole attack coming from the air.\"",
+    "spokenText": "A rabbit got you. They hop, big fella. You can see the whole attack coming from the air.",
+    "hash8": "a3788fd0",
+    "scout": "gus"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "rabbit_junie",
+    "text": "\"A rabbit got you. They hop, the fire hazard. You can see the whole attack coming from the air.\"",
+    "spokenText": "A rabbit got you. They hop, the fire hazard. You can see the whole attack coming from the air.",
+    "hash8": "83be8543",
+    "scout": "junie"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "rabbit_max",
+    "text": "\"A rabbit got you. They hop, squad leader. You can see the whole attack coming from the air.\"",
+    "spokenText": "A rabbit got you. They hop, squad leader. You can see the whole attack coming from the air.",
+    "hash8": "ee16c88d",
+    "scout": "max"
   },
   {
     "speaker": "brock",
@@ -370,10 +451,29 @@
   {
     "speaker": "brock",
     "category": "idle",
-    "slot": "6",
-    "text": "\"You aim with your eyes, not your feet. Strafe, {scout}. Strafe.\"",
-    "spokenText": "You aim with your eyes, not your feet. Strafe, {scout}. Strafe.",
-    "hash8": "482c5db4"
+    "slot": "6_gus",
+    "text": "\"You aim with your eyes, not your feet. Strafe, big fella. Strafe.\"",
+    "spokenText": "You aim with your eyes, not your feet. Strafe, big fella. Strafe.",
+    "hash8": "7a882434",
+    "scout": "gus"
+  },
+  {
+    "speaker": "brock",
+    "category": "idle",
+    "slot": "6_junie",
+    "text": "\"You aim with your eyes, not your feet. Strafe, the fire hazard. Strafe.\"",
+    "spokenText": "You aim with your eyes, not your feet. Strafe, the fire hazard. Strafe.",
+    "hash8": "d7eaab6c",
+    "scout": "junie"
+  },
+  {
+    "speaker": "brock",
+    "category": "idle",
+    "slot": "6_max",
+    "text": "\"You aim with your eyes, not your feet. Strafe, squad leader. Strafe.\"",
+    "spokenText": "You aim with your eyes, not your feet. Strafe, squad leader. Strafe.",
+    "hash8": "23cbb370",
+    "scout": "max"
   },
   {
     "speaker": "brock",
@@ -390,6 +490,54 @@
     "text": "\"Rules of Camp Hearthwood: respect the fire, bank your badges, and if a rabbit smiles at you, it already believes in something you really do not want it to.\"",
     "spokenText": "Rules of Camp Hearthwood: respect the fire, bank your badges, and if a rabbit smiles at you, it already believes in something you really do not want it to.",
     "hash8": "8277ea7d"
+  },
+  {
+    "speaker": "brock",
+    "category": "totem",
+    "slot": "0",
+    "text": "\"You put a hatchet to the post.\" He does not look at the post. \"Thirty years that thing stood there with the bark on and nobody touched it. Now it is marked. Now it is marked several times.\"",
+    "spokenText": "You put a hatchet to the post. Thirty years that thing stood there with the bark on and nobody touched it. Now it is marked. Now it is marked several times.",
+    "hash8": "fe41088b"
+  },
+  {
+    "speaker": "brock",
+    "category": "totem",
+    "slot": "1",
+    "text": "\"Every blaze on that post is a promise, and out there they read promises the way you read a trail sign. Loudly, and from a long way off.\"",
+    "spokenText": "Every blaze on that post is a promise, and out there they read promises the way you read a trail sign. Loudly, and from a long way off.",
+    "hash8": "1fe376c8"
+  },
+  {
+    "speaker": "brock",
+    "category": "totem",
+    "slot": "2",
+    "text": "\"The badges do come back heavier. I have counted. I would like the record to show I counted while disapproving.\"",
+    "spokenText": "The badges do come back heavier. I have counted. I would like the record to show I counted while disapproving.",
+    "hash8": "e2be4679"
+  },
+  {
+    "speaker": "brock",
+    "category": "totem",
+    "slot": "3",
+    "text": "\"You can plane it smooth, you know. Any night you like. Nobody out there has ever been told a promise came off, but you are welcome to try.\"",
+    "spokenText": "You can plane it smooth, you know. Any night you like. Nobody out there has ever been told a promise came off, but you are welcome to try.",
+    "hash8": "1a9fc9d0"
+  },
+  {
+    "speaker": "brock",
+    "category": "totem",
+    "slot": "4",
+    "text": "\"I watched a scout cut four blazes and walk out whistling. He came back. He did not whistle.\"",
+    "spokenText": "I watched a scout cut four blazes and walk out whistling. He came back. He did not whistle.",
+    "hash8": "0b6b18a2"
+  },
+  {
+    "speaker": "brock",
+    "category": "totem",
+    "slot": "5",
+    "text": "\"Marking wood to say you were here. That is their habit, not ours.\" He lets that sit. \"And the woods have never once failed to notice.\"",
+    "spokenText": "Marking wood to say you were here. That is their habit, not ours. And the woods have never once failed to notice.",
+    "hash8": "b5a89227"
   },
   {
     "speaker": "gus",
@@ -1238,6 +1386,70 @@
     "text": "Report: everything is on fire, sir.",
     "spokenText": "Report: everything is on fire, sir.",
     "hash8": "3783fe27"
+  },
+  {
+    "speaker": "qm",
+    "category": "coins",
+    "slot": "0",
+    "text": "\"Your Cookie Money from last night cleared. Counted, converted, logged, stamped. If the badge number felt small, take it up with the ledger. The ledger does not care.\"",
+    "spokenText": "Your Cookie Money from last night cleared. Counted, converted, logged, stamped. If the badge number felt small, take it up with the ledger. The ledger does not care.",
+    "hash8": "0556d322"
+  },
+  {
+    "speaker": "qm",
+    "category": "idle",
+    "slot": "0",
+    "text": "\"Requisition forms are in triplicate now. The forest keeps eating the second copy.\"",
+    "spokenText": "Requisition forms are in triplicate now. The forest keeps eating the second copy.",
+    "hash8": "fcfdb01b"
+  },
+  {
+    "speaker": "qm",
+    "category": "idle",
+    "slot": "1",
+    "text": "\"We are down to four tin cups. If a raccoon has the fifth, it signed nothing for it.\"",
+    "spokenText": "We are down to four tin cups. If a raccoon has the fifth, it signed nothing for it.",
+    "hash8": "68fc94ec"
+  },
+  {
+    "speaker": "qm",
+    "category": "idle",
+    "slot": "2",
+    "text": "\"Cookie Money is not legal tender. It is cookie money. It becomes badges at my table and nowhere else, and the rate is fair because I set it.\"",
+    "spokenText": "Cookie Money is not legal tender. It is cookie money. It becomes badges at my table and nowhere else, and the rate is fair because I set it.",
+    "hash8": "eac9a9b0"
+  },
+  {
+    "speaker": "qm",
+    "category": "idle",
+    "slot": "3",
+    "text": "\"Do not ask what is in the barrels. They are labeled. The label says BARREL.\"",
+    "spokenText": "Do not ask what is in the barrels. They are labeled. The label says BARREL.",
+    "hash8": "78f47eb6"
+  },
+  {
+    "speaker": "qm",
+    "category": "idle",
+    "slot": "4",
+    "text": "\"I count marshmallows by the bag, not the piece. Learned that the hard way. Junie was involved.\"",
+    "spokenText": "I count marshmallows by the bag, not the piece. Learned that the hard way. Junie was involved.",
+    "hash8": "04853272"
+  },
+  {
+    "speaker": "qm",
+    "category": "idle",
+    "slot": "5",
+    "text": "\"Lost and found out here is the whole forest, kid. Found is just the part I keep on shelves.\"",
+    "spokenText": "Lost and found out here is the whole forest, kid. Found is just the part I keep on shelves.",
+    "hash8": "72803cb2"
+  },
+  {
+    "speaker": "qm",
+    "category": "intro",
+    "slot": "0",
+    "text": "The Quartermaster looks up from a ledger thicker than you are. \"Name?\" You start to answer. \"Not yours. The inventory has names. You are the thing that makes the inventory smaller.\"",
+    "spokenText": "Name? Not yours. The inventory has names. You are the thing that makes the inventory smaller.",
+    "hash8": "3a55052b"
   },
   {
     "speaker": "vicar",
