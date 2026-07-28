@@ -13,7 +13,8 @@
     "audio:voice": "node tools/voice/dump_lines.cjs && python tools/voice/gen.py",
     "audio:music": "electron tools/render && node tools/render/encode.cjs",
     "audio:music:test": "node tools/render/selftest.cjs",
-    "audio:manifest": "node tools/manifest.cjs"
+    "audio:manifest": "node tools/manifest.cjs",
+    "rooms:check": "node tools/validate_rooms.cjs"
   },
   "devDependencies": {
     "electron": "^31.3.0",
