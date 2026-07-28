@@ -1113,7 +1113,22 @@ window.MBM = {
   skip(t) { if (App.game) App.game.time = t; },
   god() { if (App.game) App.game.player.god = !App.game.player.god; return App.game.player.god; },
   levelup() { if (App.game) App.game.gainXP(App.game.xpNext + 1); },
-  warp(act, room) { console.log('warp: room system not landed yet'); },
+  warp(act, room) {
+    // Debug: jump the live run to act N, room M (1 based), skipping the
+    // rooms between. Clears each intermediate room bloodlessly.
+    if (!App.game || typeof Run === 'undefined' || !Run.active) { console.log('warp needs a live room run'); return; }
+    const g = App.game;
+    let guard = 0;
+    while ((Run.act < act || (Run.act === act && Run.roomIdx < room - 1)) && !Run.finished && guard++ < 40) {
+      for (const e of g.enemies) if (!e.dead) g.killEnemy(e, true);
+      g.enemies.length = 0;
+      const door = (g.room && g.room.doors && g.room.doors[0]) || null;
+      Run.advance(door);
+    }
+    g.player.x = g.room && g.room.entryPoint ? g.room.entryPoint.x : g.player.x;
+    g.player.y = g.room && g.room.entryPoint ? g.room.entryPoint.y : g.player.y;
+    console.log('warped to act ' + Run.act + ' room ' + (Run.roomIdx + 1));
+  },
   clear() {
     if (!App.game) return;
     for (const e of App.game.enemies) {

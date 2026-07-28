@@ -209,12 +209,36 @@ const Run = (function () {
       if (!layoutsFor(want, t.act).length) continue;
       const early = [];
       const late = [];
-      for (let i = 0; i < types.length; i++) {
+      // Slot 0 is sacred: a night that opens on an empty shop or loot room
+      // reads as broken, so the guarantee never takes the first fight.
+      for (let i = 1; i < types.length; i++) {
         if (types[i] !== 'combat') continue;
         if (repeatsNearby(want, i, types.length, typeAt, win)) continue;
         (i < types.length - 2 ? early : late).push(i);
       }
-      const at = pick(rng, early.length ? early : late);
+      let at = pick(rng, early.length ? early : late);
+      if (at == null) {
+        // No spare fight to take over: claim a duplicated safe room instead
+        // (the second lore or rest), never slot 0, never the boss, never
+        // another promised type.
+        const counts = {};
+        for (const ty of types) counts[ty] = (counts[ty] || 0) + 1;
+        const dupes = [];
+        for (let i = 1; i < types.length; i++) {
+          const ty = types[i];
+          if (ty === 'boss' || guarantee.indexOf(ty) !== -1) continue;
+          if (counts[ty] > 1) dupes.push(i);
+        }
+        at = pick(rng, dupes);
+        if (at == null) {
+          // Still nothing: claim the least essential singleton, comfort
+          // before flavor before challenge.
+          for (const ty of ['rest', 'lore', 'elite']) {
+            const i = types.indexOf(ty);
+            if (i >= 1) { at = i; break; }
+          }
+        }
+      }
       if (at != null) types[at] = want;
     }
 
