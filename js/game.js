@@ -334,10 +334,28 @@ class Game {
   }
 
   // ---------------- damage ----------------
+  // A boss buys its untouchable moments in two places, and neither of them
+  // used to reach this function. director.js holdHp parks health on a buffer
+  // no burst can chew through and keepHp puts it back every frame, and
+  // setHidden parks the hit radius at zero. A projectile carries its own
+  // radius, so a shot still connects with a body whose radius is zero, and
+  // every one of those hits was deducted, sounded and numbered against health
+  // that was going to be restored the same frame. Measured over full fights:
+  // MAWMOLE threw away 39 to 45 hits and 1254 to 2099 damage, 13 to 19 percent
+  // of everything the player dealt, THE BEHIND 26 hits and 794 damage, and the
+  // three older bosses 0.6 to 2 percent during their phase roars. A player
+  // watched 440 come off a mound and the health bar did not move.
+  //
+  // Held health is the one test that covers all of it: holdHp is what every
+  // untouchable state calls (the phase roar, the warren, the leap, the tunnel
+  // and THE BEHIND's cover), releaseHp is the only thing that clears it, and
+  // keepHp refuses to run without it. Hiding is not tested separately because
+  // every boss that hides holds its health in the same breath.
   dealDamage(e, base, o) {
     o = o || {};
     if (e.dead) return;
     if (e.prop) return this.damageProp(e, base * this.dmgMul, o);
+    if (e._hpHold != null) return this.blockHit(e, o);
     let dmg = base * this.dmgMul;
     let crit = false;
     if (!o.noCrit && Math.random() < this.critCh) { crit = true; dmg *= 2; }
@@ -364,6 +382,47 @@ class Game {
       this.spawnNum(e.x + rand(-6, 6), e.y - e.r - 6, Math.round(dmg) + '', crit ? '#ffd94a' : (o.color || '#f0e8d8'), crit);
     }
     if (e.hp <= 0) this.killEnemy(e);
+  }
+
+  // What a hit on something untouchable does instead. Not nothing: a shot that
+  // lands with no answer at all reads as a dropped input, which is the same
+  // complaint the silent deduction above caused, only quieter. So it gets the
+  // one response in the game that is neither warm nor loud, a dry tick and a
+  // few cold sparks off the point of contact. No health, no flash, no number,
+  // no hit sound, nothing that could be read at a glance as a hit that counted,
+  // and nothing satisfying enough to be worth doing on purpose. The lesson it
+  // teaches is the one the fight wants taught: shoot the mounds, break the
+  // cover, wait for the mole to surface.
+  //
+  // Rate limited per target because a held boss under continuous fire takes
+  // upward of thirty of these a second, and thirty ticks a second is a noise,
+  // not a cue. Everything the caller asked for otherwise still happens: the
+  // projectile is consumed by its own code, and a tick the caller wanted quiet
+  // (burn and puddle ticks pass quiet) stays quiet.
+  blockHit(e, o) {
+    if (this.t - (e._blockFxT != null ? e._blockFxT : -9) < 0.09) return;
+    e._blockFxT = this.t;
+    if (!o.quiet) AudioSys.play('click');
+    // The tick comes off the body, not off the shooter. fx and fy are where
+    // the hit came FROM (for a swing that is the player's own feet), so they
+    // only ever choose which side of the body the sparks come off and which
+    // way they go, exactly as the knockback above uses them. A hidden body
+    // still has its real radius parked on _rBak, so a shot into a burrowed
+    // mole ticks off the mound rather than off a point.
+    const body = e._rBak != null ? e._rBak : e.r;
+    const fx = o.fx != null ? o.fx : this.player.x;
+    const fy = o.fy != null ? o.fy : this.player.y;
+    let a0 = Math.atan2(fy - e.y, fx - e.x);
+    if (Math.hypot(fx - e.x, fy - e.y) < 1) a0 = rand(0, TAU);
+    const cx = e.x + Math.cos(a0) * body * 0.6;
+    const cy = e.y - body * 0.4 + Math.sin(a0) * body * 0.4;
+    for (let i = 0; i < 3 && this.parts.length < 420; i++) {
+      const a = a0 + rand(-0.9, 0.9), s = rand(40, 95);
+      this.parts.push({
+        kind: 'spark', x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+        t: 0, life: rand(0.12, 0.22), size: rand(1.3, 2.1), color: '#8fa3b8',
+      });
+    }
   }
 
   applyBurn(e, dps, dur) {

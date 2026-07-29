@@ -1449,6 +1449,47 @@
       return;
     }
 
+    // Phase two's two clocks, hoisted above the exposure window below because
+    // that window used to stop them dead. Smash every breakable prop in the
+    // arena and behindStep has nowhere left to put it: exposeT was refreshed
+    // to 2 on every cycle, the early return under it ran on nearly every
+    // frame, and neither the regrow nor the reach ever came round again.
+    // Measured on a stripped arena: regrowT fell from 8.0 to 7.6 across 41
+    // seconds of fight, nothing grew back, not one cone was thrown, and act
+    // 3's boss died in 29.2 seconds at 71.9 percent exposure as a stationary
+    // target with no attacks, against a 60.7 second median when its cover is
+    // left alone. That is a cheese route into the last fight of the night.
+    //
+    // Both clocks move, not just the regrow. Regrowth alone is one stump every
+    // eight seconds and the player breaks a stump in about a second, so it
+    // hands back a fraction of the fight and leaves the rest of it standing in
+    // the open doing nothing. The reach is what makes the open state a fight
+    // at all, and it costs the authored version very little: a punish window
+    // is two seconds against a two and a half second reach cooldown, so at
+    // most one cone pair lands in one, and a cone warns for 0.7 seconds before
+    // it fires. Exposure keeps its own early return below, since that return
+    // is what stops holdHp going back on and turning the punish window into
+    // nothing at all.
+    if (ai.phase >= 2) {
+      ai.regrowT -= dt;
+      if (ai.regrowT <= 0) {
+        ai.regrowT = 8;
+        this.behindRegrow(e);
+      }
+      ai.reachT -= dt;
+      if (ai.reachT <= 0) {
+        ai.reachT = 2.5;
+        const a = Math.atan2(p.y - e.y, p.x - e.x);
+        for (const off of [-0.45, 0.45]) {
+          this.spawnZone({
+            type: 'cone', x: e.x, y: e.y, r: 300, a: a + off, arc: 0.5,
+            warn: 0.7, dmg: e.dmg * 0.9, knock: 90, kind: e.kind,
+          });
+        }
+        AudioSys.play('swing');
+      }
+    }
+
     if (ai.exposeT > 0) {
       ai.exposeT -= dt;
       if (ai.exposeT <= 0) {
@@ -1478,26 +1519,6 @@
         ai.exposeT = 2;
         this.releaseHp(e, 'behind');
         this.spawnPuff(e.x, e.y, 12);
-      }
-    }
-
-    if (ai.phase >= 2) {
-      ai.regrowT -= dt;
-      if (ai.regrowT <= 0) {
-        ai.regrowT = 8;
-        this.behindRegrow(e);
-      }
-      ai.reachT -= dt;
-      if (ai.reachT <= 0) {
-        ai.reachT = 2.5;
-        const a = Math.atan2(p.y - e.y, p.x - e.x);
-        for (const off of [-0.45, 0.45]) {
-          this.spawnZone({
-            type: 'cone', x: e.x, y: e.y, r: 300, a: a + off, arc: 0.5,
-            warn: 0.7, dmg: e.dmg * 0.9, knock: 90, kind: e.kind,
-          });
-        }
-        AudioSys.play('swing');
       }
     }
   };
