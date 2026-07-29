@@ -124,3 +124,22 @@ For a Steam depot, upload `dist/win-unpacked` with SteamPipe as usual. The
 Steamworks overlay and achievements would need the Steamworks SDK wired into
 the Electron shell. The game itself has no external dependencies and runs fully
 offline.
+
+## Deploying to tevded.com/critters
+
+Every `<script>` in `index.html` carries a `?v=` build stamp. A browser caches
+`js/game.js` forever otherwise, so a deploy without a new stamp is invisible to
+anybody who has already played: they keep running the copy they downloaded the
+first time, and the site looks like it did not update.
+
+BUMP THE STAMP ON EVERY DEPLOY. It is idempotent, so re-running this is safe:
+
+    python -c "import re,pathlib; p=pathlib.Path('index.html'); s=p.read_text(encoding='utf-8'); s=re.sub(r'(<script src=\"js/[A-Za-z0-9_]+\.js)(\?v=[^\"]*)?(\")', r'\1?v=NEWSTAMP\3', s); p.write_text(s,encoding='utf-8',newline='')"
+
+Then copy `index.html`, `js/*.js` and `assets/manifest.json` into
+`tevded-site/public/critters/`, and run `npm run deploy` there (vite build plus
+wrangler deploy).
+
+VERIFY ON THE REAL DOMAIN, and do not trust what the browser shows you: fetch
+the files with `cache: 'no-store'` and compare byte counts against the repo.
+A stale browser cache has twice now looked exactly like a failed deploy.
