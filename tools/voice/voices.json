@@ -38,39 +38,37 @@
     "the recipe evaluation round, use gen.py --force (or delete the speaker's",
     "folder under assets/voice/en/) to force a re-render. See tools/voice/README.md."
   ],
-
   "max": {
     "engine": "kokoro",
     "voice": "am_michael",
     "speed": 1.05,
-    "pitchSemitones": 3,
+    "pitchSemitones": 1,
     "post": []
   },
-
   "junie": {
     "engine": "kokoro",
     "voice": "af_bella",
     "speed": 1.12,
-    "pitchSemitones": 5,
+    "pitchSemitones": 3,
     "post": []
   },
-
   "gus": {
     "engine": "kokoro",
     "voice": "am_puck",
     "speed": 0.94,
-    "pitchSemitones": 1,
+    "pitchSemitones": 0,
     "post": []
   },
-
   "brock": {
     "engine": "kokoro",
     "voice": "bm_lewis",
     "speed": 0.92,
     "pitchSemitones": -2,
-    "post": ["saturate", "campfire_slap"]
+    "post": [
+      "saturate",
+      "campfire_slap"
+    ]
   },
-
   "qm": {
     "_note": "The Quartermaster, the supply stall by the Badge Board. Deliberately the opposite adult to Brock: American rather than British, quicker, and completely dry, with no post chain at all. Brock is a fire; this one is a counter. His lines are not in lines.json yet (dump_lines.cjs collects BARKS, SELECT_LINES, BROCK and BOSSLINES only), so nothing generates for him until that script also collects QUARTERMASTER. The recipe is here so the wiring in js/camp.js has somewhere to land.",
     "engine": "kokoro",
@@ -79,30 +77,61 @@
     "pitchSemitones": -1,
     "post": []
   },
-
   "hare": {
     "_note": "'any bright voice' per spec: af_sky picked as a bright, energetic placeholder. Swap freely during the recipe evaluation round, no code changes needed.",
     "engine": "kokoro",
     "voice": "af_sky",
-    "speed": 1.20,
+    "speed": 1.2,
     "pitchSemitones": -3,
-    "post": ["detune_double", "plate"]
+    "post": [
+      "detune_double",
+      "plate"
+    ]
   },
-
   "vicar": {
     "engine": "kokoro",
     "voice": "bm_george",
     "speed": 0.88,
     "pitchSemitones": -5,
-    "post": ["ringmod42", "plate"]
+    "post": [
+      "ringmod42",
+      "plate"
+    ]
   },
-
   "antlered": {
     "engine": "kokoro",
     "voice": "am_onyx",
-    "speed": 0.80,
-    "stacked": [-7, 5],
-    "mix": [1.0, 0.35],
-    "post": ["longtail", "highpass_upper"]
+    "speed": 0.8,
+    "stacked": [
+      -7,
+      5
+    ],
+    "mix": [
+      1.0,
+      0.35
+    ],
+    "post": [
+      "longtail",
+      "highpass_upper"
+    ]
+  },
+  "mole": {
+    "engine": "kokoro",
+    "voice": "am_onyx",
+    "speed": 0.82,
+    "pitchSemitones": -6,
+    "post": [
+      "saturate",
+      "longtail"
+    ]
+  },
+  "behind": {
+    "engine": "kokoro",
+    "voice": "am_michael",
+    "speed": 0.72,
+    "pitchSemitones": -2,
+    "post": [
+      "detune_double"
+    ]
   }
 }

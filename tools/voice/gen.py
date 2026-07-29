@@ -68,7 +68,12 @@ POST_CHAINS = {
 
     # Cheap doubling: two short, slightly detuned/delayed copies via ffmpeg's
     # chorus filter, standard doubling-preset delays/decays/speeds.
-    "detune_double": "chorus=in_gain=0.5:out_gain=0.9:delays=45|55:decays=0.4|0.32:speeds=0.3|0.4",
+    # depths is not optional. ffmpeg's chorus filter refuses the whole graph
+    # with "Both delays & decays & speeds & depths must be set" if any one of
+    # the four is missing, and this chain shipped without it, so every line
+    # using it failed: BRAMBLEBUCK's boss line has never once rendered. The
+    # values are the doubling preset from ffmpeg's own documentation.
+    "detune_double": "chorus=in_gain=0.5:out_gain=0.9:delays=45|55:decays=0.4|0.32:speeds=0.3|0.4:depths=2|1.3",
 
     # Short plate-style reverb approximated with a handful of closely spaced
     # aecho taps of decreasing level (ffmpeg has no real plate reverb; a

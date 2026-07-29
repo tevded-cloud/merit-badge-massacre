@@ -1,9 +1,1279 @@
 {
-  "generatedAt": "2026-07-28T15:43:45.243Z",
+  "generatedAt": "2026-07-29T03:12:23.658Z",
   "groups": {
     "core": [],
-    "camp": []
+    "camp": [
+      "voice/en/brock/arc_actThree_0_5923af69.webm",
+      "voice/en/brock/arc_actThree_1_5d799309.webm",
+      "voice/en/brock/arc_actTwo_0_b387600c.webm",
+      "voice/en/brock/arc_actTwo_1_3d8f8fa3.webm",
+      "voice/en/brock/arc_behindDown_0_bc5024a2.webm",
+      "voice/en/brock/arc_behindDown_1_871875a4.webm",
+      "voice/en/brock/arc_brambleDown_0_a15ea9d9.webm",
+      "voice/en/brock/arc_brambleDown_1_c9087a71.webm",
+      "voice/en/brock/arc_finalDown_0_1b39d9c7.webm",
+      "voice/en/brock/arc_finalDown_1_8386e210.webm",
+      "voice/en/brock/arc_firstDawn_0_31201393.webm",
+      "voice/en/brock/arc_firstDawn_1_e3fe7575.webm",
+      "voice/en/brock/arc_firstNight_0_c0fe516c.webm",
+      "voice/en/brock/arc_firstNight_1_15eef9c6.webm",
+      "voice/en/brock/arc_firstPage_0_55de5095.webm",
+      "voice/en/brock/arc_firstPage_1_0bdd393b.webm",
+      "voice/en/brock/arc_fiveGraves_0_b03e5075.webm",
+      "voice/en/brock/arc_fiveGraves_1_5cb3e280.webm",
+      "voice/en/brock/arc_fullJournal_0_9be30a21.webm",
+      "voice/en/brock/arc_fullJournal_1_9b343b3c.webm",
+      "voice/en/brock/arc_tallymanDown_0_7bfb8781.webm",
+      "voice/en/brock/arc_tallymanDown_1_14e55075.webm",
+      "voice/en/brock/arc_threeKills_0_33f97676.webm",
+      "voice/en/brock/arc_threeKills_1_ec9996ef.webm",
+      "voice/en/brock/arc_twoMarks_0_fd021eaf.webm",
+      "voice/en/brock/arc_twoMarks_1_f6f55f7b.webm",
+      "voice/en/brock/blink_0_c7733c6f.webm",
+      "voice/en/brock/blink_1_a6b105ae.webm",
+      "voice/en/brock/blink_2_f9177a34.webm",
+      "voice/en/brock/dawn_0_0da071c1.webm",
+      "voice/en/brock/dawn_1_e6a842ce.webm",
+      "voice/en/brock/dawn_2_8dff7314.webm",
+      "voice/en/brock/died_antlered_0b46c734.webm",
+      "voice/en/brock/died_bat_379a99e1.webm",
+      "voice/en/brock/died_beaver_eacee1d4.webm",
+      "voice/en/brock/died_behind_3a67879e.webm",
+      "voice/en/brock/died_boar_gus_5d115548.webm",
+      "voice/en/brock/died_boar_junie_4ae2bbfe.webm",
+      "voice/en/brock/died_boar_max_ab65ea43.webm",
+      "voice/en/brock/died_doe_166b2f9a.webm",
+      "voice/en/brock/died_fox_768165f9.webm",
+      "voice/en/brock/died_generic_gus_bd86c803.webm",
+      "voice/en/brock/died_generic_junie_4c82b71e.webm",
+      "voice/en/brock/died_generic_max_4be6f503.webm",
+      "voice/en/brock/died_hare_b8bb780e.webm",
+      "voice/en/brock/died_mole_gus_d37a7ef9.webm",
+      "voice/en/brock/died_mole_junie_6e950e29.webm",
+      "voice/en/brock/died_mole_max_05af267f.webm",
+      "voice/en/brock/died_owl_a6c714b5.webm",
+      "voice/en/brock/died_rabbit_gus_a3788fd0.webm",
+      "voice/en/brock/died_rabbit_junie_83be8543.webm",
+      "voice/en/brock/died_rabbit_max_ee16c88d.webm",
+      "voice/en/brock/died_raccoon_43593b04.webm",
+      "voice/en/brock/died_squirrel_2be9be6b.webm",
+      "voice/en/brock/died_vicar_26dd454d.webm",
+      "voice/en/brock/idle_0_18a68ee5.webm",
+      "voice/en/brock/idle_1_5cf36e81.webm",
+      "voice/en/brock/idle_2_1141e68e.webm",
+      "voice/en/brock/idle_3_ea199324.webm",
+      "voice/en/brock/idle_4_b7cecb1c.webm",
+      "voice/en/brock/idle_5_d2636eea.webm",
+      "voice/en/brock/idle_6_gus_7a882434.webm",
+      "voice/en/brock/idle_6_junie_d7eaab6c.webm",
+      "voice/en/brock/idle_6_max_23cbb370.webm",
+      "voice/en/brock/intro_0_7c5febee.webm",
+      "voice/en/brock/intro_1_8277ea7d.webm",
+      "voice/en/brock/totem_0_fe41088b.webm",
+      "voice/en/brock/totem_1_1fe376c8.webm",
+      "voice/en/brock/totem_2_e2be4679.webm",
+      "voice/en/brock/totem_3_1a9fc9d0.webm",
+      "voice/en/brock/totem_4_0b6b18a2.webm",
+      "voice/en/brock/totem_5_b5a89227.webm"
+    ],
+    "voice:antlered": [
+      "voice/en/antlered/bossline_0_c077d41e.webm"
+    ],
+    "voice:behind": [
+      "voice/en/behind/bossline_0_a14ceb28.webm"
+    ],
+    "voice:brock": [
+      "voice/en/brock/arc_actThree_0_5923af69.webm",
+      "voice/en/brock/arc_actThree_1_5d799309.webm",
+      "voice/en/brock/arc_actTwo_0_b387600c.webm",
+      "voice/en/brock/arc_actTwo_1_3d8f8fa3.webm",
+      "voice/en/brock/arc_behindDown_0_bc5024a2.webm",
+      "voice/en/brock/arc_behindDown_1_871875a4.webm",
+      "voice/en/brock/arc_brambleDown_0_a15ea9d9.webm",
+      "voice/en/brock/arc_brambleDown_1_c9087a71.webm",
+      "voice/en/brock/arc_finalDown_0_1b39d9c7.webm",
+      "voice/en/brock/arc_finalDown_1_8386e210.webm",
+      "voice/en/brock/arc_firstDawn_0_31201393.webm",
+      "voice/en/brock/arc_firstDawn_1_e3fe7575.webm",
+      "voice/en/brock/arc_firstNight_0_c0fe516c.webm",
+      "voice/en/brock/arc_firstNight_1_15eef9c6.webm",
+      "voice/en/brock/arc_firstPage_0_55de5095.webm",
+      "voice/en/brock/arc_firstPage_1_0bdd393b.webm",
+      "voice/en/brock/arc_fiveGraves_0_b03e5075.webm",
+      "voice/en/brock/arc_fiveGraves_1_5cb3e280.webm",
+      "voice/en/brock/arc_fullJournal_0_9be30a21.webm",
+      "voice/en/brock/arc_fullJournal_1_9b343b3c.webm",
+      "voice/en/brock/arc_tallymanDown_0_7bfb8781.webm",
+      "voice/en/brock/arc_tallymanDown_1_14e55075.webm",
+      "voice/en/brock/arc_threeKills_0_33f97676.webm",
+      "voice/en/brock/arc_threeKills_1_ec9996ef.webm",
+      "voice/en/brock/arc_twoMarks_0_fd021eaf.webm",
+      "voice/en/brock/arc_twoMarks_1_f6f55f7b.webm",
+      "voice/en/brock/blink_0_c7733c6f.webm",
+      "voice/en/brock/blink_1_a6b105ae.webm",
+      "voice/en/brock/blink_2_f9177a34.webm",
+      "voice/en/brock/dawn_0_0da071c1.webm",
+      "voice/en/brock/dawn_1_e6a842ce.webm",
+      "voice/en/brock/dawn_2_8dff7314.webm",
+      "voice/en/brock/died_antlered_0b46c734.webm",
+      "voice/en/brock/died_bat_379a99e1.webm",
+      "voice/en/brock/died_beaver_eacee1d4.webm",
+      "voice/en/brock/died_behind_3a67879e.webm",
+      "voice/en/brock/died_boar_gus_5d115548.webm",
+      "voice/en/brock/died_boar_junie_4ae2bbfe.webm",
+      "voice/en/brock/died_boar_max_ab65ea43.webm",
+      "voice/en/brock/died_doe_166b2f9a.webm",
+      "voice/en/brock/died_fox_768165f9.webm",
+      "voice/en/brock/died_generic_gus_bd86c803.webm",
+      "voice/en/brock/died_generic_junie_4c82b71e.webm",
+      "voice/en/brock/died_generic_max_4be6f503.webm",
+      "voice/en/brock/died_hare_b8bb780e.webm",
+      "voice/en/brock/died_mole_gus_d37a7ef9.webm",
+      "voice/en/brock/died_mole_junie_6e950e29.webm",
+      "voice/en/brock/died_mole_max_05af267f.webm",
+      "voice/en/brock/died_owl_a6c714b5.webm",
+      "voice/en/brock/died_rabbit_gus_a3788fd0.webm",
+      "voice/en/brock/died_rabbit_junie_83be8543.webm",
+      "voice/en/brock/died_rabbit_max_ee16c88d.webm",
+      "voice/en/brock/died_raccoon_43593b04.webm",
+      "voice/en/brock/died_squirrel_2be9be6b.webm",
+      "voice/en/brock/died_vicar_26dd454d.webm",
+      "voice/en/brock/idle_0_18a68ee5.webm",
+      "voice/en/brock/idle_1_5cf36e81.webm",
+      "voice/en/brock/idle_2_1141e68e.webm",
+      "voice/en/brock/idle_3_ea199324.webm",
+      "voice/en/brock/idle_4_b7cecb1c.webm",
+      "voice/en/brock/idle_5_d2636eea.webm",
+      "voice/en/brock/idle_6_gus_7a882434.webm",
+      "voice/en/brock/idle_6_junie_d7eaab6c.webm",
+      "voice/en/brock/idle_6_max_23cbb370.webm",
+      "voice/en/brock/intro_0_7c5febee.webm",
+      "voice/en/brock/intro_1_8277ea7d.webm",
+      "voice/en/brock/totem_0_fe41088b.webm",
+      "voice/en/brock/totem_1_1fe376c8.webm",
+      "voice/en/brock/totem_2_e2be4679.webm",
+      "voice/en/brock/totem_3_1a9fc9d0.webm",
+      "voice/en/brock/totem_4_0b6b18a2.webm",
+      "voice/en/brock/totem_5_b5a89227.webm"
+    ],
+    "voice:gus": [
+      "voice/en/gus/boss_0_34a73ca2.webm",
+      "voice/en/gus/boss_1_2108c7c9.webm",
+      "voice/en/gus/boss_2_a4a7ca23.webm",
+      "voice/en/gus/boss_3_10493804.webm",
+      "voice/en/gus/boss_4_e92da831.webm",
+      "voice/en/gus/boss_5_721a42ec.webm",
+      "voice/en/gus/bossnamed_antlered_fc751eb5.webm",
+      "voice/en/gus/bossnamed_behind_dbcb50e1.webm",
+      "voice/en/gus/bossnamed_hare_ee041cad.webm",
+      "voice/en/gus/bossnamed_mole_a87b9fc1.webm",
+      "voice/en/gus/bossnamed_vicar_8f297422.webm",
+      "voice/en/gus/chest_0_9c9679e4.webm",
+      "voice/en/gus/chest_1_1693234c.webm",
+      "voice/en/gus/death_0_126f69f5.webm",
+      "voice/en/gus/death_1_726e1401.webm",
+      "voice/en/gus/death_2_486a093b.webm",
+      "voice/en/gus/death_3_d302be33.webm",
+      "voice/en/gus/death_4_95272815.webm",
+      "voice/en/gus/kills_0_0e795562.webm",
+      "voice/en/gus/kills_1_50ab6a06.webm",
+      "voice/en/gus/lowhp_0_b27b6357.webm",
+      "voice/en/gus/lowhp_1_22f14511.webm",
+      "voice/en/gus/lowhp_2_06822e9d.webm",
+      "voice/en/gus/lowhp_3_4a4ef832.webm",
+      "voice/en/gus/lowhp_4_7009d43c.webm",
+      "voice/en/gus/lowhp_5_a4e9198e.webm",
+      "voice/en/gus/revive_0_8df66f3d.webm",
+      "voice/en/gus/revive_1_a4959462.webm",
+      "voice/en/gus/runstart_0_8b2e8cc3.webm",
+      "voice/en/gus/runstart_1_c5e2e765.webm",
+      "voice/en/gus/runstart_2_d5fd929f.webm",
+      "voice/en/gus/runstart_3_d4627e66.webm",
+      "voice/en/gus/runstart_4_5f9a2b74.webm",
+      "voice/en/gus/runstart_5_fd3278af.webm",
+      "voice/en/gus/select_0_3167d996.webm",
+      "voice/en/gus/win_0_d0d16810.webm",
+      "voice/en/gus/win_1_7887c0f0.webm"
+    ],
+    "voice:hare": [
+      "voice/en/hare/bossline_0_512cf885.webm"
+    ],
+    "voice:junie": [
+      "voice/en/junie/boss_0_3f20cfd3.webm",
+      "voice/en/junie/boss_1_d5a3a4e8.webm",
+      "voice/en/junie/boss_2_ec5355be.webm",
+      "voice/en/junie/boss_3_0ae94fbb.webm",
+      "voice/en/junie/boss_4_0201a0aa.webm",
+      "voice/en/junie/boss_5_aa4a5550.webm",
+      "voice/en/junie/bossnamed_antlered_030ec1ca.webm",
+      "voice/en/junie/bossnamed_behind_aacf5247.webm",
+      "voice/en/junie/bossnamed_hare_50ccc8fa.webm",
+      "voice/en/junie/bossnamed_mole_d10f38fb.webm",
+      "voice/en/junie/bossnamed_vicar_f287426f.webm",
+      "voice/en/junie/chest_0_b1f7de55.webm",
+      "voice/en/junie/chest_1_4e1ae71c.webm",
+      "voice/en/junie/death_0_94c5bcc1.webm",
+      "voice/en/junie/death_1_8575d5c7.webm",
+      "voice/en/junie/death_2_acbaaf8e.webm",
+      "voice/en/junie/death_3_e0da2a62.webm",
+      "voice/en/junie/death_4_16f9ffa9.webm",
+      "voice/en/junie/kills_0_59b7de3b.webm",
+      "voice/en/junie/kills_1_563c5000.webm",
+      "voice/en/junie/lowhp_0_16bce81f.webm",
+      "voice/en/junie/lowhp_1_d92511fb.webm",
+      "voice/en/junie/lowhp_2_bf42d15b.webm",
+      "voice/en/junie/lowhp_3_2c94b130.webm",
+      "voice/en/junie/lowhp_4_9038cc7c.webm",
+      "voice/en/junie/lowhp_5_63cd66b3.webm",
+      "voice/en/junie/revive_0_9fb8ef67.webm",
+      "voice/en/junie/revive_1_0fa2cf57.webm",
+      "voice/en/junie/runstart_0_82d000fd.webm",
+      "voice/en/junie/runstart_1_6d5c3e06.webm",
+      "voice/en/junie/runstart_2_0ebba515.webm",
+      "voice/en/junie/runstart_3_65452274.webm",
+      "voice/en/junie/runstart_4_063d9895.webm",
+      "voice/en/junie/runstart_5_715dcf14.webm",
+      "voice/en/junie/select_0_9f779df4.webm",
+      "voice/en/junie/win_0_a01807a1.webm",
+      "voice/en/junie/win_1_938c687f.webm"
+    ],
+    "voice:max": [
+      "voice/en/max/boss_0_82e4f1c6.webm",
+      "voice/en/max/boss_1_34c87083.webm",
+      "voice/en/max/boss_2_358150b5.webm",
+      "voice/en/max/boss_3_e890c4b4.webm",
+      "voice/en/max/boss_4_06ab9afc.webm",
+      "voice/en/max/boss_5_1240bfd2.webm",
+      "voice/en/max/bossnamed_antlered_75fd5397.webm",
+      "voice/en/max/bossnamed_behind_7b3d00db.webm",
+      "voice/en/max/bossnamed_hare_6162cb0b.webm",
+      "voice/en/max/bossnamed_mole_97238fa6.webm",
+      "voice/en/max/bossnamed_vicar_2dc29a1f.webm",
+      "voice/en/max/chest_0_7cac4e69.webm",
+      "voice/en/max/chest_1_f2391bdb.webm",
+      "voice/en/max/death_0_6c534c00.webm",
+      "voice/en/max/death_1_e4d2253b.webm",
+      "voice/en/max/death_2_ae9d443d.webm",
+      "voice/en/max/death_3_e03f7b0b.webm",
+      "voice/en/max/death_4_70f3c8b2.webm",
+      "voice/en/max/kills_0_66de3350.webm",
+      "voice/en/max/kills_1_8f4054cc.webm",
+      "voice/en/max/lowhp_0_cdfff83d.webm",
+      "voice/en/max/lowhp_1_3a8a1f6f.webm",
+      "voice/en/max/lowhp_2_8b0aa3f9.webm",
+      "voice/en/max/lowhp_3_3375a4af.webm",
+      "voice/en/max/lowhp_4_1e9a5134.webm",
+      "voice/en/max/lowhp_5_b1bcea3c.webm",
+      "voice/en/max/revive_0_c2e2cc60.webm",
+      "voice/en/max/revive_1_59caa523.webm",
+      "voice/en/max/runstart_0_0f391c2b.webm",
+      "voice/en/max/runstart_1_3a379ec4.webm",
+      "voice/en/max/runstart_2_06dfbcb3.webm",
+      "voice/en/max/runstart_3_99fae9a1.webm",
+      "voice/en/max/runstart_4_1a51cd35.webm",
+      "voice/en/max/runstart_5_c4833708.webm",
+      "voice/en/max/select_0_5fb2acbc.webm",
+      "voice/en/max/win_0_2e1f6eba.webm",
+      "voice/en/max/win_1_3783fe27.webm"
+    ],
+    "voice:mole": [
+      "voice/en/mole/bossline_0_49b1688c.webm"
+    ],
+    "voice:qm": [
+      "voice/en/qm/coins_0_0556d322.webm",
+      "voice/en/qm/idle_0_fcfdb01b.webm",
+      "voice/en/qm/idle_1_68fc94ec.webm",
+      "voice/en/qm/idle_2_eac9a9b0.webm",
+      "voice/en/qm/idle_3_78f47eb6.webm",
+      "voice/en/qm/idle_4_04853272.webm",
+      "voice/en/qm/idle_5_72803cb2.webm",
+      "voice/en/qm/intro_0_3a55052b.webm"
+    ],
+    "voice:vicar": [
+      "voice/en/vicar/bossline_0_7a928410.webm"
+    ]
   },
-  "files": {},
+  "files": {
+    "voice/en/antlered/bossline_0_c077d41e.webm": {
+      "bytes": 15970,
+      "speaker": "antlered",
+      "spokenText": "somebody tell them about me."
+    },
+    "voice/en/behind/bossline_0_a14ceb28.webm": {
+      "bytes": 12843,
+      "speaker": "behind",
+      "spokenText": "turn around. i can wait."
+    },
+    "voice/en/brock/arc_actThree_0_5923af69.webm": {
+      "bytes": 39401,
+      "speaker": "brock",
+      "spokenText": "This deep, the maps stop helping. This deep, Camp Hearthwood stops being the last camp on the ridge and starts being the last camp, period."
+    },
+    "voice/en/brock/arc_actThree_1_5d799309.webm": {
+      "bytes": 29085,
+      "speaker": "brock",
+      "spokenText": "Bring back whatever you find. I am done being surprised at my age. I would just like to be informed."
+    },
+    "voice/en/brock/arc_actTwo_0_b387600c.webm": {
+      "bytes": 57161,
+      "speaker": "brock",
+      "spokenText": "You are past the treeline proper now. Further than I go. Further than most of my old troop got. Different makers stamp those tokens out there. Different hands, different tin. They compete. I do not know for what."
+    },
+    "voice/en/brock/arc_actTwo_1_3d8f8fa3.webm": {
+      "bytes": 44124,
+      "speaker": "brock",
+      "spokenText": "Bring me one, if you can pry it loose. I have wanted to look at one up close for thirty years. I have also, and I cannot stress this enough, been too much of a coward."
+    },
+    "voice/en/brock/arc_behindDown_0_bc5024a2.webm": {
+      "bytes": 34206,
+      "speaker": "brock",
+      "spokenText": "THE BEHIND. In thirty years not one scout has been able to tell me what it looks like, and I notice you have not offered either."
+    },
+    "voice/en/brock/arc_behindDown_1_871875a4.webm": {
+      "bytes": 36670,
+      "speaker": "brock",
+      "spokenText": "Do not. I have thought about it every night since I was younger than you and I have decided I would rather go on not knowing. Eat something."
+    },
+    "voice/en/brock/arc_brambleDown_0_a15ea9d9.webm": {
+      "bytes": 39291,
+      "speaker": "brock",
+      "spokenText": "BRAMBLEBUCK, down. First one Signed, if the old stories are even true, which means you just beat the one with seniority."
+    },
+    "voice/en/brock/arc_brambleDown_1_c9087a71.webm": {
+      "bytes": 21691,
+      "speaker": "brock",
+      "spokenText": "Do not let it go to your head. It was, and I want to stress this, a rabbit."
+    },
+    "voice/en/brock/arc_finalDown_0_1b39d9c7.webm": {
+      "bytes": 57787,
+      "speaker": "brock",
+      "spokenText": "OLD NOBODY. HOLLOWANTLER, if you want its whole name, though nothing out there wants to hear it said twice. Down. Thirty years running this camp did not prepare me for how quiet that would be."
+    },
+    "voice/en/brock/arc_finalDown_1_8386e210.webm": {
+      "bytes": 38584,
+      "speaker": "brock",
+      "spokenText": "I had a whole speech ready. I am not giving it tonight. Go celebrate. And do not ask me about the twelfth name yet. Some other night."
+    },
+    "voice/en/brock/arc_firstDawn_0_31201393.webm": {
+      "bytes": 36451,
+      "speaker": "brock",
+      "spokenText": "You saw a whole dawn out there and came back to tell me about it. Sit by the fire. The actual seat, not the log with the splinter."
+    },
+    "voice/en/brock/arc_firstDawn_1_e3fe7575.webm": {
+      "bytes": 36915,
+      "speaker": "brock",
+      "spokenText": "Thirty years I ran this camp on the theory that somebody eventually would. Thank you for proving the theory. Cocoa is on me tonight."
+    },
+    "voice/en/brock/arc_firstNight_0_c0fe516c.webm": {
+      "bytes": 36525,
+      "speaker": "brock",
+      "spokenText": "Back already. Good. That means you are still breathing. Sit. I only tell this story once, and I am not repeating the good parts."
+    },
+    "voice/en/brock/arc_firstNight_1_15eef9c6.webm": {
+      "bytes": 38927,
+      "speaker": "brock",
+      "spokenText": "Thirty years ago I brought twelve kids up this ridge. I brought one down. That is a fireside talk for later. Tonight, go get badges."
+    },
+    "voice/en/brock/arc_firstPage_0_55de5095.webm": {
+      "bytes": 33989,
+      "speaker": "brock",
+      "spokenText": "You are keeping notes. Good. Nobody who ever camped this ridge before you wrote a single thing down, and look how that went."
+    },
+    "voice/en/brock/arc_firstPage_1_0bdd393b.webm": {
+      "bytes": 26506,
+      "speaker": "brock",
+      "spokenText": "Keep the journal. I will read it when you are done needing it. Preferably a long time from now."
+    },
+    "voice/en/brock/arc_fiveGraves_0_b03e5075.webm": {
+      "bytes": 34441,
+      "speaker": "brock",
+      "spokenText": "Five times back to this fire in a body bag, more or less. I stopped flinching around number three. Professional courtesy."
+    },
+    "voice/en/brock/arc_fiveGraves_1_5cb3e280.webm": {
+      "bytes": 33908,
+      "speaker": "brock",
+      "spokenText": "You keep coming back, though. That is either grit or a badge quota you are very committed to. I am choosing to believe grit."
+    },
+    "voice/en/brock/arc_fullJournal_0_9be30a21.webm": {
+      "bytes": 34959,
+      "speaker": "brock",
+      "spokenText": "That journal of yours is getting thick. You have written down more about this ridge than I managed in thirty years, and I LIVE here."
+    },
+    "voice/en/brock/arc_fullJournal_1_9b343b3c.webm": {
+      "bytes": 12421,
+      "speaker": "brock",
+      "spokenText": "Feel free to be smug about it. Once."
+    },
+    "voice/en/brock/arc_tallymanDown_0_7bfb8781.webm": {
+      "bytes": 32231,
+      "speaker": "brock",
+      "spokenText": "THE TALLYMAN, finally handled. He has been walking off with badges since before you were born. Did you get any of them back?"
+    },
+    "voice/en/brock/arc_tallymanDown_1_14e55075.webm": {
+      "bytes": 23683,
+      "speaker": "brock",
+      "spokenText": "No? Of course not. He is very organized about it. There is probably a ledger."
+    },
+    "voice/en/brock/arc_threeKills_0_33f97676.webm": {
+      "bytes": 34942,
+      "speaker": "brock",
+      "spokenText": "Three of the named ones, put down for good. That is not luck, kid. That is a pattern. I am almost proud, which is new for me."
+    },
+    "voice/en/brock/arc_threeKills_1_ec9996ef.webm": {
+      "bytes": 16430,
+      "speaker": "brock",
+      "spokenText": "Try not to let it go to your head twice in one season."
+    },
+    "voice/en/brock/arc_twoMarks_0_fd021eaf.webm": {
+      "bytes": 45603,
+      "speaker": "brock",
+      "spokenText": "You have gotten a good look at two of them now. Notice the tin? Every marked critter wears one, pressed right into the fur. Somebody out there is stamping those by hand."
+    },
+    "voice/en/brock/arc_twoMarks_1_f6f55f7b.webm": {
+      "bytes": 18614,
+      "speaker": "brock",
+      "spokenText": "Do not ask me who. I have theories. None of them let me sleep."
+    },
+    "voice/en/brock/blink_0_c7733c6f.webm": {
+      "bytes": 31547,
+      "speaker": "brock",
+      "spokenText": "That bug follows you everywhere now. I do not name wildlife. If I did, which I do not, that one is Blink."
+    },
+    "voice/en/brock/blink_1_a6b105ae.webm": {
+      "bytes": 27064,
+      "speaker": "brock",
+      "spokenText": "Your firefly sat on my ledger hand for an hour last night. Got nothing done. It can stay."
+    },
+    "voice/en/brock/blink_2_f9177a34.webm": {
+      "bytes": 36076,
+      "speaker": "brock",
+      "spokenText": "Thirty years on this ridge and the woods finally sent us something that is not trying to eat anyone. Do not tell it I said that."
+    },
+    "voice/en/brock/dawn_0_0da071c1.webm": {
+      "bytes": 27628,
+      "speaker": "brock",
+      "spokenText": "You saw the dawn. Thirty years I have run this camp and I can count dawn-watchers on one paw."
+    },
+    "voice/en/brock/dawn_1_e6a842ce.webm": {
+      "bytes": 33332,
+      "speaker": "brock",
+      "spokenText": "OLD NOBODY is down and the sun came up. Do not get comfortable. Antlers grow back, and so, probably, does he."
+    },
+    "voice/en/brock/dawn_2_8dff7314.webm": {
+      "bytes": 52383,
+      "speaker": "brock",
+      "spokenText": "THE BEHIND is down and the sun came up. Thirty years I have felt something at my shoulder on this ridge. This morning there is nothing there, and I find I do not know what to do with my hands."
+    },
+    "voice/en/brock/died_antlered_0b46c734.webm": {
+      "bytes": 51458,
+      "speaker": "brock",
+      "spokenText": "OLD NOBODY. HOLLOWANTLER, if you want its whole name, though nobody out there wants to be caught saying it twice. You got further than most of Troop 12 ever did. Again."
+    },
+    "voice/en/brock/died_bat_379a99e1.webm": {
+      "bytes": 15829,
+      "speaker": "brock",
+      "spokenText": "Bats. Hate the wobble. Everyone hates the wobble."
+    },
+    "voice/en/brock/died_beaver_eacee1d4.webm": {
+      "bytes": 25130,
+      "speaker": "brock",
+      "spokenText": "A beaver. Death by municipal engineering. There is a badge for irony somewhere."
+    },
+    "voice/en/brock/died_behind_3a67879e.webm": {
+      "bytes": 46991,
+      "speaker": "brock",
+      "spokenText": "THE BEHIND. You cannot shoot a thing that is not there, and it is never there. Take the cover away from it. Every stump you break is one less place in the world for it to stand."
+    },
+    "voice/en/brock/died_boar_gus_5d115548.webm": {
+      "bytes": 25622,
+      "speaker": "brock",
+      "spokenText": "Boars telegraph the charge. Big exclamation of intent. Step LEFT, big fella."
+    },
+    "voice/en/brock/died_boar_junie_4ae2bbfe.webm": {
+      "bytes": 26533,
+      "speaker": "brock",
+      "spokenText": "Boars telegraph the charge. Big exclamation of intent. Step LEFT, the fire hazard."
+    },
+    "voice/en/brock/died_boar_max_ab65ea43.webm": {
+      "bytes": 25209,
+      "speaker": "brock",
+      "spokenText": "Boars telegraph the charge. Big exclamation of intent. Step LEFT, squad leader."
+    },
+    "voice/en/brock/died_doe_166b2f9a.webm": {
+      "bytes": 21345,
+      "speaker": "brock",
+      "spokenText": "Killed by a doe. Gentle eyes, they said. Nature is healing, they said."
+    },
+    "voice/en/brock/died_fox_768165f9.webm": {
+      "bytes": 20712,
+      "speaker": "brock",
+      "spokenText": "Foxes weave. Stop shooting where they were and shoot where they are going."
+    },
+    "voice/en/brock/died_generic_gus_bd86c803.webm": {
+      "bytes": 30141,
+      "speaker": "brock",
+      "spokenText": "Back again, big fella. The forest keeps score, and so do I. Spend some badges before you go back out."
+    },
+    "voice/en/brock/died_generic_junie_4c82b71e.webm": {
+      "bytes": 31552,
+      "speaker": "brock",
+      "spokenText": "Back again, the fire hazard. The forest keeps score, and so do I. Spend some badges before you go back out."
+    },
+    "voice/en/brock/died_generic_max_4be6f503.webm": {
+      "bytes": 30276,
+      "speaker": "brock",
+      "spokenText": "Back again, squad leader. The forest keeps score, and so do I. Spend some badges before you go back out."
+    },
+    "voice/en/brock/died_hare_b8bb780e.webm": {
+      "bytes": 44138,
+      "speaker": "brock",
+      "spokenText": "BRAMBLEBUCK. Signed young, they say, back when the tokens were still hand stamped. Every third landing it sprays. Count the hops, kid."
+    },
+    "voice/en/brock/died_mole_gus_d37a7ef9.webm": {
+      "bytes": 67737,
+      "speaker": "brock",
+      "spokenText": "MAWMOLE. Blind since before either of us was born and it has never once needed eyes: every shot you fire is you telling it exactly where to come up. It is only worth hitting when the nose is out, big fella. The rest is dirt."
+    },
+    "voice/en/brock/died_mole_junie_6e950e29.webm": {
+      "bytes": 69053,
+      "speaker": "brock",
+      "spokenText": "MAWMOLE. Blind since before either of us was born and it has never once needed eyes: every shot you fire is you telling it exactly where to come up. It is only worth hitting when the nose is out, the fire hazard. The rest is dirt."
+    },
+    "voice/en/brock/died_mole_max_05af267f.webm": {
+      "bytes": 67114,
+      "speaker": "brock",
+      "spokenText": "MAWMOLE. Blind since before either of us was born and it has never once needed eyes: every shot you fire is you telling it exactly where to come up. It is only worth hitting when the nose is out, squad leader. The rest is dirt."
+    },
+    "voice/en/brock/died_owl_a6c714b5.webm": {
+      "bytes": 22191,
+      "speaker": "brock",
+      "spokenText": "The owls spit feathers. Keep your feet moving and they cannot lead the shot."
+    },
+    "voice/en/brock/died_rabbit_gus_a3788fd0.webm": {
+      "bytes": 25361,
+      "speaker": "brock",
+      "spokenText": "A rabbit got you. They hop, big fella. You can see the whole attack coming from the air."
+    },
+    "voice/en/brock/died_rabbit_junie_83be8543.webm": {
+      "bytes": 26159,
+      "speaker": "brock",
+      "spokenText": "A rabbit got you. They hop, the fire hazard. You can see the whole attack coming from the air."
+    },
+    "voice/en/brock/died_rabbit_max_ee16c88d.webm": {
+      "bytes": 25058,
+      "speaker": "brock",
+      "spokenText": "A rabbit got you. They hop, squad leader. You can see the whole attack coming from the air."
+    },
+    "voice/en/brock/died_raccoon_43593b04.webm": {
+      "bytes": 20965,
+      "speaker": "brock",
+      "spokenText": "A raccoon. It probably went through your pack afterwards. They always do."
+    },
+    "voice/en/brock/died_squirrel_2be9be6b.webm": {
+      "bytes": 31245,
+      "speaker": "brock",
+      "spokenText": "A squirrel. You were bested by a SQUIRREL. I have led this troop thirty years and it does not get less embarrassing."
+    },
+    "voice/en/brock/died_vicar_26dd454d.webm": {
+      "bytes": 32036,
+      "speaker": "brock",
+      "spokenText": "THE TALLYMAN got you. Everything you own, he considers a loan. Stay off his rings and mind the raccoons he calls."
+    },
+    "voice/en/brock/idle_0_18a68ee5.webm": {
+      "bytes": 13598,
+      "speaker": "brock",
+      "spokenText": "The Badge Board takes badges, not promises."
+    },
+    "voice/en/brock/idle_1_5cf36e81.webm": {
+      "bytes": 22861,
+      "speaker": "brock",
+      "spokenText": "Cocoa heals. That is not camp wisdom, that is medical fact out here."
+    },
+    "voice/en/brock/idle_2_1141e68e.webm": {
+      "bytes": 20102,
+      "speaker": "brock",
+      "spokenText": "Hold your ground near the fire all you want. Out there, keep moving."
+    },
+    "voice/en/brock/idle_3_ea199324.webm": {
+      "bytes": 21499,
+      "speaker": "brock",
+      "spokenText": "Elites glow red. Chests fall out of them. Draw your own conclusions."
+    },
+    "voice/en/brock/idle_4_b7cecb1c.webm": {
+      "bytes": 25070,
+      "speaker": "brock",
+      "spokenText": "I knew that stag when he was a fawn. Before he got Signed. Shame. Great rack, though."
+    },
+    "voice/en/brock/idle_5_d2636eea.webm": {
+      "bytes": 15351,
+      "speaker": "brock",
+      "spokenText": "Second Wind is not a myth. It is a purchase."
+    },
+    "voice/en/brock/idle_6_gus_7a882434.webm": {
+      "bytes": 19579,
+      "speaker": "brock",
+      "spokenText": "You aim with your eyes, not your feet. Strafe, big fella. Strafe."
+    },
+    "voice/en/brock/idle_6_junie_d7eaab6c.webm": {
+      "bytes": 21332,
+      "speaker": "brock",
+      "spokenText": "You aim with your eyes, not your feet. Strafe, the fire hazard. Strafe."
+    },
+    "voice/en/brock/idle_6_max_23cbb370.webm": {
+      "bytes": 20259,
+      "speaker": "brock",
+      "spokenText": "You aim with your eyes, not your feet. Strafe, squad leader. Strafe."
+    },
+    "voice/en/brock/intro_0_7c5febee.webm": {
+      "bytes": 73793,
+      "speaker": "brock",
+      "spokenText": "New blood. Good. Every critter out here that has truly seen one of them believes forever after, and belief like that leaves a mark, a little tin stamp pressed into the fur. We call that getting Signed. Earn badges. Come back alive. In that order, preferably."
+    },
+    "voice/en/brock/intro_1_8277ea7d.webm": {
+      "bytes": 43555,
+      "speaker": "brock",
+      "spokenText": "Rules of Camp Hearthwood: respect the fire, bank your badges, and if a rabbit smiles at you, it already believes in something you really do not want it to."
+    },
+    "voice/en/brock/totem_0_fe41088b.webm": {
+      "bytes": 42554,
+      "speaker": "brock",
+      "spokenText": "You put a hatchet to the post. Thirty years that thing stood there with the bark on and nobody touched it. Now it is marked. Now it is marked several times."
+    },
+    "voice/en/brock/totem_1_1fe376c8.webm": {
+      "bytes": 40414,
+      "speaker": "brock",
+      "spokenText": "Every blaze on that post is a promise, and out there they read promises the way you read a trail sign. Loudly, and from a long way off."
+    },
+    "voice/en/brock/totem_2_e2be4679.webm": {
+      "bytes": 31022,
+      "speaker": "brock",
+      "spokenText": "The badges do come back heavier. I have counted. I would like the record to show I counted while disapproving."
+    },
+    "voice/en/brock/totem_3_1a9fc9d0.webm": {
+      "bytes": 37271,
+      "speaker": "brock",
+      "spokenText": "You can plane it smooth, you know. Any night you like. Nobody out there has ever been told a promise came off, but you are welcome to try."
+    },
+    "voice/en/brock/totem_4_0b6b18a2.webm": {
+      "bytes": 26737,
+      "speaker": "brock",
+      "spokenText": "I watched a scout cut four blazes and walk out whistling. He came back. He did not whistle."
+    },
+    "voice/en/brock/totem_5_b5a89227.webm": {
+      "bytes": 31588,
+      "speaker": "brock",
+      "spokenText": "Marking wood to say you were here. That is their habit, not ours. And the woods have never once failed to notice."
+    },
+    "voice/en/gus/boss_0_34a73ca2.webm": {
+      "bytes": 7166,
+      "speaker": "gus",
+      "spokenText": "That is a lot of critter."
+    },
+    "voice/en/gus/boss_1_2108c7c9.webm": {
+      "bytes": 8713,
+      "speaker": "gus",
+      "spokenText": "You look like you skip breakfast."
+    },
+    "voice/en/gus/boss_2_a4a7ca23.webm": {
+      "bytes": 9054,
+      "speaker": "gus",
+      "spokenText": "I have a skillet with your name on it."
+    },
+    "voice/en/gus/boss_3_10493804.webm": {
+      "bytes": 11675,
+      "speaker": "gus",
+      "spokenText": "Oh, this one has a whole legend. Fancy."
+    },
+    "voice/en/gus/boss_4_e92da831.webm": {
+      "bytes": 7328,
+      "speaker": "gus",
+      "spokenText": "Big name, big target."
+    },
+    "voice/en/gus/boss_5_721a42ec.webm": {
+      "bytes": 10924,
+      "speaker": "gus",
+      "spokenText": "I have been hungrier than this. Barely."
+    },
+    "voice/en/gus/bossnamed_antlered_fc751eb5.webm": {
+      "bytes": 17833,
+      "speaker": "gus",
+      "spokenText": "OLD NOBODY. I have skipped fewer meals than you have skipped centuries."
+    },
+    "voice/en/gus/bossnamed_behind_dbcb50e1.webm": {
+      "bytes": 15183,
+      "speaker": "gus",
+      "spokenText": "THE BEHIND. Nope. I am facing this way now. Permanently."
+    },
+    "voice/en/gus/bossnamed_hare_ee041cad.webm": {
+      "bytes": 16694,
+      "speaker": "gus",
+      "spokenText": "The hopping one. I have heard the stories. Underwhelming so far."
+    },
+    "voice/en/gus/bossnamed_mole_a87b9fc1.webm": {
+      "bytes": 19361,
+      "speaker": "gus",
+      "spokenText": "MAWMOLE. All that digging and it still has not found lunch."
+    },
+    "voice/en/gus/bossnamed_vicar_8f297422.webm": {
+      "bytes": 13765,
+      "speaker": "gus",
+      "spokenText": "You are not getting my snacks. Try the badges instead."
+    },
+    "voice/en/gus/chest_0_9c9679e4.webm": {
+      "bytes": 7150,
+      "speaker": "gus",
+      "spokenText": "Ooh. Heavier than it looks."
+    },
+    "voice/en/gus/chest_1_1693234c.webm": {
+      "bytes": 7682,
+      "speaker": "gus",
+      "spokenText": "Is there food in this one?"
+    },
+    "voice/en/gus/death_0_126f69f5.webm": {
+      "bytes": 8713,
+      "speaker": "gus",
+      "spokenText": "Someone... eat my rations..."
+    },
+    "voice/en/gus/death_1_726e1401.webm": {
+      "bytes": 11646,
+      "speaker": "gus",
+      "spokenText": "Do not let this go to waste... any of it..."
+    },
+    "voice/en/gus/death_2_486a093b.webm": {
+      "bytes": 10075,
+      "speaker": "gus",
+      "spokenText": "Tell them I finished my snacks first..."
+    },
+    "voice/en/gus/death_3_d302be33.webm": {
+      "bytes": 9545,
+      "speaker": "gus",
+      "spokenText": "Worth it. The snacks were worth it..."
+    },
+    "voice/en/gus/death_4_95272815.webm": {
+      "bytes": 9593,
+      "speaker": "gus",
+      "spokenText": "Nap time... forever, I guess..."
+    },
+    "voice/en/gus/kills_0_0e795562.webm": {
+      "bytes": 7258,
+      "speaker": "gus",
+      "spokenText": "I count them like sheep."
+    },
+    "voice/en/gus/kills_1_50ab6a06.webm": {
+      "bytes": 10274,
+      "speaker": "gus",
+      "spokenText": "A hundred down. Arms are noodles."
+    },
+    "voice/en/gus/lowhp_0_b27b6357.webm": {
+      "bytes": 8018,
+      "speaker": "gus",
+      "spokenText": "I have been hit in the snacks."
+    },
+    "voice/en/gus/lowhp_1_22f14511.webm": {
+      "bytes": 10762,
+      "speaker": "gus",
+      "spokenText": "Everything hurts. Even the trail mix."
+    },
+    "voice/en/gus/lowhp_2_06822e9d.webm": {
+      "bytes": 7509,
+      "speaker": "gus",
+      "spokenText": "Walk it off. Walk it off."
+    },
+    "voice/en/gus/lowhp_3_4a4ef832.webm": {
+      "bytes": 7218,
+      "speaker": "gus",
+      "spokenText": "That woke me up, at least."
+    },
+    "voice/en/gus/lowhp_4_7009d43c.webm": {
+      "bytes": 10175,
+      "speaker": "gus",
+      "spokenText": "I am fine. The trail mix is not."
+    },
+    "voice/en/gus/lowhp_5_a4e9198e.webm": {
+      "bytes": 6710,
+      "speaker": "gus",
+      "spokenText": "Rude. Very rude."
+    },
+    "voice/en/gus/revive_0_8df66f3d.webm": {
+      "bytes": 6157,
+      "speaker": "gus",
+      "spokenText": "Nap is over."
+    },
+    "voice/en/gus/revive_1_a4959462.webm": {
+      "bytes": 7156,
+      "speaker": "gus",
+      "spokenText": "You woke me up. Rude."
+    },
+    "voice/en/gus/runstart_0_8b2e8cc3.webm": {
+      "bytes": 7919,
+      "speaker": "gus",
+      "spokenText": "I brought snacks for after."
+    },
+    "voice/en/gus/runstart_1_c5e2e765.webm": {
+      "bytes": 8407,
+      "speaker": "gus",
+      "spokenText": "Big night. Bigger appetite."
+    },
+    "voice/en/gus/runstart_2_d5fd929f.webm": {
+      "bytes": 10169,
+      "speaker": "gus",
+      "spokenText": "Gus is here. Relax, everybody."
+    },
+    "voice/en/gus/runstart_3_d4627e66.webm": {
+      "bytes": 12183,
+      "speaker": "gus",
+      "spokenText": "Whatever it believes in, I believe in lunch."
+    },
+    "voice/en/gus/runstart_4_5f9a2b74.webm": {
+      "bytes": 10932,
+      "speaker": "gus",
+      "spokenText": "Let us get this over with, I am hungry."
+    },
+    "voice/en/gus/runstart_5_fd3278af.webm": {
+      "bytes": 9499,
+      "speaker": "gus",
+      "spokenText": "Slow and steady. Mostly slow."
+    },
+    "voice/en/gus/select_0_3167d996.webm": {
+      "bytes": 7757,
+      "speaker": "gus",
+      "spokenText": "Fine. But we eat after."
+    },
+    "voice/en/gus/win_0_d0d16810.webm": {
+      "bytes": 9625,
+      "speaker": "gus",
+      "spokenText": "Dawn already? Time for pancakes."
+    },
+    "voice/en/gus/win_1_7887c0f0.webm": {
+      "bytes": 8625,
+      "speaker": "gus",
+      "spokenText": "We survived. Who wants eggs?"
+    },
+    "voice/en/hare/bossline_0_512cf885.webm": {
+      "bytes": 9158,
+      "speaker": "hare",
+      "spokenText": "hold still. it is only a pin."
+    },
+    "voice/en/junie/boss_0_3f20cfd3.webm": {
+      "bytes": 7420,
+      "speaker": "junie",
+      "spokenText": "Ooh, a BIG candle."
+    },
+    "voice/en/junie/boss_1_d5a3a4e8.webm": {
+      "bytes": 9866,
+      "speaker": "junie",
+      "spokenText": "You ever seen a deer cry? Wanna?"
+    },
+    "voice/en/junie/boss_2_ec5355be.webm": {
+      "bytes": 9234,
+      "speaker": "junie",
+      "spokenText": "I am going to need more marshmallows."
+    },
+    "voice/en/junie/boss_3_0ae94fbb.webm": {
+      "bytes": 10939,
+      "speaker": "junie",
+      "spokenText": "It has a WHOLE NAME. I am so excited."
+    },
+    "voice/en/junie/boss_4_0201a0aa.webm": {
+      "bytes": 12910,
+      "speaker": "junie",
+      "spokenText": "Ooh, it is famous. Famous things burn great."
+    },
+    "voice/en/junie/boss_5_aa4a5550.webm": {
+      "bytes": 9727,
+      "speaker": "junie",
+      "spokenText": "Bigger tin, bigger fire. Math."
+    },
+    "voice/en/junie/bossnamed_antlered_030ec1ca.webm": {
+      "bytes": 13677,
+      "speaker": "junie",
+      "spokenText": "Big Nobody! I brought extra matches, just for you!"
+    },
+    "voice/en/junie/bossnamed_behind_aacf5247.webm": {
+      "bytes": 16468,
+      "speaker": "junie",
+      "spokenText": "I keep looking and it keeps not being there. I hate it. I love it."
+    },
+    "voice/en/junie/bossnamed_hare_50ccc8fa.webm": {
+      "bytes": 17193,
+      "speaker": "junie",
+      "spokenText": "BRAMBLEBUCK! I have wanted to meet you since orientation!"
+    },
+    "voice/en/junie/bossnamed_mole_d10f38fb.webm": {
+      "bytes": 15213,
+      "speaker": "junie",
+      "spokenText": "It is blind! HEY! OVER HERE! I am the loudest thing alive!"
+    },
+    "voice/en/junie/bossnamed_vicar_f287426f.webm": {
+      "bytes": 9337,
+      "speaker": "junie",
+      "spokenText": "Ooh, the collector. Collect THIS."
+    },
+    "voice/en/junie/chest_0_b1f7de55.webm": {
+      "bytes": 6390,
+      "speaker": "junie",
+      "spokenText": "Presents! For me!"
+    },
+    "voice/en/junie/chest_1_4e1ae71c.webm": {
+      "bytes": 6783,
+      "speaker": "junie",
+      "spokenText": "Ooh, shiny shiny."
+    },
+    "voice/en/junie/death_0_94c5bcc1.webm": {
+      "bytes": 8320,
+      "speaker": "junie",
+      "spokenText": "Cold... why is it cold..."
+    },
+    "voice/en/junie/death_1_8575d5c7.webm": {
+      "bytes": 9893,
+      "speaker": "junie",
+      "spokenText": "No fire... no fire anywhere..."
+    },
+    "voice/en/junie/death_2_acbaaf8e.webm": {
+      "bytes": 10196,
+      "speaker": "junie",
+      "spokenText": "Tell the marshmallows... I loved them..."
+    },
+    "voice/en/junie/death_3_e0da2a62.webm": {
+      "bytes": 12215,
+      "speaker": "junie",
+      "spokenText": "This is... a really bad campfire story..."
+    },
+    "voice/en/junie/death_4_16f9ffa9.webm": {
+      "bytes": 9029,
+      "speaker": "junie",
+      "spokenText": "I bet I still... look cool..."
+    },
+    "voice/en/junie/kills_0_59b7de3b.webm": {
+      "bytes": 7780,
+      "speaker": "junie",
+      "spokenText": "I lost count at a hundred!"
+    },
+    "voice/en/junie/kills_1_563c5000.webm": {
+      "bytes": 8176,
+      "speaker": "junie",
+      "spokenText": "The smoke smells like victory."
+    },
+    "voice/en/junie/lowhp_0_16bce81f.webm": {
+      "bytes": 5275,
+      "speaker": "junie",
+      "spokenText": "Ow ow ow OW."
+    },
+    "voice/en/junie/lowhp_1_d92511fb.webm": {
+      "bytes": 7112,
+      "speaker": "junie",
+      "spokenText": "Bad bunnies! BAD!"
+    },
+    "voice/en/junie/lowhp_2_bf42d15b.webm": {
+      "bytes": 9159,
+      "speaker": "junie",
+      "spokenText": "I am mostly fine. Mostly."
+    },
+    "voice/en/junie/lowhp_3_2c94b130.webm": {
+      "bytes": 9814,
+      "speaker": "junie",
+      "spokenText": "That is going to leave a hilarious scar."
+    },
+    "voice/en/junie/lowhp_4_9038cc7c.webm": {
+      "bytes": 7220,
+      "speaker": "junie",
+      "spokenText": "Okay THAT one I felt."
+    },
+    "voice/en/junie/lowhp_5_63cd66b3.webm": {
+      "bytes": 9963,
+      "speaker": "junie",
+      "spokenText": "Still on fire! Wait, is that me?"
+    },
+    "voice/en/junie/revive_0_9fb8ef67.webm": {
+      "bytes": 8092,
+      "speaker": "junie",
+      "spokenText": "Can not stop, will not stop."
+    },
+    "voice/en/junie/revive_1_0fa2cf57.webm": {
+      "bytes": 6531,
+      "speaker": "junie",
+      "spokenText": "The fire says get UP."
+    },
+    "voice/en/junie/runstart_0_82d000fd.webm": {
+      "bytes": 7628,
+      "speaker": "junie",
+      "spokenText": "Time to earn my FIRE badge."
+    },
+    "voice/en/junie/runstart_1_6d5c3e06.webm": {
+      "bytes": 10472,
+      "speaker": "junie",
+      "spokenText": "Ha ha ha ha. Okay. Focus."
+    },
+    "voice/en/junie/runstart_2_0ebba515.webm": {
+      "bytes": 8804,
+      "speaker": "junie",
+      "spokenText": "Smells like s'mores and vengeance."
+    },
+    "voice/en/junie/runstart_3_65452274.webm": {
+      "bytes": 10126,
+      "speaker": "junie",
+      "spokenText": "They are all Signed and I am ALL fire."
+    },
+    "voice/en/junie/runstart_4_063d9895.webm": {
+      "bytes": 13170,
+      "speaker": "junie",
+      "spokenText": "Who wants to see something get REALLY believed in."
+    },
+    "voice/en/junie/runstart_5_715dcf14.webm": {
+      "bytes": 14177,
+      "speaker": "junie",
+      "spokenText": "Focus. Focus. Fire first, focus second."
+    },
+    "voice/en/junie/select_0_9f779df4.webm": {
+      "bytes": 13776,
+      "speaker": "junie",
+      "spokenText": "I already lit the roaster. It is not even dark yet."
+    },
+    "voice/en/junie/win_0_a01807a1.webm": {
+      "bytes": 9740,
+      "speaker": "junie",
+      "spokenText": "The sun! My other favorite fire!"
+    },
+    "voice/en/junie/win_1_938c687f.webm": {
+      "bytes": 10067,
+      "speaker": "junie",
+      "spokenText": "We won! Nobody check the forest."
+    },
+    "voice/en/max/boss_0_82e4f1c6.webm": {
+      "bytes": 9646,
+      "speaker": "max",
+      "spokenText": "That one has a title. Great."
+    },
+    "voice/en/max/boss_1_34c87083.webm": {
+      "bytes": 8729,
+      "speaker": "max",
+      "spokenText": "Steady. Aim for the eyes."
+    },
+    "voice/en/max/boss_2_358150b5.webm": {
+      "bytes": 9349,
+      "speaker": "max",
+      "spokenText": "Big ones fall the same way."
+    },
+    "voice/en/max/boss_3_e890c4b4.webm": {
+      "bytes": 10407,
+      "speaker": "max",
+      "spokenText": "It has a name. Do not learn it."
+    },
+    "voice/en/max/boss_4_06ab9afc.webm": {
+      "bytes": 10112,
+      "speaker": "max",
+      "spokenText": "Hold the line like Brock taught us."
+    },
+    "voice/en/max/boss_5_1240bfd2.webm": {
+      "bytes": 13815,
+      "speaker": "max",
+      "spokenText": "Big or small, it still counts as one badge."
+    },
+    "voice/en/max/bossnamed_antlered_75fd5397.webm": {
+      "bytes": 18336,
+      "speaker": "max",
+      "spokenText": "Troop 13. Hold the line. That is an order and a request."
+    },
+    "voice/en/max/bossnamed_behind_7b3d00db.webm": {
+      "bytes": 18638,
+      "speaker": "max",
+      "spokenText": "Nobody turns around. Nobody. Eyes front, Troop 13."
+    },
+    "voice/en/max/bossnamed_hare_6162cb0b.webm": {
+      "bytes": 14041,
+      "speaker": "max",
+      "spokenText": "Hold still, it says. Like that has ever worked."
+    },
+    "voice/en/max/bossnamed_mole_97238fa6.webm": {
+      "bytes": 17201,
+      "speaker": "max",
+      "spokenText": "It wants noise. Then we give it noise, together, on my mark."
+    },
+    "voice/en/max/bossnamed_vicar_2dc29a1f.webm": {
+      "bytes": 11598,
+      "speaker": "max",
+      "spokenText": "Nothing here is owed to you. Move."
+    },
+    "voice/en/max/chest_0_7cac4e69.webm": {
+      "bytes": 6409,
+      "speaker": "max",
+      "spokenText": "Requisitioned."
+    },
+    "voice/en/max/chest_1_f2391bdb.webm": {
+      "bytes": 7029,
+      "speaker": "max",
+      "spokenText": "The troop provides."
+    },
+    "voice/en/max/death_0_6c534c00.webm": {
+      "bytes": 7602,
+      "speaker": "max",
+      "spokenText": "Tell them... I earned it..."
+    },
+    "voice/en/max/death_1_e4d2253b.webm": {
+      "bytes": 9589,
+      "speaker": "max",
+      "spokenText": "Somebody... bank my badges..."
+    },
+    "voice/en/max/death_2_ae9d443d.webm": {
+      "bytes": 9651,
+      "speaker": "max",
+      "spokenText": "Tell Brock... I held the line..."
+    },
+    "voice/en/max/death_3_e03f7b0b.webm": {
+      "bytes": 12496,
+      "speaker": "max",
+      "spokenText": "It is fine. This is fine. Mostly fine."
+    },
+    "voice/en/max/death_4_70f3c8b2.webm": {
+      "bytes": 11425,
+      "speaker": "max",
+      "spokenText": "Troop 13... does not... run..."
+    },
+    "voice/en/max/kills_0_66de3350.webm": {
+      "bytes": 9157,
+      "speaker": "max",
+      "spokenText": "That is a lot of paperwork."
+    },
+    "voice/en/max/kills_1_8f4054cc.webm": {
+      "bytes": 9325,
+      "speaker": "max",
+      "spokenText": "Two hundred. Somebody count."
+    },
+    "voice/en/max/lowhp_0_cdfff83d.webm": {
+      "bytes": 9675,
+      "speaker": "max",
+      "spokenText": "Just a scratch. A big scratch."
+    },
+    "voice/en/max/lowhp_1_3a8a1f6f.webm": {
+      "bytes": 7250,
+      "speaker": "max",
+      "spokenText": "Regroup. Breathe."
+    },
+    "voice/en/max/lowhp_2_8b0aa3f9.webm": {
+      "bytes": 9128,
+      "speaker": "max",
+      "spokenText": "Not like this. Not tonight."
+    },
+    "voice/en/max/lowhp_3_3375a4af.webm": {
+      "bytes": 12803,
+      "speaker": "max",
+      "spokenText": "I have had worse at scout camp. Probably."
+    },
+    "voice/en/max/lowhp_4_1e9a5134.webm": {
+      "bytes": 12073,
+      "speaker": "max",
+      "spokenText": "Troop 13 does not quit at half health."
+    },
+    "voice/en/max/lowhp_5_b1bcea3c.webm": {
+      "bytes": 6105,
+      "speaker": "max",
+      "spokenText": "Hold. HOLD."
+    },
+    "voice/en/max/revive_0_c2e2cc60.webm": {
+      "bytes": 8537,
+      "speaker": "max",
+      "spokenText": "A scout finishes the hike."
+    },
+    "voice/en/max/revive_1_59caa523.webm": {
+      "bytes": 7535,
+      "speaker": "max",
+      "spokenText": "Not yet. NOT yet."
+    },
+    "voice/en/max/runstart_0_0f391c2b.webm": {
+      "bytes": 8590,
+      "speaker": "max",
+      "spokenText": "Troop 13, moving out."
+    },
+    "voice/en/max/runstart_1_3a379ec4.webm": {
+      "bytes": 9087,
+      "speaker": "max",
+      "spokenText": "Eyes open. Hands steady."
+    },
+    "voice/en/max/runstart_2_06dfbcb3.webm": {
+      "bytes": 5553,
+      "speaker": "max",
+      "spokenText": "For the troop."
+    },
+    "voice/en/max/runstart_3_99fae9a1.webm": {
+      "bytes": 14294,
+      "speaker": "max",
+      "spokenText": "Nobody gets Signed tonight. Not on my watch."
+    },
+    "voice/en/max/runstart_4_1a51cd35.webm": {
+      "bytes": 7520,
+      "speaker": "max",
+      "spokenText": "Badges up, chins up."
+    },
+    "voice/en/max/runstart_5_c4833708.webm": {
+      "bytes": 16723,
+      "speaker": "max",
+      "spokenText": "Stay together. Camp Hearthwood does not do rescues twice."
+    },
+    "voice/en/max/select_0_5fb2acbc.webm": {
+      "bytes": 14930,
+      "speaker": "max",
+      "spokenText": "Troop 13 does not run. Not from squirrels."
+    },
+    "voice/en/max/win_0_2e1f6eba.webm": {
+      "bytes": 6630,
+      "speaker": "max",
+      "spokenText": "Dawn. We made it."
+    },
+    "voice/en/max/win_1_3783fe27.webm": {
+      "bytes": 12155,
+      "speaker": "max",
+      "spokenText": "Report: everything is on fire, sir."
+    },
+    "voice/en/mole/bossline_0_49b1688c.webm": {
+      "bytes": 14188,
+      "speaker": "mole",
+      "spokenText": "say something. anything."
+    },
+    "voice/en/qm/coins_0_0556d322.webm": {
+      "bytes": 33788,
+      "speaker": "qm",
+      "spokenText": "Your Cookie Money from last night cleared. Counted, converted, logged, stamped. If the badge number felt small, take it up with the ledger. The ledger does not care."
+    },
+    "voice/en/qm/idle_0_fcfdb01b.webm": {
+      "bytes": 19928,
+      "speaker": "qm",
+      "spokenText": "Requisition forms are in triplicate now. The forest keeps eating the second copy."
+    },
+    "voice/en/qm/idle_1_68fc94ec.webm": {
+      "bytes": 18910,
+      "speaker": "qm",
+      "spokenText": "We are down to four tin cups. If a raccoon has the fifth, it signed nothing for it."
+    },
+    "voice/en/qm/idle_2_eac9a9b0.webm": {
+      "bytes": 31078,
+      "speaker": "qm",
+      "spokenText": "Cookie Money is not legal tender. It is cookie money. It becomes badges at my table and nowhere else, and the rate is fair because I set it."
+    },
+    "voice/en/qm/idle_3_78f47eb6.webm": {
+      "bytes": 15787,
+      "speaker": "qm",
+      "spokenText": "Do not ask what is in the barrels. They are labeled. The label says BARREL."
+    },
+    "voice/en/qm/idle_4_04853272.webm": {
+      "bytes": 21638,
+      "speaker": "qm",
+      "spokenText": "I count marshmallows by the bag, not the piece. Learned that the hard way. Junie was involved."
+    },
+    "voice/en/qm/idle_5_72803cb2.webm": {
+      "bytes": 21944,
+      "speaker": "qm",
+      "spokenText": "Lost and found out here is the whole forest, kid. Found is just the part I keep on shelves."
+    },
+    "voice/en/qm/intro_0_3a55052b.webm": {
+      "bytes": 20828,
+      "speaker": "qm",
+      "spokenText": "Name? Not yours. The inventory has names. You are the thing that makes the inventory smaller."
+    },
+    "voice/en/vicar/bossline_0_7a928410.webm": {
+      "bytes": 14389,
+      "speaker": "vicar",
+      "spokenText": "everything you have is owed."
+    }
+  },
   "prune": []
 }

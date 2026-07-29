@@ -8,6 +8,14 @@
     "hash8": "c077d41e"
   },
   {
+    "speaker": "behind",
+    "category": "bossline",
+    "slot": "0",
+    "text": "turn around. i can wait.",
+    "spokenText": "turn around. i can wait.",
+    "hash8": "a14ceb28"
+  },
+  {
     "speaker": "brock",
     "category": "arc",
     "slot": "actThree_0",
@@ -38,6 +46,22 @@
     "text": "\"Bring me one, if you can pry it loose. I have wanted to look at one up close for thirty years. I have also, and I cannot stress this enough, been too much of a coward.\"",
     "spokenText": "Bring me one, if you can pry it loose. I have wanted to look at one up close for thirty years. I have also, and I cannot stress this enough, been too much of a coward.",
     "hash8": "3d8f8fa3"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "behindDown_0",
+    "text": "\"THE BEHIND. In thirty years not one scout has been able to tell me what it looks like, and I notice you have not offered either.\"",
+    "spokenText": "THE BEHIND. In thirty years not one scout has been able to tell me what it looks like, and I notice you have not offered either.",
+    "hash8": "bc5024a2"
+  },
+  {
+    "speaker": "brock",
+    "category": "arc",
+    "slot": "behindDown_1",
+    "text": "\"Do not. I have thought about it every night since I was younger than you and I have decided I would rather go on not knowing. Eat something.\"",
+    "spokenText": "Do not. I have thought about it every night since I was younger than you and I have decided I would rather go on not knowing. Eat something.",
+    "hash8": "871875a4"
   },
   {
     "speaker": "brock",
@@ -241,6 +265,14 @@
   },
   {
     "speaker": "brock",
+    "category": "dawn",
+    "slot": "2",
+    "text": "\"THE BEHIND is down and the sun came up. Thirty years I have felt something at my shoulder on this ridge. This morning there is nothing there, and I find I do not know what to do with my hands.\"",
+    "spokenText": "THE BEHIND is down and the sun came up. Thirty years I have felt something at my shoulder on this ridge. This morning there is nothing there, and I find I do not know what to do with my hands.",
+    "hash8": "8dff7314"
+  },
+  {
+    "speaker": "brock",
     "category": "died",
     "slot": "antlered",
     "text": "\"OLD NOBODY. HOLLOWANTLER, if you want its whole name, though nobody out there wants to be caught saying it twice. You got further than most of Troop 12 ever did. Again.\"",
@@ -262,6 +294,14 @@
     "text": "\"A beaver. Death by municipal engineering. There is a badge for irony somewhere.\"",
     "spokenText": "A beaver. Death by municipal engineering. There is a badge for irony somewhere.",
     "hash8": "eacee1d4"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "behind",
+    "text": "\"THE BEHIND. You cannot shoot a thing that is not there, and it is never there. Take the cover away from it. Every stump you break is one less place in the world for it to stand.\"",
+    "spokenText": "THE BEHIND. You cannot shoot a thing that is not there, and it is never there. Take the cover away from it. Every stump you break is one less place in the world for it to stand.",
+    "hash8": "3a67879e"
   },
   {
     "speaker": "brock",
@@ -340,6 +380,33 @@
     "text": "\"BRAMBLEBUCK. Signed young, they say, back when the tokens were still hand stamped. Every third landing it sprays. Count the hops, kid.\"",
     "spokenText": "BRAMBLEBUCK. Signed young, they say, back when the tokens were still hand stamped. Every third landing it sprays. Count the hops, kid.",
     "hash8": "b8bb780e"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "mole_gus",
+    "text": "\"MAWMOLE. Blind since before either of us was born and it has never once needed eyes: every shot you fire is you telling it exactly where to come up. It is only worth hitting when the nose is out, big fella. The rest is dirt.\"",
+    "spokenText": "MAWMOLE. Blind since before either of us was born and it has never once needed eyes: every shot you fire is you telling it exactly where to come up. It is only worth hitting when the nose is out, big fella. The rest is dirt.",
+    "hash8": "d37a7ef9",
+    "scout": "gus"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "mole_junie",
+    "text": "\"MAWMOLE. Blind since before either of us was born and it has never once needed eyes: every shot you fire is you telling it exactly where to come up. It is only worth hitting when the nose is out, the fire hazard. The rest is dirt.\"",
+    "spokenText": "MAWMOLE. Blind since before either of us was born and it has never once needed eyes: every shot you fire is you telling it exactly where to come up. It is only worth hitting when the nose is out, the fire hazard. The rest is dirt.",
+    "hash8": "6e950e29",
+    "scout": "junie"
+  },
+  {
+    "speaker": "brock",
+    "category": "died",
+    "slot": "mole_max",
+    "text": "\"MAWMOLE. Blind since before either of us was born and it has never once needed eyes: every shot you fire is you telling it exactly where to come up. It is only worth hitting when the nose is out, squad leader. The rest is dirt.\"",
+    "spokenText": "MAWMOLE. Blind since before either of us was born and it has never once needed eyes: every shot you fire is you telling it exactly where to come up. It is only worth hitting when the nose is out, squad leader. The rest is dirt.",
+    "hash8": "05af267f",
+    "scout": "max"
   },
   {
     "speaker": "brock",
@@ -598,10 +665,26 @@
   {
     "speaker": "gus",
     "category": "bossnamed",
+    "slot": "behind",
+    "text": "THE BEHIND. Nope. I am facing this way now. Permanently.",
+    "spokenText": "THE BEHIND. Nope. I am facing this way now. Permanently.",
+    "hash8": "dbcb50e1"
+  },
+  {
+    "speaker": "gus",
+    "category": "bossnamed",
     "slot": "hare",
     "text": "The hopping one. I have heard the stories. Underwhelming so far.",
     "spokenText": "The hopping one. I have heard the stories. Underwhelming so far.",
     "hash8": "ee041cad"
+  },
+  {
+    "speaker": "gus",
+    "category": "bossnamed",
+    "slot": "mole",
+    "text": "MAWMOLE. All that digging and it still has not found lunch.",
+    "spokenText": "MAWMOLE. All that digging and it still has not found lunch.",
+    "hash8": "a87b9fc1"
   },
   {
     "speaker": "gus",
@@ -886,10 +969,26 @@
   {
     "speaker": "junie",
     "category": "bossnamed",
+    "slot": "behind",
+    "text": "I keep looking and it keeps not being there. I hate it. I love it.",
+    "spokenText": "I keep looking and it keeps not being there. I hate it. I love it.",
+    "hash8": "aacf5247"
+  },
+  {
+    "speaker": "junie",
+    "category": "bossnamed",
     "slot": "hare",
     "text": "BRAMBLEBUCK! I have wanted to meet you since orientation!",
     "spokenText": "BRAMBLEBUCK! I have wanted to meet you since orientation!",
     "hash8": "50ccc8fa"
+  },
+  {
+    "speaker": "junie",
+    "category": "bossnamed",
+    "slot": "mole",
+    "text": "It is blind! HEY! OVER HERE! I am the loudest thing alive!",
+    "spokenText": "It is blind! HEY! OVER HERE! I am the loudest thing alive!",
+    "hash8": "d10f38fb"
   },
   {
     "speaker": "junie",
@@ -1166,10 +1265,26 @@
   {
     "speaker": "max",
     "category": "bossnamed",
+    "slot": "behind",
+    "text": "Nobody turns around. Nobody. Eyes front, Troop 13.",
+    "spokenText": "Nobody turns around. Nobody. Eyes front, Troop 13.",
+    "hash8": "7b3d00db"
+  },
+  {
+    "speaker": "max",
+    "category": "bossnamed",
     "slot": "hare",
     "text": "Hold still, it says. Like that has ever worked.",
     "spokenText": "Hold still, it says. Like that has ever worked.",
     "hash8": "6162cb0b"
+  },
+  {
+    "speaker": "max",
+    "category": "bossnamed",
+    "slot": "mole",
+    "text": "It wants noise. Then we give it noise, together, on my mark.",
+    "spokenText": "It wants noise. Then we give it noise, together, on my mark.",
+    "hash8": "97238fa6"
   },
   {
     "speaker": "max",
@@ -1386,6 +1501,14 @@
     "text": "Report: everything is on fire, sir.",
     "spokenText": "Report: everything is on fire, sir.",
     "hash8": "3783fe27"
+  },
+  {
+    "speaker": "mole",
+    "category": "bossline",
+    "slot": "0",
+    "text": "say something. anything.",
+    "spokenText": "say something. anything.",
+    "hash8": "49b1688c"
   },
   {
     "speaker": "qm",
