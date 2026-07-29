@@ -18,6 +18,26 @@
 // same authoring shape with their own hooks. Both are closed vocabularies:
 // an item composes what is here, it does not add verbs.
 //
+// THREE SURFACES, NOT TWO (E2, BUILD_ARCHITECTURE.md 4.7). A trait used to
+// need a projectile, and exactly three of the nine weapons make one, so an
+// item promising "your shots pierce and chain" did nothing at all for six of
+// them. The vocabulary is the same twelve verbs; what changed is that each
+// verb now declares what it does on each of three surfaces:
+//
+//   strike   needs only a hit. dealDamage is the single door every point of
+//            player damage comes through, so this reaches all nine weapons.
+//   carrier  needs a moving thing with a heading. Projectiles.
+//   field    needs an area with a radius and a duration. Six weapons make
+//            one: the hatchet swing, the firecracker blast, the canteen
+//            puddle, the bugle ring, the knife orbit and the spray cloud.
+//
+// SCOPE_TABLE below is twelve traits by those three surfaces, 36 cells, and
+// EVERY CELL IS FILLED with either a behaviour or a stated no-op. It is data
+// the code reads rather than a comment, so a trait cannot silently do nothing
+// on a surface: a no-op is a thing somebody wrote down, and auditScopes()
+// fails loudly if a cell is ever missing. 36 is a fixed cost. It stays 36 at
+// ninety six items and at nine hundred, because a surface is not an item.
+//
 // THREE RULES THIS FILE IS WRITTEN AGAINST, from COOP_DESIGN.md section 10,
 // applied now because applying them after ninety six items exist is not free:
 //
@@ -130,8 +150,6 @@ const Traits = (function () {
   // ============================================================ SHOT TRAITS
 
   // Each trait is a small object with:
-  //   scope    'shot' needs a projectile to mean anything, 'any' fires on
-  //            every point of player damage including melee, auras and blasts
   //   apply    (g, s, cfg)          once, when the shot is armed
   //   update   (g, s, cfg, dt)      every frame, BEFORE the shot integrates
   //   onHit    (g, s, cfg, e, dmg)  when damage lands; return true to keep a
@@ -140,12 +158,17 @@ const Traits = (function () {
   //   vis      (out, cfg)           folds this trait into the visual
   //                                 descriptor the renderer reads
   // Every hook is optional.
+  //
+  // These are the CARRIER hooks. What the same trait does on the other two
+  // surfaces is declared in SCOPE_TABLE below and, where it is a behaviour
+  // rather than a stated no-op, implemented in FIELD (fields) or by the hooks
+  // the strike walk already runs. There is no `scope` field on a trait any
+  // more: the table is the one place a surface answer lives.
 
   const SHOT = {};
 
   // ---- giant: bigger, and it hits like it looks -------------------------
   SHOT.giant = {
-    scope: 'shot',
     apply(g, s, c) {
       const k = num(c.scale, 1.7);
       s.r *= k;
@@ -159,7 +182,6 @@ const Traits = (function () {
   // No lock. It leans at the closest body every frame, so a seeking shot
   // wanders through a crowd rather than committing to one target.
   SHOT.seek = {
-    scope: 'shot',
     update(g, s, c, dt) {
       if (s.vx === undefined) return;
       const tgt = nearest(g, s.x, s.y, num(c.range, 300), -1, s.hit);
@@ -176,7 +198,6 @@ const Traits = (function () {
   // back to a body would put a linear scan of g.enemies on that path for
   // nothing. Nothing is ever written to a save from it.
   SHOT.homing = {
-    scope: 'shot',
     apply(g, s) { s.homeT = null; },
     update(g, s, c, dt) {
       if (s.vx === undefined) return;
@@ -201,7 +222,6 @@ const Traits = (function () {
   // to g.player (C6). In a party of four, four orbiting shots go four
   // different ways and no line here had to learn that.
   SHOT.orbit = {
-    scope: 'shot',
     update(g, s, c, dt) {
       if (s.vx === undefined) return;
       const sp = Math.sqrt(s.vx * s.vx + s.vy * s.vy);
@@ -231,7 +251,6 @@ const Traits = (function () {
   // happens on the frame the shot would have entered the wall and the main
   // loop's blocked-cell check never sees it. No fifth hook needed.
   SHOT.ricochet = {
-    scope: 'shot',
     apply(g, s, c) { s.ricoN = (s.ricoN || 0) + num(c.n, 2); },
     update(g, s, c, dt) {
       if (s.vx === undefined || s.ricoN <= 0 || !g.room) return;
@@ -252,7 +271,6 @@ const Traits = (function () {
   // Where pierce spends a charge to pass THROUGH, bounce spends one to turn
   // and go after somebody else.
   SHOT.bounce = {
-    scope: 'shot',
     apply(g, s, c) { s.bounceN = (s.bounceN || 0) + num(c.n, 2); },
     onHit(g, s, c, e) {
       if (s.bounceN <= 0 || s.vx === undefined) return false;
@@ -274,7 +292,6 @@ const Traits = (function () {
   // trait-granted pierce and a slingshot's own level 3 pierce are the same
   // number and stack without either knowing about the other.
   SHOT.pierce = {
-    scope: 'shot',
     apply(g, s, c) { s.pierce = (s.pierce || 0) + num(c.n, 1); },
   };
 
@@ -283,7 +300,6 @@ const Traits = (function () {
   // readily as off a stone. Its own damage is dealt with noTraits so an
   // arc cannot arc.
   SHOT.chain = {
-    scope: 'any',
     onHit(g, s, c, e, dmg) {
       const jumps = num(c.jumps, 1);
       const range = num(c.range, 150);
@@ -298,10 +314,23 @@ const Traits = (function () {
         const t = nearest(g, fx, fy, range, -1, seen);
         if (t === null) break;
         seen.add(t.eid);
-        g.parts.push({
-          kind: 'arc', x: fx, y: fy, x2: t.x, y2: t.y,
-          t: 0, life: 0.16, color: c.color || '150,220,255',
-        });
+        // The arc is a DRAWING and the damage below is the effect, so the
+        // budget guard sits on the drawing alone: a chain that runs out of
+        // particles still deals every point it was going to deal.
+        //
+        // Measured, and this is why the guard exists. Nine weapons, twelve
+        // bodies, a build holding chain with three jumps: this push was the
+        // one emitter in the game with no budget check, and it peaked at 8214
+        // live arcs against a cap of 420, twenty times over, on the previous
+        // commit. E2 makes it worse rather than better, because chain now
+        // arcs off six more surfaces: the same build measured 10053. Every
+        // other emitter in the engine already tests this number.
+        if (g.parts.length < 420) {
+          g.parts.push({
+            kind: 'arc', x: fx, y: fy, x2: t.x, y2: t.y,
+            t: 0, life: 0.16, color: c.color || '150,220,255',
+          });
+        }
         // Raw damage: dealDamage multiplies by dmgMul, and the hit that
         // spawned this arc was already scaled, so hand it the base share.
         g.dealDamage(t, power / (g.dmgMul || 1), {
@@ -321,7 +350,6 @@ const Traits = (function () {
   // same set minus one generation, and at zero the burst does nothing, so a
   // split cannot run away.
   SHOT.split = {
-    scope: 'shot',
     apply(g, s, c) { if (s.gen === undefined) s.gen = num(c.gen, 1); },
     onHit(g, s, c, e) {
       if (c.on === 'expire') return false;
@@ -380,7 +408,6 @@ const Traits = (function () {
 
   // ---- burn ------------------------------------------------------------
   SHOT.burn = {
-    scope: 'any',
     // A burning projectile sheds embers as it flies. The emission lives here
     // rather than in the renderer because it changes the world: parts are
     // simulation state, and a field that looked different depending on
@@ -403,7 +430,6 @@ const Traits = (function () {
 
   // ---- freeze: a slow, on the field the director already reads ---------
   SHOT.freeze = {
-    scope: 'any',
     onHit(g, s, c, e) {
       e.slowT = Math.max(e.slowT || 0, num(c.dur, 1.2));
       return false;
@@ -415,7 +441,6 @@ const Traits = (function () {
   // Its own status fields, ticked with the others in director.updateEnemies,
   // so a rent body can also be a burning body.
   SHOT.rend = {
-    scope: 'any',
     onHit(g, s, c, e) {
       e.rendDps = Math.max(e.rendDps || 0, num(c.dps, 6));
       e.rendT = Math.max(e.rendT || 0, num(c.dur, 3));
@@ -443,6 +468,185 @@ const Traits = (function () {
     'freeze',     // 10
     'rend',       // 11
   ];
+
+  // ==================================================== THE SCOPE TABLE
+  //
+  // Twelve traits by three surfaces. 36 cells, every one of them filled.
+  //
+  // WHY IT IS DATA AND NOT A COMMENT. Before E2, a trait carried a `scope`
+  // string with two possible values and everything else was implied. Measured
+  // on the branch this replaced: armShot was called from exactly THREE sites,
+  // so eight of the twelve verbs reached three of the nine weapons and an item
+  // that promised "your shots pierce and chain" was two thirds a lie. The
+  // failure was silent, which is the part that matters. A cell that says
+  // `noop` is a decision somebody made and wrote down; a missing cell is a
+  // bug, and auditScopes below turns a missing cell into a loud console error
+  // at load rather than into an item that quietly does nothing on a Tuesday.
+  //
+  // The cost is fixed. Adding the ninety seventh item adds no cells. Adding a
+  // thirteenth verb adds three. Adding a fourth surface adds twelve. That is
+  // the property Isaac's pairwise exception matrix does not have.
+  //
+  //   act   the trait does this here
+  //   noop  the trait deliberately does nothing here, for this stated reason
+  //
+  // Exactly one of the two per cell, enforced.
+  const SURFACES = ['strike', 'carrier', 'field'];
+
+  const SCOPE_TABLE = {
+    giant: {
+      strike: { noop: 'a strike has no size. By the time damage reaches dealDamage the geometry is already settled, so there is nothing left to scale.' },
+      carrier: { act: 'multiplies the projectile radius, and its damage with it.' },
+      field: { act: 'multiplies the field radius. It does NOT also multiply the field damage, and that is deliberate: a field already deals more by covering more ground, so paying the damage term as well would buy one buff twice. A projectile covers no ground, which is exactly why the carrier cell pays damage instead.' },
+    },
+    seek: {
+      strike: { noop: 'nothing is in flight at the moment damage lands.' },
+      carrier: { act: 'leans the velocity at the nearest body every frame, with no lock, so a shot wanders through a crowd.' },
+      field: { noop: 'a field has a centre, not a heading. A puddle that drifted off after the nearest critter would be a different weapon rather than a modified one.' },
+    },
+    homing: {
+      strike: { noop: 'nothing is in flight at the moment damage lands.' },
+      carrier: { act: 'acquires the nearest body and steers at it until that body dies.' },
+      field: { noop: 'the spec names this one itself: homing on a ring has no heading.' },
+    },
+    orbit: {
+      strike: { noop: 'there is no path to turn around.' },
+      carrier: { act: 'flies out to a set distance, then comes home to the scout who fired it.' },
+      field: { noop: 'a field stays where it was placed. The one weapon that orbits, the whittling knives, owns that motion itself, exactly as the boomerang owns its own return on the carrier surface.' },
+    },
+    ricochet: {
+      strike: { noop: 'walls are answered while a thing travels, and a strike does not travel.' },
+      carrier: { act: 'reverses the velocity component that would have entered a blocked cell, n charges, resolved before the shot integrates.' },
+      field: { noop: 'a field does not travel into a wall. The one field that travels at all, the lobbed firecracker, is thrown over the geometry rather than through it.' },
+    },
+    bounce: {
+      strike: { noop: 'there is no heading to redirect.' },
+      carrier: { act: 'turns the shot at another body instead of spending it.' },
+      field: { noop: 'there is no heading to redirect.' },
+    },
+    pierce: {
+      strike: { noop: 'the hit budget belongs to the thing that produced the strike, never to the strike itself.' },
+      carrier: { act: 'adds n to the projectile hit budget, the same s.pierce field a slingshot level 3 writes.' },
+      field: { act: 'adds n to the field per-body hit budget: a body a field has already struck may be struck 1 + n times by that same field. A field that keeps no per-body exclusion (the holy water puddle, the bug spray cloud) already strikes everything it covers on every tick and has no exclusion to extend.' },
+    },
+    chain: {
+      strike: { act: 'arcs from the struck body to nearby ones, damage falling off per jump. This is the cell that reaches a hand axe chop and a bugle blast.' },
+      carrier: { act: 'the same arc, off the projectile hit.' },
+      field: { noop: 'every point of damage a field deals goes through dealDamage, where the strike cell above already arcs. Arcing here as well would double every arc a field throws.' },
+    },
+    split: {
+      strike: { noop: 'a strike has nothing to divide, and per C14 nothing here may ever raise the living body count.' },
+      carrier: { act: 'spawns n smaller child projectiles, generation capped so a split cannot run away.' },
+      field: { act: 'spawns n smaller copies of the field when the field ends, generation capped. A copy is measured off the parent AFTER the parent is armed, so a giant split makes big fields that make smaller big fields rather than a field that grows every generation. Copies are fields. They are never bodies (C14).' },
+    },
+    burn: {
+      strike: { act: 'sets the struck body alight.' },
+      carrier: { act: 'the same, and the projectile sheds embers along its flight path.' },
+      field: { noop: 'already applied at the strike surface, on every damage tick the field deals. Applying it here too would set one body alight twice in one tick.' },
+    },
+    freeze: {
+      strike: { act: 'slows the struck body, on the field the director already reads.' },
+      carrier: { act: 'the same, off the projectile hit.' },
+      field: { noop: 'already applied at the strike surface, on every damage tick the field deals.' },
+    },
+    rend: {
+      strike: { act: 'a bleed that is not fire, ticking alongside burn rather than instead of it.' },
+      carrier: { act: 'the same, off the projectile hit.' },
+      field: { noop: 'already applied at the strike surface, on every damage tick the field deals.' },
+    },
+  };
+
+  // The cell, or undefined if nobody declared one. Every consumer of the table
+  // goes through here, so "no cell" and "a cell that says no-op" are the same
+  // answer at the call site and different answers to the audit.
+  function cellOf(id, surface) {
+    const row = SCOPE_TABLE[id];
+    if (row === undefined) return undefined;
+    return row[surface];
+  }
+
+  function acts(id, surface) {
+    const c = cellOf(id, surface);
+    return c !== undefined && c.act !== undefined;
+  }
+
+  // The gate. Called once at load below, and again by the verification
+  // harness, which asserts on the numbers rather than on the absence of a
+  // console error. Returns the counts and the list of anything wrong.
+  function auditScopes() {
+    const bad = [];
+    let cells = 0, actN = 0, noopN = 0;
+    for (let i = 0; i < SHOT_ORDER.length; i++) {
+      const id = SHOT_ORDER[i];
+      if (SCOPE_TABLE[id] === undefined) { bad.push(id + ': no row'); continue; }
+      for (let j = 0; j < SURFACES.length; j++) {
+        const s = SURFACES[j];
+        const c = SCOPE_TABLE[id][s];
+        if (c === undefined) { bad.push(id + '.' + s + ': no cell'); continue; }
+        const hasAct = typeof c.act === 'string' && c.act.length > 0;
+        const hasNoop = typeof c.noop === 'string' && c.noop.length > 0;
+        if (hasAct === hasNoop) { bad.push(id + '.' + s + ': needs exactly one of act, noop'); continue; }
+        cells++;
+        if (hasAct) actN++; else noopN++;
+      }
+    }
+    for (const id in SCOPE_TABLE) {
+      if (SHOT_ORDER.indexOf(id) === -1) bad.push(id + ': in the table, not in the vocabulary');
+    }
+    // A cell may only promise a behaviour the code can actually run.
+    for (let i = 0; i < SHOT_ORDER.length; i++) {
+      const id = SHOT_ORDER[i];
+      if (acts(id, 'field') && FIELD[id] === undefined) bad.push(id + '.field: declared a behaviour with no implementation');
+      if (FIELD[id] !== undefined && !acts(id, 'field')) bad.push(id + '.field: implemented, not declared');
+    }
+    return {
+      traits: SHOT_ORDER.length, surfaces: SURFACES.length,
+      cells: cells, expected: SHOT_ORDER.length * SURFACES.length,
+      act: actN, noop: noopN, bad: bad,
+    };
+  }
+
+  // =========================================================== FIELD TRAITS
+  //
+  // The field arming door. Six of the nine weapons already make an object
+  // with a position and a lifetime and, until E2, not one of them was ever
+  // armed: the hatchet swing, the firecracker blast, the canteen puddle, the
+  // bugle ring, the knife orbit and the spray cloud. Three of the twelve
+  // verbs mean something on an area, and those three are here.
+  //
+  //   apply (g, f, cfg)   once, when the field is armed
+  //   end   (g, f, cfg)   when the field's life runs out
+  //
+  // A field carries f.rk, the name of the number its OWN updater treats as a
+  // radius. Five different hands wrote these six objects and they named that
+  // number five different ways (range, radius, r, max), so the name travels
+  // with the object rather than being guessed here. game.js owns the map.
+  const FIELD = {};
+
+  FIELD.giant = {
+    apply(g, f, c) {
+      const k = num(c.scale, 1.7);
+      const key = f.rk || 'r';
+      f[key] = num(f[key], 0) * k;
+      f.giant = (f.giant || 1) * k;
+    },
+  };
+
+  FIELD.pierce = {
+    apply(g, f, c) { f.budget = (f.budget || 0) + num(c.n, 1); },
+  };
+
+  FIELD.split = {
+    apply(g, f, c) { if (f.gen === undefined) f.gen = num(c.gen, 1); },
+    end(g, f, c) {
+      if (f.gen <= 0) return;
+      // game.js owns the six arrays a copy could land in, so it owns the
+      // spawn. Everything this file does is decide that a copy is owed.
+      g.splitField(f, c);
+    },
+  };
+
+  const FIELD_ORDER = ['giant', 'pierce', 'split'];
 
   // ================================================== THE STACKING POLICY
 
@@ -730,6 +934,14 @@ const Traits = (function () {
         if (typeof console !== 'undefined') console.warn('Traits: unknown trait "' + t.t + '"');
         continue;
       }
+      // A shot trait with no row in the scope table would reach three
+      // surfaces with nothing written down about any of them, which is
+      // exactly the silence E2 exists to remove. Refuse it rather than ship
+      // an item whose behaviour nobody stated.
+      if (defs === SHOT && SCOPE_TABLE[t.t] === undefined) {
+        if (typeof console !== 'undefined') console.warn('Traits: "' + t.t + '" has no scope table row and was dropped');
+        continue;
+      }
       const rule = stack[t.t] || dfltRule;
       const key = rule.key === undefined ? t.t : rule.key(t);
       const at = seen[key];
@@ -769,13 +981,47 @@ const Traits = (function () {
 
   const ONE_RULE = { mode: 'max' };
 
+  // The subset of a compiled set that has a declared BEHAVIOUR on one
+  // surface. This is the only way a trait reaches a surface: a cell that says
+  // no-op filters the trait out here, and a trait with no cell at all is
+  // filtered out too and reported by the audit. There is no path from a trait
+  // to a surface that does not pass through the table.
+  //
+  // The result keeps the compiled set's pipeline order, because a filtered
+  // subsequence of a sorted list is still sorted, and it carries a null vis so
+  // arm() does not try to hang a projectile's visual descriptor on a chop.
+  function subsetFor(set, surface) {
+    if (set === NONE || !set.length) return NONE;
+    const out = [];
+    for (let i = 0; i < set.length; i++) {
+      if (acts(set[i].t, surface)) out.push(set[i]);
+    }
+    if (!out.length) return NONE;
+    Object.defineProperty(out, 'vis', { value: null, enumerable: false });
+    return out;
+  }
+
+  // Loud at load, once. A missing cell is not a thing to discover in a
+  // playtest four items later.
+  const AUDIT = auditScopes();
+  if (AUDIT.bad.length && typeof console !== 'undefined') {
+    console.error('Traits: the scope table is incomplete: ' + AUDIT.bad.join('; '));
+  }
+
   return {
     NONE: NONE,
     SHOT: SHOT,
     DASH: DASH,
+    FIELD: FIELD,
     SHOT_ORDER: SHOT_ORDER,
     DASH_ORDER: DASH_ORDER,
+    FIELD_ORDER: FIELD_ORDER,
     SHOT_STACK: SHOT_STACK,
+    SCOPE_TABLE: SCOPE_TABLE,
+    SURFACES: SURFACES,
+    auditScopes: auditScopes,
+    scopeCell: cellOf,
+    scopeActs: acts,
 
     compileShot(list) {
       const set = compile(list, SHOT, SHOT_ORDER, SHOT_STACK, ONE_RULE);
@@ -787,19 +1033,21 @@ const Traits = (function () {
 
     compileDash(list) { return compile(list, DASH, DASH_ORDER, DASH_STACK, ONE_RULE); },
 
-    // Everything in a set whose scope is 'any': the traits that mean
-    // something without a projectile, so a hand axe chop can burn.
-    anyScope(set) {
-      if (set === NONE || !set.length) return NONE;
-      const out = [];
-      for (let i = 0; i < set.length; i++) {
-        const d = SHOT[set[i].t];
-        if (d !== undefined && d.scope === 'any') out.push(set[i]);
-      }
-      if (!out.length) return NONE;
-      Object.defineProperty(out, 'vis', { value: null, enumerable: false });
-      return out;
-    },
+    // Everything in a set with a declared behaviour on the STRIKE surface:
+    // the traits that mean something without a projectile, so a hand axe chop
+    // can burn. This is the subset that reaches all nine weapons, because
+    // dealDamage is the single door every point of player damage comes
+    // through.
+    strikeScope(set) { return subsetFor(set, 'strike'); },
+
+    // Everything with a declared behaviour on the FIELD surface: giant,
+    // pierce and split. The subset that rides the six weapons that make an
+    // area rather than a projectile.
+    fieldScope(set) { return subsetFor(set, 'field'); },
+
+    // The name E1 shipped. Kept so nothing breaks mid wave; it is the strike
+    // subset and always was.
+    anyScope(set) { return subsetFor(set, 'strike'); },
 
     // ------------------------------------------------------- shot pipeline
 
@@ -833,16 +1081,23 @@ const Traits = (function () {
     },
 
     // Damage landed. set is the shot's own traits when a projectile did it,
-    // and the run's 'any' scope set when a chop, an aura or a blast did.
-    // Returns true when some trait insists the projectile survives.
+    // and the scout's strike subset when a chop, an aura, a puddle, a blast
+    // or a bugle ring did. Returns true when some trait insists the
+    // projectile survives.
+    //
+    // Which surface this is answers itself: a projectile was handed in or it
+    // was not. The table then decides whether the trait is allowed to speak
+    // here, so a trait can never act on a surface where somebody wrote down
+    // that it does nothing.
     hit(g, e, set, s, dmg) {
       let keep = false;
-      const shot = s === undefined ? null : s;
+      const shot = s === undefined || s === null ? null : s;
+      const surface = shot === null ? 'strike' : 'carrier';
       for (let i = 0; i < set.length; i++) {
         const t = set[i];
         const d = SHOT[t.t];
         if (d === undefined || d.onHit === undefined) continue;
-        if (d.scope === 'shot' && shot === null) continue;
+        if (!acts(t.t, surface)) continue;
         if (d.onHit(g, shot, t, e, dmg) === true) keep = true;
       }
       return keep;
@@ -853,6 +1108,37 @@ const Traits = (function () {
       for (let i = 0; i < set.length; i++) {
         const d = SHOT[set[i].t];
         if (d !== undefined && d.onExpire !== undefined) d.onExpire(g, s, set[i]);
+      }
+    },
+
+    // ------------------------------------------------------ field pipeline
+
+    // Arm an area: hang the field subset on it and run every apply hook in
+    // pipeline order (giant before anything reads the radius, then the hit
+    // budget, then the split generation). Called by Game.armField, which is
+    // the single door every field in the game comes through and the one place
+    // a field's owner id and entity id are stamped (C4).
+    //
+    // Deliberately smaller than arm() above. A field has no per-frame trait
+    // walk at all: all three field cells are settled at arming time except
+    // split, which fires once when the field ends. Six new objects a second
+    // carrying a per-frame walk would be a cost for nothing.
+    armField(g, f, set) {
+      f.traits = set;
+      if (set === NONE || set.length === 0) return f;
+      for (let i = 0; i < set.length; i++) {
+        const d = FIELD[set[i].t];
+        if (d !== undefined && d.apply !== undefined) d.apply(g, f, set[i]);
+      }
+      return f;
+    },
+
+    fieldEnd(g, f) {
+      const set = f.traits;
+      if (set === undefined || set === null || set.length === 0) return;
+      for (let i = 0; i < set.length; i++) {
+        const d = FIELD[set[i].t];
+        if (d !== undefined && d.end !== undefined) d.end(g, f, set[i]);
       }
     },
 

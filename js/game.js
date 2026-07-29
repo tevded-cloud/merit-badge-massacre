@@ -28,6 +28,20 @@ const CELL = 72;
 // this.speed, which dodge.js reads and recalc() owns.
 const HASTE_MUL = 1.3;
 
+// The number each of the six field objects treats as its radius. They were
+// written at different times by different hands and named it four different
+// ways, and the two that render.js reads by name (a swing's range, a puddle's
+// r) cannot be renamed from here, because render.js belongs to another unit.
+// So the name is looked up once, at the door, and travels on the object.
+const FIELD_R = {
+  swing: 'range',    // the hatchet chop
+  boom: 'radius',    // the firecracker blast
+  puddle: 'r',       // the canteen's holy water
+  ring: 'max',       // the bugle wavefront, which grows to it
+  orbit: 'r',        // the whittling knives, distance from the scout
+  aura: 'r',         // the bug spray cloud
+};
+
 // Ceiling on the positional loops one room may stand up. The engine's own cap
 // is 24 for the whole game and drops the farthest when a new one would break
 // it; the busiest layout in the catalogue asks for 7, so this is a fence
@@ -47,7 +61,9 @@ function newBuild() {
   return {
     items: [],
     shotTraits: Traits.NONE,    // rides every projectile this scout fires
-    strikeTraits: Traits.NONE,  // the 'any' scope subset: chops, auras, blasts
+    strikeTraits: Traits.NONE,  // the strike subset: every point of damage
+    fieldTraits: Traits.NONE,   // the field subset: swings, blasts, puddles,
+                                //   rings, the knife orbit, the spray cloud
     dashTraits: Traits.NONE,    // rides the dodge roll
     dashMods: { charges: 0, cdMul: 1, distMul: 1, iframeAdd: 0 },
   };
@@ -234,8 +250,158 @@ class Game {
     return Traits.arm(this, s, use);
   }
 
-  // Fold every held item's grants into the three sets this scout's shots and
-  // rolls walk. Called whenever the build changes, never per frame.
+  // THE SECOND DOOR (BUILD_ARCHITECTURE.md 4.7). Everything with an area and
+  // a lifetime comes through here, exactly as every projectile comes through
+  // armShot, and it stamps the same two ids for the same reason (C4).
+  //
+  // WHY IT EXISTS, measured. Before E2, armShot was called from three sites.
+  // DATA.weapons has nine entries. So six of the nine weapons made an object
+  // with a position and a lifetime that no item could touch, and a card
+  // promising "your shots pierce and chain" was two thirds a lie on a build
+  // holding a hand axe. This door plus six call sites is the whole fix.
+  //
+  // rk is the name of the number this field's own updater treats as a radius.
+  // Six objects, written by more than one hand, named it four different ways,
+  // and renaming them would reach into render.js, which is not this unit's
+  // file. So the name travels with the object.
+  armField(owner, f, set) {
+    const o = owner || this.players[0];
+    f.oid = o.eid;
+    f.eid = this.nextId++;
+    f.owner = o;
+    if (f.rk === undefined) f.rk = FIELD_R[f.fkind] || 'r';
+    const use = (set === undefined || set === null) ? o.build.fieldTraits : set;
+    Traits.armField(this, f, use);
+    // The per-body registry appears exactly when something needs it. A field
+    // with no hit budget keeps no registry at all, so an empty build walks
+    // the same path it walked in 2.0 and pays nothing for a Map it will
+    // never read.
+    if (f.budget > 0) {
+      if (f.fhit === undefined) f.fhit = new Set();
+      f.hitN = new Map();
+    }
+    return f;
+  }
+
+  // The one place a field decides whether it may strike a body again.
+  //
+  // A field with no registry has nothing to exclude and always says yes: that
+  // is the hatchet swing, the firecracker blast and the holy water puddle as
+  // they have always behaved. A field with a registry says yes once per body,
+  // which is what the bugle ring has always done. Pierce raises that to
+  // 1 + budget strikes per body, and the ids are entity ids, never bodies
+  // (C5).
+  fieldStrike(f, e) {
+    const reg = f.fhit;
+    if (reg === undefined) return true;
+    if (!reg.has(e.eid)) {
+      reg.add(e.eid);
+      if (f.hitN !== undefined) f.hitN.set(e.eid, 1);
+      return true;
+    }
+    const b = f.budget;
+    if (b === undefined || b <= 0) return false;
+    const n = f.hitN.get(e.eid) || 1;
+    if (n > b) return false;
+    f.hitN.set(e.eid, n + 1);
+    return true;
+  }
+
+  // Split, on a field. The copies are FIELDS: swings, blasts, puddles and
+  // rings, pushed into the four arrays this file already owns. Nothing here
+  // can touch this.enemies, and that is the point, because C14 forbids any
+  // item raising the living body count outside the party multiplier.
+  //
+  // A copy is measured off the parent AFTER the parent was armed, so a build
+  // holding giant and split makes a big field that makes smaller big fields
+  // rather than a field that grows a little every generation. gen decrements
+  // and at zero the spawn does nothing, so a split cannot run away.
+  //
+  // The knife orbit and the spray cloud are absent on purpose: both are
+  // permanently attached to their scout and never end, so a copy would sit
+  // exactly on top of the original for the rest of the night. There is
+  // nothing to spawn and pretending otherwise would be a second cloud nobody
+  // can see.
+  splitField(f, c) {
+    const n = Math.max(1, Math.round(typeof c.n === 'number' ? c.n : 3));
+    const size = typeof c.size === 'number' ? c.size : 0.6;
+    const dmgK = typeof c.dmg === 'number' ? c.dmg : 0.55;
+    const gen = f.gen - 1;
+    const rk = f.rk || 'r';
+    const pr = f[rk] || 0;
+    const owner = f.owner;
+    const set = f.traits;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU + (f.a || 0);
+      if (f.fkind === 'swing') {
+        if (this.swings.length > 40) break;
+        const sw = this.armField(owner, {
+          fkind: 'swing', x: f.x, y: f.y, a: a, t: 0, dur: f.dur,
+          range: pr, arc: f.arc, dmg: f.dmg, knock: f.knock, gen: gen,
+        }, set);
+        sw.range = pr * size;
+        sw.dmg = f.dmg * dmgK;
+        this.swings.push(sw);
+        this.swingBite(sw);
+      } else if (f.fkind === 'boom') {
+        if (this.bombs.length > 40) break;
+        const d = pr * 0.7;
+        const bx = f.tx + Math.cos(a) * d, by = f.ty + Math.sin(a) * d;
+        const b = this.armField(owner, {
+          fkind: 'boom', type: 'boom', sx: f.tx, sy: f.ty, tx: bx, ty: by,
+          x: f.tx, y: f.ty, t: 0, fuse: 0.22, radius: pr, dmg: f.dmg, gen: gen,
+        }, set);
+        b.radius = pr * size;
+        b.dmg = f.dmg * dmgK;
+        this.bombs.push(b);
+      } else if (f.fkind === 'puddle') {
+        if (this.puddles.length > 40) break;
+        const d = pr * 0.8;
+        const pd = this.armField(owner, {
+          fkind: 'puddle', x: f.x + Math.cos(a) * d, y: f.y + Math.sin(a) * d,
+          r: pr, dps: f.dps, life: f.life0 * 0.6, tick: 0, gen: gen,
+          life0: f.life0 * 0.6,
+        }, set);
+        pd.r = pr * size;
+        pd.dps = f.dps * dmgK;
+        this.puddles.push(pd);
+      } else if (f.fkind === 'ring') {
+        if (this.rings.length > 20) break;
+        const rg = this.armField(owner, {
+          fkind: 'ring', x: f.x, y: f.y, r: 10, max: pr, speed: f.speed,
+          dmg: f.dmg, knock: f.knock, stun: f.stun, fhit: new Set(), gen: gen,
+        }, set);
+        rg.max = pr * size;
+        rg.dmg = f.dmg * dmgK;
+        this.rings.push(rg);
+      }
+    }
+  }
+
+  // The knife orbit and the spray cloud are the two fields nobody ever built
+  // an object for: both are recomputed from the weapon's stats every frame
+  // and neither leaves anything behind. So the object is made here once and
+  // kept on the weapon, and it is rebuilt only when the scout's field set
+  // changes or the weapon levels up.
+  //
+  // Comparing the compiled set by IDENTITY is exact rather than lucky:
+  // rebuildTraits produces a brand new array on every build change and hands
+  // back the same frozen NONE when a build has granted nothing, so the
+  // compare is true for exactly as long as nothing has changed.
+  weaponField(owner, w, kind, r) {
+    const set = owner.build.fieldTraits;
+    let f = w.field;
+    if (f === undefined || f.traits !== set || f.r0 !== r) {
+      f = this.armField(owner, { fkind: kind, x: owner.x, y: owner.y, r: r, r0: r }, set);
+      w.field = f;
+    }
+    f.x = owner.x;
+    f.y = owner.y;
+    return f;
+  }
+
+  // Fold every held item's grants into the four sets this scout's shots,
+  // fields and rolls walk. Called whenever the build changes, never per frame.
   rebuildTraits(owner) {
     const b = owner.build;
     let shot = null;
@@ -268,7 +434,13 @@ class Game {
 
     b.dashMods = mods;
     b.shotTraits = Traits.compileShot(shot);
-    b.strikeTraits = Traits.anyScope(b.shotTraits);
+    // The three surfaces, filtered out of the one compiled set by the scope
+    // table. Compiled once per build change, never per shot and never per
+    // frame, which is what lets armField be one array reference on the hot
+    // path. Each of these is a brand new array every time this runs, and
+    // weaponField below relies on exactly that to know when to rebuild.
+    b.strikeTraits = Traits.strikeScope(b.shotTraits);
+    b.fieldTraits = Traits.fieldScope(b.shotTraits);
     b.dashTraits = Traits.compileDash(dash);
   }
 
@@ -1161,28 +1333,48 @@ class Game {
       const st = w.stats;
       const def = DATA.weapons[w.id];
 
+      // FIELD CALL SITE 5 of 6: the knife orbit. The field is the circle the
+      // knives ride, so giant widens the orbit and every knife with it. The
+      // per-body cooldown lives on the BODY here rather than on the field
+      // (e.knifeT, a shipped 2.0 shape), so the hit budget is spent against
+      // that window instead of against a registry: 1 + budget bites per
+      // window, and with no budget this is the same `continue` it always was.
       if (w.id === 'knives') {
+        const fld = this.weaponField(p, w, 'orbit', st.radius);
         w.angle += st.rot * dt;
         const n = st.count;
         for (let i = 0; i < n; i++) {
           const a = w.angle + i * TAU / n;
-          const kx = p.x + Math.cos(a) * st.radius;
-          const ky = p.y + Math.sin(a) * st.radius;
+          const kx = p.x + Math.cos(a) * fld.r;
+          const ky = p.y + Math.sin(a) * fld.r;
           const hits = this.queryEnemies(kx, ky, 13, true);
           for (const e of hits) {
-            if ((e.knifeT || 0) > this.t - st.hitCd) continue;
-            e.knifeT = this.t;
+            if ((e.knifeT || 0) > this.t - st.hitCd) {
+              const b = fld.budget;
+              if (b === undefined || b <= 0) continue;
+              if ((e.knifeN || 1) > b) continue;
+              e.knifeN = (e.knifeN || 1) + 1;
+            } else {
+              e.knifeT = this.t;
+              e.knifeN = 1;
+            }
             this.dealDamage(e, st.dmg, { knock: 90, fx: p.x, fy: p.y, owner: p });
           }
         }
         continue;
       }
 
+      // FIELD CALL SITE 6 of 6: the spray cloud. Giant makes a wider cloud.
+      // Nothing else in the field vocabulary reaches it: the cloud strikes
+      // everything it covers on every tick, so it keeps no per-body exclusion
+      // for a hit budget to extend, and it never ends, so there is no moment
+      // for a split to happen at.
       if (w.id === 'bugspray') {
+        const fld = this.weaponField(p, w, 'aura', st.radius);
         w.tickT -= dt;
         if (w.tickT <= 0) {
           w.tickT += st.tick;
-          const hits = this.queryEnemies(p.x, p.y, st.radius, true);
+          const hits = this.queryEnemies(p.x, p.y, fld.r, true);
           for (const e of hits) {
             this.dealDamage(e, st.dps * st.tick, { small: true, quiet: true, noCrit: true, color: '#9ed88a', owner: p });
             if (st.slow > 0) e.slowT = Math.max(e.slowT || 0, 0.5);
@@ -1242,16 +1434,19 @@ class Game {
         AudioSys.play('flame');
         break;
       }
+      // FIELD CALL SITE 1 of 6: the hatchet swing. The swing object already
+      // had a centre, an arc and a fifth of a second of life; until E2 it was
+      // a drawing and the damage was a separate pass that happened to use the
+      // same numbers. Now the damage pass reads the swing, so arming it BEFORE
+      // the pass is what makes giant a wider CHOP rather than a wider picture.
       case 'hatchet': {
-        const range = st.range * (0.8 + gs * 0.25);
-        this.swings.push({ x: p.x, y: p.y, a: aim, t: 0, dur: 0.2, range, arc: st.arc });
-        const hits = this.queryEnemies(p.x, p.y, range, true);
-        for (const e of hits) {
-          const ea = Math.atan2(e.y - p.y, e.x - p.x);
-          if (Math.abs(angDiff(ea, aim)) <= st.arc / 2 + 0.25) {
-            this.dealDamage(e, st.dmg, { knock: st.knock, owner: p });
-          }
-        }
+        const sw = this.armField(p, {
+          fkind: 'swing', x: p.x, y: p.y, a: aim, t: 0, dur: 0.2,
+          range: st.range * (0.8 + gs * 0.25), arc: st.arc,
+          dmg: st.dmg, knock: st.knock,
+        }, null);
+        this.swings.push(sw);
+        this.swingBite(sw);
         this.recoil = 0.2;
         AudioSys.play('swing');
         break;
@@ -1271,7 +1466,15 @@ class Game {
               ty = p.y + (hit.y - p.y) * back;
             }
           }
-          this.bombs.push({ type: 'boom', sx: p.x, sy: p.y - 10, tx, ty, x: p.x, y: p.y, t: 0, fuse: st.fuse, radius: st.radius * (0.8 + gs * 0.25), dmg: st.dmg, owner: p, oid: p.eid, eid: this.nextId++ });
+          // FIELD CALL SITE 2 of 6: the firecracker. The banger in flight and
+          // the blast it becomes are one object with one lifetime, so it is
+          // armed here at the throw rather than at the bang: a giant cracker
+          // is decided by the build that threw it.
+          this.bombs.push(this.armField(p, {
+            fkind: 'boom', type: 'boom', sx: p.x, sy: p.y - 10, tx, ty,
+            x: p.x, y: p.y, t: 0, fuse: st.fuse,
+            radius: st.radius * (0.8 + gs * 0.25), dmg: st.dmg,
+          }, null));
         }
         this.recoil = 0.15;
         AudioSys.play('throw');
@@ -1304,16 +1507,24 @@ class Game {
             const a = rand(0, TAU), d = rand(90, 220);
             tx = p.x + Math.cos(a) * d; ty = p.y + Math.sin(a) * d;
           }
+          // The thrown tin is a delivery arc, not a field: it has no radius
+          // and hurts nobody. It still carries both ids (C4). The FIELD is
+          // the puddle it leaves, and that is armed where it lands, in
+          // updateBombs.
           this.bombs.push({ type: 'puddle', sx: p.x, sy: p.y - 10, tx, ty, x: p.x, y: p.y, t: 0, fuse: 0.5, radius: st.radius, dps: st.dps, dur: st.dur, owner: p, oid: p.eid, eid: this.nextId++ });
         }
         break;
       }
+      // FIELD CALL SITE 4 of 6: the bugle ring. Giant sends the wavefront
+      // further, and the exclusion set it has always kept is the registry a
+      // hit budget extends. Measured: at 460 units a second and a 16 ms step
+      // the wavefront covers a standing critter for about three frames, so a
+      // budget of 2 is worth exactly three hits and cannot become four.
       case 'bugle': {
-        this.rings.push({
-          x: p.x, y: p.y, r: 14, max: st.radius, speed: 460,
-          dmg: st.dmg, knock: st.knock, stun: st.stun,
-          hit: new Set(), owner: p, oid: p.eid, eid: this.nextId++,
-        });
+        this.rings.push(this.armField(p, {
+          fkind: 'ring', x: p.x, y: p.y, r: 14, max: st.radius, speed: 460,
+          dmg: st.dmg, knock: st.knock, stun: st.stun, fhit: new Set(),
+        }, null));
         AudioSys.play('bugle');
         break;
       }
@@ -1493,13 +1704,20 @@ class Game {
           AudioSys.play('boom');
           const hits = this.queryEnemies(b.tx, b.ty, b.radius, true);
           for (const e of hits) {
+            if (!this.fieldStrike(b, e)) continue;
             this.dealDamage(e, b.dmg, { knock: 240, fx: b.tx, fy: b.ty, owner: b.owner });
           }
+          // The blast IS the end of this field: it resolves in one instant
+          // and there is no later moment for a split to fire at.
+          Traits.fieldEnd(this, b);
         } else {
-          this.puddles.push({
-            x: b.tx, y: b.ty, r: b.radius, dps: b.dps, life: b.dur, tick: 0,
-            owner: b.owner, oid: b.oid, eid: this.nextId++,
-          });
+          // FIELD CALL SITE 3 of 6: the holy water. Armed here rather than at
+          // the throw because the puddle is the thing with the radius and the
+          // three seconds, and it does not exist until the tin lands.
+          this.puddles.push(this.armField(b.owner, {
+            fkind: 'puddle', x: b.tx, y: b.ty, r: b.radius, dps: b.dps,
+            life: b.dur, life0: b.dur, tick: 0,
+          }, null));
           AudioSys.play('splash');
         }
         this.bombs.splice(i, 1);
@@ -1519,7 +1737,10 @@ class Game {
           this.dealDamage(e, pd.dps * 0.25, { small: true, quiet: true, noCrit: true, color: '#7ec8e8', owner: pd.owner });
         }
       }
-      if (pd.life <= 0) this.puddles.splice(i, 1);
+      if (pd.life <= 0) {
+        Traits.fieldEnd(this, pd);
+        this.puddles.splice(i, 1);
+      }
     }
   }
 
@@ -1530,10 +1751,12 @@ class Game {
       rg.r += rg.speed * dt;
       const hits = this.queryEnemies(rg.x, rg.y, rg.r + 20, true);
       for (const e of hits) {
-        if (rg.hit.has(e.eid)) continue;
         const d = Math.hypot(e.x - rg.x, e.y - rg.y);
         if (d <= rg.r + e.r && d >= prev - e.r - 6) {
-          rg.hit.add(e.eid);
+          // The band test comes first and the registry second, which is the
+          // order that lets a hit budget mean anything: a body outside the
+          // wavefront is not a spent charge, it is simply not being hit.
+          if (!this.fieldStrike(rg, e)) continue;
           // A ring that carries damage is a weapon (the Camp Bugle) and goes
           // through dealDamage exactly as it always has. A ring with no damage
           // is a shout (Reveille): it must not spawn a "0" over anybody, must
@@ -1549,12 +1772,38 @@ class Game {
           if (rg.stun > 0 && !e.boss) e.stunT = Math.max(e.stunT || 0, rg.stun);
         }
       }
-      if (rg.r >= rg.max) this.rings.splice(i, 1);
+      if (rg.r >= rg.max) {
+        Traits.fieldEnd(this, rg);
+        this.rings.splice(i, 1);
+      }
     }
     for (let i = this.swings.length - 1; i >= 0; i--) {
       const sw = this.swings[i];
       sw.t += dt;
-      if (sw.t >= sw.dur) this.swings.splice(i, 1);
+      // A chop with a hit budget keeps biting for the length of its own
+      // animation, which is where the extra bites go. Gated on the budget and
+      // not on "carries traits", because a swing that is only bigger must
+      // still land exactly once: an empty build and a giant build both take
+      // this branch zero times.
+      if (sw.budget > 0 && sw.t < sw.dur) this.swingBite(sw);
+      if (sw.t >= sw.dur) {
+        Traits.fieldEnd(this, sw);
+        this.swings.splice(i, 1);
+      }
+    }
+  }
+
+  // The chop, as a pass over the field it is. Lifted out of fireWeapon so the
+  // swing's later frames can run the same code its first frame ran, and so a
+  // split copy bites the moment it appears rather than having to wait for a
+  // second swing to be thrown.
+  swingBite(sw) {
+    const hits = this.queryEnemies(sw.x, sw.y, sw.range, true);
+    for (const e of hits) {
+      const ea = Math.atan2(e.y - sw.y, e.x - sw.x);
+      if (Math.abs(angDiff(ea, sw.a)) > sw.arc / 2 + 0.25) continue;
+      if (!this.fieldStrike(sw, e)) continue;
+      this.dealDamage(e, sw.dmg, { knock: sw.knock, owner: sw.owner });
     }
   }
 
@@ -1895,9 +2144,12 @@ Game.prototype.gainCoins = function (n) {
   // gets a couple of seconds to be somewhere else.
   Game.prototype.fireReveille = function () {
     const p = this.player;
+    // A shout, not a weapon: it carries no damage and no traits, so it is not
+    // armed. Its exclusion set is spelled fhit because updateRings reads the
+    // one field registry name for every ring in the game.
     this.rings.push({
       x: p.x, y: p.y, r: 14, max: 340, speed: 560,
-      dmg: 0, knock: 90, stun: REVEILLE_STUN, hit: new Set(),
+      dmg: 0, knock: 90, stun: REVEILLE_STUN, fhit: new Set(),
       owner: p, oid: p.eid, eid: this.nextId++,
     });
     p.hasteT = REVEILLE_HASTE;
