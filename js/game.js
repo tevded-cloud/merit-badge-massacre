@@ -34,19 +34,62 @@ const HASTE_MUL = 1.3;
 // against a future layout, not a limit anything hits today.
 const ROOM_AMBIENCE_MAX = 12;
 
+// A scout's build, empty. One shape, made in exactly one place, so a second
+// player is one more call to this and nothing else (COOP_DESIGN.md C1).
+//
+// items is the ordered list of held item ids and it is the whole of what
+// travels: a count vector over a fixed id list, no object references, a few
+// hundred bytes at a full night's twenty six picks (C15). The three compiled
+// sets and the dash modifiers are DERIVED from it by rebuildTraits and are
+// never saved, because a save that stored a compiled set would be a save that
+// could not survive a balance change.
+function newBuild() {
+  return {
+    items: [],
+    shotTraits: Traits.NONE,    // rides every projectile this scout fires
+    strikeTraits: Traits.NONE,  // the 'any' scope subset: chops, auras, blasts
+    dashTraits: Traits.NONE,    // rides the dodge roll
+    dashMods: { charges: 0, cdMul: 1, distMul: 1, iframeAdd: 0 },
+  };
+}
+
 class Game {
   constructor(charId) {
     const c = DATA.characters[charId];
     this.charId = charId;
     this.char = c;
+
+    // 3.0 substrate. The night's own event bus, so nothing a previous run
+    // registered can reach this one and two Games in one page cannot write
+    // into each other's handler lists.
+    this.hooks = Hooks.create();
+    this._tDepth = 0;                 // reentrancy guard for the trait pipeline
+    this._chainSet = new Set();       // scratch for chain, allocated once, holds ids
+    this._dashBuf = [];               // scratch for the dash grid queries
+    this._decoy = null;
+
     const hearty = META.rank('hearty') * 12;
     this.player = {
+      // Entity id. Players are numbered from zero and everything the world
+      // spawns is numbered from one (this.nextId below), so a scout's id can
+      // never collide with a critter's or a prop's. Every hit registry in the
+      // game is a set of these numbers rather than a set of objects, which is
+      // what lets a registry survive a save and attribute a kill.
+      eid: 0,
       x: 0, y: 0, r: 11, hp: c.hp + hearty, maxhp: c.hp + hearty,
       face: 1, moving: false, lastDir: { x: 1, y: 0 },
       iframe: 0, god: false,
       // active skill state: Ember Drag's armed window, Reveille's speed burst
       emberArm: 0, hasteT: 0,
       in: { moveX: 0, moveY: 0, aimX: 0, aimY: 0, fire: false, dodge: false, skill: false },
+      // THE BUILD IS AN OBJECT OWNED BY A PLAYER, never a pile of fields on
+      // the Game (COOP_DESIGN.md C1). Everything 3.0 adds to a scout's
+      // loadout lives in here and is reached as owner.build, so a second
+      // scout is a second build and not a second Game. The 2.0 stat block
+      // (dmgMul, speed, armor and the rest, written by recalc) is still on
+      // the Game: moving it is unit E3's job, since ui.js, run.js and
+      // camp.js all read it there today.
+      build: newBuild(),
     };
     this.players = [this.player];
 
@@ -147,6 +190,120 @@ class Game {
       this.pendingLevelups++;
     }
     this.xpNext = DATA.xpNext(this.level);
+
+    // The scout's own dodge flavour, said in the dash vocabulary. Junie's
+    // burn trail and Gus's barge are trait sets now, not branches in
+    // dodge.js, which is what lets an item that adds frost to a dash compose
+    // with her fire instead of arguing with it.
+    for (const p of this.players) this.rebuildTraits(p);
+    for (const p of this.players) this.hooks.emit('onRunStart', this, p);
+  }
+
+  // ---------------- 3.0 substrate ----------------
+
+  // The simulation's random stream, and the only one a trait, a hook or an
+  // item is allowed to draw from (COOP_DESIGN.md C7). It delegates to
+  // Math.random today and it exists so that seeding it later is a one line
+  // change in one file rather than an audit of the whole item catalogue.
+  rng() { return Math.random(); }
+
+  // Whose damage this is. The caller says so when it knows, a projectile
+  // carries the scout who fired it, and anything that names nobody belongs
+  // to player one, which is the same answer at one player.
+  ownerOf(o) {
+    if (o) {
+      if (o.owner) return o.owner;
+      if (o.src && o.src.owner) return o.src.owner;
+    }
+    return this.players[0];
+  }
+
+  // Every projectile in the game comes through this door. owner is the scout
+  // it belongs to; set defaults to that scout's granted traits, and a caller
+  // with its own set (a split child inheriting its parent's) passes it.
+  //
+  // The two ids are stamped here and nowhere else (C4): oid says whose shot
+  // this is, so a kill can be credited and a trait can find its scout without
+  // reading g.player, and eid names this particular shot.
+  armShot(owner, s, set) {
+    const o = owner || this.players[0];
+    s.oid = o.eid;
+    s.eid = this.nextId++;
+    s.owner = o;
+    const use = (set === undefined || set === null) ? o.build.shotTraits : set;
+    return Traits.arm(this, s, use);
+  }
+
+  // Fold every held item's grants into the three sets this scout's shots and
+  // rolls walk. Called whenever the build changes, never per frame.
+  rebuildTraits(owner) {
+    const b = owner.build;
+    let shot = null;
+    let dash = null;
+    const mods = { charges: 0, cdMul: 1, distMul: 1, iframeAdd: 0 };
+
+    // The scout's own dodge flavour is a trait set like any other. A
+    // character authored before the vocabulary existed is compiled from its
+    // old flags, so Junie's fire and Gus's shoulder are in the same list an
+    // item writes into and compose with it instead of fighting it.
+    const cd = this.char && this.char.dodge;
+    if (cd) {
+      const own = cd.traits || (this.legacyDashTraits ? this.legacyDashTraits(cd) : null);
+      if (own) { dash = []; for (const t of own) dash.push(t); }
+    }
+
+    for (let i = 0; i < b.items.length; i++) {
+      const def = DATA.relics ? DATA.relics[b.items[i]] : null;
+      if (!def) continue;
+      if (def.shotTraits) { if (shot === null) shot = []; for (const t of def.shotTraits) shot.push(t); }
+      if (def.dashTraits) { if (dash === null) dash = []; for (const t of def.dashTraits) dash.push(t); }
+      const d = def.dash;
+      if (d) {
+        if (d.charges) mods.charges += d.charges;
+        if (d.cdMul) mods.cdMul *= d.cdMul;
+        if (d.distMul) mods.distMul *= d.distMul;
+        if (d.iframeAdd) mods.iframeAdd += d.iframeAdd;
+      }
+    }
+
+    b.dashMods = mods;
+    b.shotTraits = Traits.compileShot(shot);
+    b.strikeTraits = Traits.anyScope(b.shotTraits);
+    b.dashTraits = Traits.compileDash(dash);
+  }
+
+  // Take an item. Grants are data: trait lists get folded into this scout's
+  // sets, hooks get registered against this scout AND the item id, so two
+  // players holding the same item register independently.
+  addItem(owner, id) {
+    const o = owner || this.players[0];
+    const def = DATA.relics ? DATA.relics[id] : null;
+    if (!def || o.build.items.indexOf(id) !== -1) return false;
+    o.build.items.push(id);
+    this.rebuildTraits(o);
+    if (def.hooks) {
+      for (const h of def.hooks) this.hooks.on(h.on, o, id, h.pri || 0, h.fn);
+    }
+    return true;
+  }
+
+  // THE REMOVAL PATH. An item has to be able to leave a build, or a keystone
+  // trade, a drawback that expires and a co-op hand-off are all rewrites
+  // later. Taking it off is exactly taking it on, backwards: drop the id,
+  // recompile, and take this owner's handlers off the bus by owner AND
+  // source so another scout holding the same item keeps theirs.
+  //
+  // Shots already in the air keep the set they were armed with, which is
+  // right: a stone that left the sling pierces because it was fired by a
+  // build that pierced. The next shot is the one that changes.
+  removeItem(owner, id) {
+    const o = owner || this.players[0];
+    const at = o.build.items.indexOf(id);
+    if (at === -1) return false;
+    o.build.items.splice(at, 1);
+    this.hooks.off(o, id);
+    this.rebuildTraits(o);
+    return true;
   }
 
   bark(trigger) {
@@ -202,7 +359,19 @@ class Game {
   }
 
   // ---------------- level up pool ----------------
-  levelPool(n) {
+  // EVERY OFFER, APPLY AND GRANT FUNCTION TAKES AN OWNER AS ITS FIRST
+  // ARGUMENT (COOP_DESIGN.md C2). That is the signature ninety six items get
+  // authored against in wave 3, so it is settled now.
+  //
+  // js/ui.js and js/transition.js still call the old one-argument forms and
+  // they belong to units S3 and S4, so each of these five leads with the
+  // shift below: an absent owner resolves to player one, which is the same
+  // answer at one player. Every one of those shifts is deleted the day those
+  // files land on the new signature, and grepping for `argShift` finds them
+  // all.
+  levelPool(owner, n) {
+    if (n === undefined) { n = owner; owner = null; }   // argShift, see above
+    owner = owner || this.players[0];
     const pool = [];
     const owned = id => this.weapons.find(w => w.id === id);
     for (const w of this.weapons) {
@@ -222,6 +391,17 @@ class Game {
         pool.push({ kind: 'passive', id, isNew: false, lvl: cur + 1, wgt: 8 });
       } else if (cur === 0 && pcount < DATA.PASSIVE_SLOTS) {
         pool.push({ kind: 'passive', id, isNew: true, lvl: 1, wgt: 5 });
+      }
+    }
+    // 3.0 demonstration items. These exist to prove the substrate composes,
+    // not to be balance, so they sit behind a flag a normal run never sets:
+    // DATA.DEBUG_TRAITS is false in data.js and is turned on only by the
+    // verification harness, by ?traits=1, or by hand from a console.
+    if (DATA.DEBUG_TRAITS && DATA.relics) {
+      for (const id in DATA.relics) {
+        if (owner.build.items.indexOf(id) === -1) {
+          pool.push({ kind: 'relic', id, isNew: true, lvl: 1, wgt: 12 });
+        }
       }
     }
     const out = [];
@@ -246,7 +426,8 @@ class Game {
     return out;
   }
 
-  choiceInfo(c) {
+  choiceInfo(owner, c) {
+    if (c === undefined) { c = owner; owner = null; }    // argShift, see levelPool
     if (c.kind === 'weapon') {
       const def = DATA.weapons[c.id];
       return {
@@ -263,39 +444,48 @@ class Game {
         desc: (c.isNew ? def.desc + ' ' : '') + def.per,
       };
     }
+    if (c.kind === 'relic') {
+      const r = DATA.relics[c.id];
+      return { name: r.name, icon: r.icon, chip: 'RELIC', desc: r.desc };
+    }
     const f = DATA.fillers.find(f => f.id === c.id);
     return { name: f.name, icon: f.icon, chip: 'SUPPLY', desc: f.desc };
   }
 
-  applyChoice(c) {
-    if (c.kind === 'weapon') {
+  applyChoice(owner, c) {
+    if (c === undefined) { c = owner; owner = null; }    // argShift, see levelPool
+    owner = owner || this.players[0];
+    if (c.kind === 'relic') {
+      this.addItem(owner, c.id);
+    } else if (c.kind === 'weapon') {
       if (c.isNew) this.addWeapon(c.id); else this.upgradeWeapon(c.id);
     } else if (c.kind === 'passive') {
       this.passives[c.id] = (this.passives[c.id] || 0) + 1;
       this.recalc();
     } else {
-      const p = this.player;
+      const p = owner;
       if (c.id === 'smore') p.hp = Math.min(p.maxhp, p.hp + 40);
       if (c.id === 'patch') { p.maxhp += 10; p.hp = Math.min(p.maxhp, p.hp + 10); }
-      if (c.id === 'stash') this.gainXP(25);
+      if (c.id === 'stash') this.gainXP(owner, 25);
     }
     this.flashGold = 0.35;
-    this.spawnBurst(this.player.x, this.player.y, '#f4c542', 14);
+    this.spawnBurst(owner.x, owner.y, '#f4c542', 14);
   }
 
-  grantChest() {
-    const picks = this.levelPool(1);
+  grantChest(owner) {
+    owner = owner || this.players[0];
+    const picks = this.levelPool(owner, 1);
     if (picks.length === 0) {
-      this.player.hp = Math.min(this.player.maxhp, this.player.hp + 30);
+      owner.hp = Math.min(owner.maxhp, owner.hp + 30);
       this.toast('CHEST: 30 HP', '#7ec87e');
       return;
     }
     const c = picks[0];
-    this.applyChoice(c);
-    const info = this.choiceInfo(c);
+    this.applyChoice(owner, c);
+    const info = this.choiceInfo(owner, c);
     this.toast('CHEST: ' + info.name.toUpperCase() + (c.kind !== 'filler' ? ' LV ' + c.lvl : ''), '#f4c542');
     this.hitstop = Math.max(this.hitstop, 0.16);
-    this.parts.push({ kind: 'ring', x: this.player.x, y: this.player.y - 8, t: 0, life: 0.5, size: 90 });
+    this.parts.push({ kind: 'ring', x: owner.x, y: owner.y - 8, t: 0, life: 0.5, size: 90 });
     AudioSys.play('chest');
   }
 
@@ -303,7 +493,9 @@ class Game {
     this.toasts.push({ text, color: color || '#ff5b45' });
   }
 
-  gainXP(v) {
+  gainXP(owner, v) {
+    if (v === undefined) { v = owner; owner = null; }    // argShift, see levelPool
+    owner = owner || this.players[0];
     this.xp += v * this.xpMul;
     this.badges += v;
     while (this.xp >= this.xpNext) {
@@ -311,13 +503,14 @@ class Game {
       this.level++;
       this.xpNext = DATA.xpNext(this.level);
       this.pendingLevelups++;
-      this.player.maxhp += 2;
-      this.player.hp = Math.min(this.player.maxhp, this.player.hp + 6);
+      owner.maxhp += 2;
+      owner.hp = Math.min(owner.maxhp, owner.hp + 6);
       // rank-up moment: freeze frame, gold ring, spark shower
       this.hitstop = Math.max(this.hitstop, 0.2);
       this.flashGold = 0.4;
-      this.spawnBurst(this.player.x, this.player.y - 10, '#f4c542', 18);
-      this.parts.push({ kind: 'ring', x: this.player.x, y: this.player.y - 8, t: 0, life: 0.45, size: 70 });
+      this.spawnBurst(owner.x, owner.y - 10, '#f4c542', 18);
+      this.parts.push({ kind: 'ring', x: owner.x, y: owner.y - 8, t: 0, life: 0.45, size: 70 });
+      this.hooks.emit('onLevelUp', this, owner, this.level);
     }
   }
 
@@ -363,6 +556,14 @@ class Game {
   // and THE BEHIND's cover), releaseHp is the only thing that clears it, and
   // keepHp refuses to run without it. Hiding is not tested separately because
   // every boss that hides holds its health in the same breath.
+  //
+  // 3.0: this is also THE ONE DOOR the trait pipeline hangs off. Every point
+  // of player damage in the game arrives here (stones, flame, boomerangs, the
+  // hand axe, orbiting knives, bug spray, holy water, firecrackers, the
+  // bugle), so a hit becomes an event here and nothing downstream needs to
+  // know which weapon it was. A hit on something untouchable turns back at
+  // the _hpHold line above and fires nothing, which is correct: no damage
+  // landed, so there is nothing for a trait or a hook to react to.
   dealDamage(e, base, o) {
     o = o || {};
     if (e.dead) return;
@@ -371,6 +572,9 @@ class Game {
     let dmg = base * this.dmgMul;
     let crit = false;
     if (!o.noCrit && Math.random() < this.critCh) { crit = true; dmg *= 2; }
+    // A dash that marked this body on the way past. Undefined on every
+    // critter nobody marked, so the compare is the whole cost.
+    if (e.markT > 0) dmg *= (e.markMul || 1);
     e.hp -= dmg;
     e.flash = 0.1;
     if (o.knock && !e.boss) {
@@ -393,7 +597,25 @@ class Game {
     if ((typeof SETTINGS !== 'undefined' ? SETTINGS.dmgNums : true) && (!o.small || dmg >= 9 || crit || Math.random() < 0.25)) {
       this.spawnNum(e.x + rand(-6, 6), e.y - e.r - 6, Math.round(dmg) + '', crit ? '#ffd94a' : (o.color || '#f0e8d8'), crit);
     }
-    if (e.hp <= 0) this.killEnemy(e);
+
+    // o.src is the projectile when a projectile did it, and undefined when a
+    // chop or an aura did, which is exactly the distinction a trait's scope
+    // is written against: a shot walks its own full set, everything else
+    // walks the owner's pre-filtered 'any' scope subset. The depth guard
+    // means a handler that deals damage of its own (a chain arc) cannot
+    // re-enter the pipeline while the pipeline is on the stack.
+    const owner = this.ownerOf(o);
+    if (this._tDepth === 0 && !o.noTraits) {
+      this._tDepth = 1;
+      const tt = o.src !== undefined ? o.src.traits : owner.build.strikeTraits;
+      if (tt !== undefined && tt !== null && tt.length !== 0) {
+        if (Traits.hit(this, e, tt, o.src, dmg) && o.src !== undefined) o.src._keep = true;
+      }
+      this.hooks.emit('onHit', this, owner, e, dmg, o.src || null);
+      this._tDepth = 0;
+    }
+
+    if (e.hp <= 0) this.killEnemy(e, false, owner);
   }
 
   // What a hit on something untouchable does instead. Not nothing: a shot that
@@ -481,10 +703,18 @@ class Game {
     if (typeof META.save === 'function') META.save();
   }
 
-  killEnemy(e, noDrops) {
+  // owner is whoever put it down, so a hook can credit the kill. A body that
+  // burned to death or fell to the dawn sweep names nobody and answers player
+  // one, which is the same answer at one player.
+  killEnemy(e, noDrops, owner) {
     if (e.dead) return;
     e.dead = true;
     this.kills++;
+    // Fired here, above the noDrops bail, for the same reason the codex is
+    // written here: a body that went down went down, however it went down.
+    // The critter still has its position, so a handler can drop something on
+    // the spot it fell.
+    this.hooks.emit('onKill', this, owner || this.players[0], e);
     // Before the noDrops bail: a bloodless sweep still killed the thing.
     if (e.boss) this.recordBoss(e, true);
     AudioSys.play('pop', { pitch: e.boss ? 0.5 : rand(0.85, 1.2) });
@@ -554,6 +784,7 @@ class Game {
       p.y += (p.y - fy) / d * 14;
     }
     this.spawnNum(p.x, p.y - 24, '-' + taken, '#ff5b45', true);
+    this.hooks.emit('onDamaged', this, p, taken, kind);
     if (p.hp <= 0) {
       // Second Wind from the Badge Board: once per night, dawn insists
       if (META.rank('secondwind') > 0 && !this.revived) {
@@ -941,7 +1172,7 @@ class Game {
           for (const e of hits) {
             if ((e.knifeT || 0) > this.t - st.hitCd) continue;
             e.knifeT = this.t;
-            this.dealDamage(e, st.dmg, { knock: 90, fx: p.x, fy: p.y });
+            this.dealDamage(e, st.dmg, { knock: 90, fx: p.x, fy: p.y, owner: p });
           }
         }
         continue;
@@ -953,7 +1184,7 @@ class Game {
           w.tickT += st.tick;
           const hits = this.queryEnemies(p.x, p.y, st.radius, true);
           for (const e of hits) {
-            this.dealDamage(e, st.dps * st.tick, { small: true, quiet: true, noCrit: true, color: '#9ed88a' });
+            this.dealDamage(e, st.dps * st.tick, { small: true, quiet: true, noCrit: true, color: '#9ed88a', owner: p });
             if (st.slow > 0) e.slowT = Math.max(e.slowT || 0, 0.5);
           }
         }
@@ -987,11 +1218,11 @@ class Game {
         for (let i = 0; i < n; i++) {
           const off = (i - (n - 1) / 2) * 0.11 + rand(-st.spread, st.spread);
           const a = aim + off;
-          this.shots.push({
+          this.shots.push(this.armShot(p, {
             kind: 'pebble', x: p.x + Math.cos(a) * 16, y: p.y + Math.sin(a) * 16 - 8,
             vx: Math.cos(a) * st.speed, vy: Math.sin(a) * st.speed,
             dmg: st.dmg, pierce: st.pierce, r: 4.5 * gs, life: 1.5,
-          });
+          }));
         }
         this.recoil = 0.15;
         AudioSys.play('shoot', { pitch: rand(0.92, 1.1) });
@@ -1001,12 +1232,12 @@ class Game {
         for (let i = 0; i < st.count; i++) {
           const a = aim + rand(-st.spread, st.spread);
           const sp = st.speed * rand(0.85, 1.2);
-          this.shots.push({
+          this.shots.push(this.armShot(p, {
             kind: 'flame', x: p.x + Math.cos(a) * 18, y: p.y + Math.sin(a) * 18 - 8,
             vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
             dmg: st.dmg, r: 9 * gs, life: st.range / st.speed, maxlife: st.range / st.speed,
             burnDps: st.burnDps, burnDur: st.burnDur,
-          });
+          }));
         }
         AudioSys.play('flame');
         break;
@@ -1018,7 +1249,7 @@ class Game {
         for (const e of hits) {
           const ea = Math.atan2(e.y - p.y, e.x - p.x);
           if (Math.abs(angDiff(ea, aim)) <= st.arc / 2 + 0.25) {
-            this.dealDamage(e, st.dmg, { knock: st.knock });
+            this.dealDamage(e, st.dmg, { knock: st.knock, owner: p });
           }
         }
         this.recoil = 0.2;
@@ -1040,7 +1271,7 @@ class Game {
               ty = p.y + (hit.y - p.y) * back;
             }
           }
-          this.bombs.push({ type: 'boom', sx: p.x, sy: p.y - 10, tx, ty, x: p.x, y: p.y, t: 0, fuse: st.fuse, radius: st.radius * (0.8 + gs * 0.25), dmg: st.dmg });
+          this.bombs.push({ type: 'boom', sx: p.x, sy: p.y - 10, tx, ty, x: p.x, y: p.y, t: 0, fuse: st.fuse, radius: st.radius * (0.8 + gs * 0.25), dmg: st.dmg, owner: p, oid: p.eid, eid: this.nextId++ });
         }
         this.recoil = 0.15;
         AudioSys.play('throw');
@@ -1049,12 +1280,15 @@ class Game {
       case 'boomerang': {
         for (let i = 0; i < st.count; i++) {
           const a = aim + (i - (st.count - 1) / 2) * 0.22;
-          this.shots.push({
+          // hits is a per-target cooldown keyed by ENTITY ID, never by the
+          // body itself: a registry of objects cannot be written to a save
+          // and cannot say whose kill it was (COOP_DESIGN.md C5).
+          this.shots.push(this.armShot(p, {
             kind: 'boomer', x: p.x, y: p.y - 6,
             dirx: Math.cos(a), diry: Math.sin(a), speed: st.speed,
             traveled: 0, range: st.range, r: st.size * gs, dmg: st.dmg,
             phase: 'out', spin: rand(0, TAU), hits: new Map(), life: 6,
-          });
+          }));
         }
         AudioSys.play('throw');
         break;
@@ -1070,12 +1304,16 @@ class Game {
             const a = rand(0, TAU), d = rand(90, 220);
             tx = p.x + Math.cos(a) * d; ty = p.y + Math.sin(a) * d;
           }
-          this.bombs.push({ type: 'puddle', sx: p.x, sy: p.y - 10, tx, ty, x: p.x, y: p.y, t: 0, fuse: 0.5, radius: st.radius, dps: st.dps, dur: st.dur });
+          this.bombs.push({ type: 'puddle', sx: p.x, sy: p.y - 10, tx, ty, x: p.x, y: p.y, t: 0, fuse: 0.5, radius: st.radius, dps: st.dps, dur: st.dur, owner: p, oid: p.eid, eid: this.nextId++ });
         }
         break;
       }
       case 'bugle': {
-        this.rings.push({ x: p.x, y: p.y, r: 14, max: st.radius, speed: 460, dmg: st.dmg, knock: st.knock, stun: st.stun, hit: new Set() });
+        this.rings.push({
+          x: p.x, y: p.y, r: 14, max: st.radius, speed: 460,
+          dmg: st.dmg, knock: st.knock, stun: st.stun,
+          hit: new Set(), owner: p, oid: p.eid, eid: this.nextId++,
+        });
         AudioSys.play('bugle');
         break;
       }
@@ -1129,6 +1367,19 @@ class Game {
       const s = this.shots[i];
       let remove = false;
 
+      // ---- 3.0 trait pipeline ----------------------------------------
+      // Every projectile carries a set. In a build that has granted nothing
+      // the set is the shared frozen empty array, so this is one length
+      // compare and the whole loop below runs exactly as it did in 2.0.
+      const hasT = s.traits !== undefined && s.traits.length !== 0;
+      if (hasT) {
+        s._keep = false;
+        // Steering, wall response and path ownership all resolve BEFORE the
+        // shot integrates, so a ricochet turns on the frame it would have
+        // entered the wall and the blocked-cell check never sees it.
+        Traits.update(this, s, dt);
+      }
+
       if (s.kind === 'boomer') {
         s.spin += 13 * dt;
         if (s.phase === 'out') {
@@ -1148,19 +1399,26 @@ class Game {
         if (s.life <= 0) remove = true;
         const hits = this.queryEnemies(s.x, s.y, s.r, true);
         for (const e of hits) {
-          const last = s.hits.get(e);
+          const last = s.hits.get(e.eid);
           if (last != null && this.t - last < 0.4) continue;
-          s.hits.set(e, this.t);
-          this.dealDamage(e, s.dmg, { knock: 60, fx: s.x, fy: s.y });
+          s.hits.set(e.eid, this.t);
+          this.dealDamage(e, s.dmg, { knock: 60, fx: s.x, fy: s.y, src: s });
         }
-        if (remove) this.shots.splice(i, 1);
+        if (remove) {
+          if (hasT) Traits.expire(this, s);
+          this.shots.splice(i, 1);
+        }
         continue;
       }
 
       s.x += s.vx * dt;
       s.y += s.vy * dt;
       s.life -= dt;
-      if (s.life <= 0) { this.shots.splice(i, 1); continue; }
+      if (s.life <= 0) {
+        if (hasT) Traits.expire(this, s);
+        this.shots.splice(i, 1);
+        continue;
+      }
       if (this.room && Collide.blockedAt(this.room, s.x, s.y)) {
         // A shot resolves what it hit before it dies. Most blocked cells in a
         // room are blocked BY something: a stump, a logpile, a warren mound.
@@ -1168,8 +1426,9 @@ class Game {
         // damage a solid prop, which left a slingshot or roaster build unable
         // to break BRAMBLEBUCK's mounds (an unwinnable act one) or to open the
         // cache under the logpile in a1_l_cacheline.
-        this.damageSolidAt(s, s.dmg, { knock: 70 });
+        this.damageSolidAt(s, s.dmg, { knock: 70, owner: s.owner });
         this.spawnPuff(s.x, s.y, 2);
+        if (hasT) Traits.expire(this, s);
         this.shots.splice(i, 1);
         continue;
       }
@@ -1177,24 +1436,46 @@ class Game {
       const hits = this.queryEnemies(s.x, s.y, s.r, true);
       for (const e of hits) {
         if (s.kind === 'flame') {
-          this.dealDamage(e, s.dmg, { small: true, color: '#ffb347' });
+          if (s.hit !== undefined && s.hit.has(e.eid)) continue;
+          this.dealDamage(e, s.dmg, { small: true, color: '#ffb347', src: s });
           this.applyBurn(e, s.burnDps, s.burnDur);
+          // A gob of burning sugar is spent on contact, unless something a
+          // trait did says otherwise. Pierce reads the same field the stone
+          // reads, so a build that grants pierce grants it to the flame too.
+          if (hasT && (s._keep || s.pierce > 0)) {
+            if (!s._keep) s.pierce--;
+            (s.hit || (s.hit = new Set())).add(e.eid);
+            s._keep = false;
+            continue;
+          }
           remove = true;
           break;
         }
         // A stone overlaps a surviving enemy for several frames; without a
         // hit record the pierce charge is burned re-hitting the same target.
-        if (s.hit && s.hit.has(e)) continue;
-        this.dealDamage(e, s.dmg, { knock: 70, fx: s.x, fy: s.y });
+        // The record is a set of entity ids, never of bodies (C5).
+        if (s.hit && s.hit.has(e.eid)) continue;
+        this.dealDamage(e, s.dmg, { knock: 70, fx: s.x, fy: s.y, src: s });
+        // A trait can insist the shot lives: bounce turns it at somebody
+        // else rather than spending it. That is checked before the pierce
+        // budget, so a bounce does not cost a pierce charge.
+        if (hasT && s._keep) {
+          (s.hit || (s.hit = new Set())).add(e.eid);
+          s._keep = false;
+          continue;
+        }
         if (s.pierce > 0) {
           s.pierce--;
-          (s.hit || (s.hit = new Set())).add(e);
+          (s.hit || (s.hit = new Set())).add(e.eid);
         } else {
           remove = true;
           break;
         }
       }
-      if (remove) this.shots.splice(i, 1);
+      if (remove) {
+        if (hasT) Traits.expire(this, s);
+        this.shots.splice(i, 1);
+      }
     }
   }
 
@@ -1212,10 +1493,13 @@ class Game {
           AudioSys.play('boom');
           const hits = this.queryEnemies(b.tx, b.ty, b.radius, true);
           for (const e of hits) {
-            this.dealDamage(e, b.dmg, { knock: 240, fx: b.tx, fy: b.ty });
+            this.dealDamage(e, b.dmg, { knock: 240, fx: b.tx, fy: b.ty, owner: b.owner });
           }
         } else {
-          this.puddles.push({ x: b.tx, y: b.ty, r: b.radius, dps: b.dps, life: b.dur, tick: 0 });
+          this.puddles.push({
+            x: b.tx, y: b.ty, r: b.radius, dps: b.dps, life: b.dur, tick: 0,
+            owner: b.owner, oid: b.oid, eid: this.nextId++,
+          });
           AudioSys.play('splash');
         }
         this.bombs.splice(i, 1);
@@ -1232,7 +1516,7 @@ class Game {
         pd.tick += 0.25;
         const hits = this.queryEnemies(pd.x, pd.y, pd.r, true);
         for (const e of hits) {
-          this.dealDamage(e, pd.dps * 0.25, { small: true, quiet: true, noCrit: true, color: '#7ec8e8' });
+          this.dealDamage(e, pd.dps * 0.25, { small: true, quiet: true, noCrit: true, color: '#7ec8e8', owner: pd.owner });
         }
       }
       if (pd.life <= 0) this.puddles.splice(i, 1);
@@ -1246,17 +1530,17 @@ class Game {
       rg.r += rg.speed * dt;
       const hits = this.queryEnemies(rg.x, rg.y, rg.r + 20, true);
       for (const e of hits) {
-        if (rg.hit.has(e)) continue;
+        if (rg.hit.has(e.eid)) continue;
         const d = Math.hypot(e.x - rg.x, e.y - rg.y);
         if (d <= rg.r + e.r && d >= prev - e.r - 6) {
-          rg.hit.add(e);
+          rg.hit.add(e.eid);
           // A ring that carries damage is a weapon (the Camp Bugle) and goes
           // through dealDamage exactly as it always has. A ring with no damage
           // is a shout (Reveille): it must not spawn a "0" over anybody, must
           // not play a hit sound, and must leave props standing, so it shoves
           // by hand and lets the stun below do the rest.
           if (rg.dmg > 0) {
-            this.dealDamage(e, rg.dmg, { knock: rg.knock, fx: rg.x, fy: rg.y });
+            this.dealDamage(e, rg.dmg, { knock: rg.knock, fx: rg.x, fy: rg.y, owner: rg.owner });
           } else if (!e.prop && rg.knock && !e.boss) {
             const kd = Math.max(12, d);
             e.kx = (e.kx || 0) + (e.x - rg.x) / kd * rg.knock;
@@ -1309,10 +1593,11 @@ class Game {
         g.y += (p.y - g.y) / d * sp * dt;
         if (d < 18) {
           this.gems.splice(i, 1);
-          this.gainXP(g.v);
+          this.gainXP(p, g.v);
           this.gemCombo = Math.min(14, this.gemCombo + 1);
           this.gemComboT = 0.9;
           AudioSys.play('pickup', { pitch: 1 + this.gemCombo * 0.05 });
+          this.hooks.emit('onPickup', this, p, 'gem', g.v);
         }
       }
     }
@@ -1326,6 +1611,7 @@ class Game {
         pk.y += (p.y - pk.y) / d * 300 * dt;
         if (d < 20) {
           this.pickups.splice(i, 1);
+          this.hooks.emit('onPickup', this, p, pk.type, 1);
           if (pk.type === 'cocoa') {
             p.hp = Math.min(p.maxhp, p.hp + 25);
             this.spawnNum(p.x, p.y - 26, '+25', '#7ec87e', true);
@@ -1334,7 +1620,7 @@ class Game {
             for (const g of this.gems) g.attracted = true;
             AudioSys.play('magnet');
           } else if (pk.type === 'chest') {
-            this.grantChest();
+            this.grantChest(p);
           }
         }
       }
@@ -1369,6 +1655,12 @@ class Game {
       n.t += dt;
       n.y -= 34 * dt;
       if (n.t > 0.75) this.nums.splice(i, 1);
+    }
+    // A dash decoy is the only thing in the world that can pull a critter's
+    // attention off the scout, so it is on a short clock and it clears itself.
+    if (this._decoy !== null) {
+      this._decoy.life -= dt;
+      if (this._decoy.life <= 0) this._decoy = null;
     }
     this.shake = Math.max(0, this.shake - dt * 26);
     this.shakeX = rand(-1, 1) * this.shake;
@@ -1606,6 +1898,7 @@ Game.prototype.gainCoins = function (n) {
     this.rings.push({
       x: p.x, y: p.y, r: 14, max: 340, speed: 560,
       dmg: 0, knock: 90, stun: REVEILLE_STUN, hit: new Set(),
+      owner: p, oid: p.eid, eid: this.nextId++,
     });
     p.hasteT = REVEILLE_HASTE;
     AudioSys.play('bugle');
@@ -1632,7 +1925,10 @@ Game.prototype.gainCoins = function (n) {
     // transition (nothing ticks outside the play phase) and light up again at
     // the same coordinates in the next room. Burning ground belongs to the
     // floor it was burned into.
-    trail.push({ x, y, t: 0, life: NODE_LIFE, r: NODE_R, tick: 0, room: this.room || null });
+    trail.push({
+      x, y, t: 0, life: NODE_LIFE, r: NODE_R, tick: 0, room: this.room || null,
+      owner: this.player, oid: this.player.eid, eid: this.nextId++,
+    });
     if (this.parts.length < PART_CAP) {
       this.parts.push({ kind: 'ring', x, y, t: 0, life: 0.35, size: NODE_R * 1.1 });
     }
@@ -1657,7 +1953,7 @@ Game.prototype.gainCoins = function (n) {
           // applyBurn is written for critters; dealDamage routes props to
           // damageProp on its own, so the second call is safe for both.
           if (!e.prop) this.applyBurn(e, NODE_BURN_DPS, NODE_BURN_DUR);
-          this.dealDamage(e, NODE_DMG, { small: true, quiet: true, noCrit: true, color: '#ffb347' });
+          this.dealDamage(e, NODE_DMG, { small: true, quiet: true, noCrit: true, color: '#ffb347', owner: nd.owner });
         }
       }
 
@@ -1687,6 +1983,21 @@ Game.prototype.gainCoins = function (n) {
   // What the scout is carrying at a room boundary. Read before the room is
   // entered, so a rest stop's comfort and a cache's haul land once when the
   // night is continued instead of once per continue.
+  // One scout's whole build, as a count vector over a fixed id list with no
+  // object reference anywhere in it (COOP_DESIGN.md C15). Twenty six item ids
+  // is about 350 bytes, which is what makes this cheap enough to send at
+  // every room boundary. The compiled trait sets are NOT here: they are
+  // derived from these ids by rebuildTraits, and a save that stored a
+  // compiled set would be a save that could not survive a balance change.
+  function buildOut(owner) {
+    const items = [];
+    const b = owner && owner.build;
+    if (b && Array.isArray(b.items)) {
+      for (const id of b.items) if (typeof id === 'string' && id) items.push(id);
+    }
+    return { items };
+  }
+
   Game.prototype.snapshot = function () {
     const p = this.player || {};
     const weapons = [];
@@ -1700,6 +2011,14 @@ Game.prototype.gainCoins = function (n) {
       if (r > 0) passives[id] = r;
     }
     const s = this.skill;
+    // THE SAVE IS A LIST OF BUILDS, NOT A BUILD (C16). One entry today, one
+    // per scout the night an extra scout exists, and restore already walks it
+    // as a list. The flat fields below it stay where they are because
+    // js/run.js:285-291 validates weapons and passives at the top level of
+    // this object and js/run.js belongs to unit S4; the day it moves, the
+    // rest of the scout moves into this array beside the items.
+    const builds = [];
+    for (const pl of (this.players || [])) builds.push(buildOut(pl));
     // The night's feat counters live on META while you play and are only
     // banked at the end, so they ride along here or a continued night forgets
     // everything it set alight.
@@ -1729,6 +2048,7 @@ Game.prototype.gainCoins = function (n) {
       bossSpawned: Array.isArray(this.bossSpawned) ? this.bossSpawned.slice() : null,
       weapons,
       passives,
+      builds,
       skill: s && s.id ? { id: s.id, t: Math.max(0, num(s.t, 0)) } : null,
       counters: c ? { burned: c.burned | 0, lowHpTime: Math.round(num(c.lowHpTime, 0) * 10) / 10 } : null,
     };
@@ -1738,8 +2058,16 @@ Game.prototype.gainCoins = function (n) {
   // answers null and the caller throws the save away: half a scout is worse
   // than starting the night again.
   Game.restore = function (s) {
+    // A list of length one, or the single entry itself: both are accepted,
+    // because a save that is a list of builds has to be readable by a caller
+    // that only knows about one scout (C16).
+    if (Array.isArray(s)) s = s.length ? s[0] : null;
     if (!s || typeof s !== 'object') return null;
     if (typeof DATA === 'undefined' || !DATA || !DATA.characters) return null;
+    // The builds this save carries. A save written before the list existed
+    // has its scout at the top level, and lands on the same array.
+    const builds = Array.isArray(s.builds) ? s.builds : [s];
+    if (!builds.length) return null;
     const id = s.charId;
     if (typeof id !== 'string' || !DATA.characters[id]) return null;
     if (!Array.isArray(s.weapons) || !s.weapons.length) return null;
@@ -1747,9 +2075,31 @@ Game.prototype.gainCoins = function (n) {
     if (s.passives && typeof s.passives === 'object') {
       for (const pid in s.passives) if (!DATA.passives[pid]) return null;
     }
+    // Item ids are validated exactly the way a weapon id, a patch id and a
+    // boss id already are (js/run.js:299-307 for the boss): a snapshot naming
+    // an item this build no longer ships is a snapshot we decline, whole.
+    // Half a scout is worse than starting the night again, and an item that
+    // silently vanished would be a build the player did not choose.
+    for (const b of builds) {
+      if (!b || typeof b !== 'object') return null;
+      if (b.items === undefined || b.items === null) continue;
+      if (!Array.isArray(b.items)) return null;
+      for (const iid of b.items) {
+        if (typeof iid !== 'string' || !DATA.relics || !DATA.relics[iid]) return null;
+      }
+    }
 
     let g = null;
     try { g = new Game(id); } catch (e) { return null; }
+
+    // The build, back on the scout it belongs to: the same ids in the same
+    // order, so the trait sets recompile to the same thing and the hooks
+    // register in the same order they were picked up in.
+    for (let i = 0; i < builds.length && i < g.players.length; i++) {
+      const held = builds[i].items;
+      if (!Array.isArray(held)) continue;
+      for (const iid of held) g.addItem(g.players[i], iid);
+    }
 
     // Gear, exactly as it stood: the same ids at the same levels, with the
     // stat block recomputed rather than trusted from the file.

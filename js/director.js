@@ -200,7 +200,12 @@
       dead: false, elite: !!elite, boss: false,
       ai: {},
     };
-    e.id = this.nextId++;
+    // Two names for one number. e.id is what the engine has always called a
+    // critter; e.eid is the ENTITY ID every hit registry in the game now
+    // holds instead of holding the body itself (COOP_DESIGN.md C5), and it is
+    // spelled the same on a prop (js/props.js:153) so one registry can hold
+    // both. Same counter, so a critter and a prop never share a number.
+    e.id = e.eid = this.nextId++;
     if (d.move === 'hop') e.ai = { state: 'idle', t: rand(0.1, 0.5), k: 0, dx: 0, dy: 0, hopSpd: d.hopSpd };
     if (d.move === 'charge') e.ai = { state: 'stalk', t: rand(1, 2.2), dx: 0, dy: 0, chargeSpd: d.chargeSpd };
     if (d.move === 'ranged') e.ai = { shotT: rand(1, d.shotCd) };
@@ -331,7 +336,7 @@
         telegraph: null, phase: 1, cuts: null,
       },
     };
-    e.id = this.nextId++;
+    e.id = e.eid = this.nextId++;   // see the note at the critter spawn above
 
     // Phase cuts, as fractions of max hp. A boss without cuts keeps the old
     // single-phase behaviour.
@@ -1068,6 +1073,9 @@
       if (phase === 2) this.vicarOpenLedger(e);
       if (phase === 3) this.vicarDesperate(e);
     }
+    // Nobody owns a boss crossing a phase cut, so the bus passes null and
+    // hands each handler the owner it registered under.
+    this.hooks.emit('onBossPhase', this, null, e, phase);
     this.toast(e.name, '#ff5b45');
   };
 
@@ -1894,6 +1902,23 @@
       e.slowT = Math.max(0, (e.slowT || 0) - dt);
       e.stunT = Math.max(0, (e.stunT || 0) - dt);
 
+      // 3.0 statuses, ticked here with the ones that were always here. Both
+      // fields are undefined on a critter nobody rent or marked, so the
+      // compare is the whole cost of having them.
+      if (e.rendT > 0) {
+        e.rendT -= dt;
+        e.rendTick -= dt;
+        if (e.rendTick <= 0) {
+          e.rendTick += 0.5;
+          e.hp -= e.rendDps * 0.5;
+          if ((typeof SETTINGS !== 'undefined' ? SETTINGS.dmgNums : true) && Math.random() < 0.5) {
+            this.spawnNum(e.x + rand(-5, 5), e.y - e.r - 4, Math.round(e.rendDps * 0.5) + '', '#c98cff');
+          }
+          if (e.hp <= 0) { this.killEnemy(e); continue; }
+        }
+      }
+      if (e.markT > 0) e.markT -= dt;
+
       // burning
       if (e.burnT > 0) {
         e.burnT -= dt;
@@ -1924,7 +1949,16 @@
       e.kx *= Math.pow(0.002, dt);
       e.ky *= Math.pow(0.002, dt);
 
-      const dx = p.x - e.x, dy = p.y - e.y;
+      // The one place in the game a critter decides what it is walking at.
+      // A dash decoy is therefore a one line divert rather than a change to
+      // eleven gaits: null in every run that has not left one standing.
+      let tx = p.x, ty = p.y;
+      if (this._decoy !== null && this._decoy !== undefined) {
+        const dc = this._decoy;
+        const ddx = dc.x - e.x, ddy = dc.y - e.y;
+        if (ddx * ddx + ddy * ddy < dc.r * dc.r) { tx = dc.x; ty = dc.y; }
+      }
+      const dx = tx - e.x, dy = ty - e.y;
       const d = Math.hypot(dx, dy) || 1;
       const ux = dx / d, uy = dy / d;
       const slowMul = e.slowT > 0 ? 0.62 : 1;

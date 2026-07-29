@@ -482,14 +482,26 @@ DATA.themes = {
 // character table above stays exactly as it was. spd is the roll speed, dur how
 // long the roll lasts, iframe how long you are untouchable, cd the recharge per
 // charge in seconds.
+// 3.0: the per character flavour is a DASH TRAIT SET, in the same vocabulary
+// an item writes into. Junie's fire and Gus's shoulder used to be two flags
+// read by two ifs in dodge.js; they are entries in a list now, so an item
+// that adds frost to a dash lands beside her fire rather than instead of it.
+// The numbers are the ones those two ifs were carrying, moved and not
+// changed: 6 damage a second for 1.2 seconds inside 26 units for the fire,
+// 260 of knock, 0.3 of stun and 20 to a prop inside 30 units for the
+// shoulder. The old trail/barge flags are gone; dodge.js still compiles them
+// for any character authored before the vocabulary, and nothing here needs
+// that path.
 DATA.characters.max.dodge = {
   name: 'Sidestep', spd: 620, dur: 0.17, iframe: 0.30, cd: 1.0, charges: 1,
 };
 DATA.characters.junie.dodge = {
-  name: 'Backdraft', spd: 700, dur: 0.13, iframe: 0.24, cd: 0.8, charges: 2, trail: 'burn',
+  name: 'Backdraft', spd: 700, dur: 0.13, iframe: 0.24, cd: 0.8, charges: 2,
+  traits: [{ t: 'trail', effect: 'burn', dps: 6, dur: 1.2, r: 26, rate: 0.3 }],
 };
 DATA.characters.gus.dodge = {
-  name: 'Tuck and Roll', spd: 520, dur: 0.24, iframe: 0.34, cd: 1.4, charges: 1, barge: true,
+  name: 'Tuck and Roll', spd: 520, dur: 0.24, iframe: 0.34, cd: 1.4, charges: 1,
+  traits: [{ t: 'barge', knock: 260, stun: 0.3, propDmg: 20, r: 30 }],
 };
 
 // Bosses by act tier. These are the same definitions from DATA.bosses, copied
@@ -544,6 +556,112 @@ DATA.COINS = {
   prop: [1, 3],
   cache: 35,
   convert: 2,
+};
+
+// ===========================================================================
+// 3.0 SUBSTRATE DEMONSTRATION ITEMS
+//
+// These four exist to prove that composable traits and event hooks actually
+// compose, and for nothing else. They are not balance and they are not
+// content: no feat awards them, they are in no shop, and levelPool only ever
+// offers them when DATA.DEBUG_TRAITS is true, which nothing in a normal run
+// sets. Turn them on with ?traits=1 in the URL, or DATA.DEBUG_TRAITS = true
+// from a console.
+//
+// The point is the shape. Every one of them is DATA. Not one of them names a
+// weapon, a scout, or a projectile kind, and not one of them required a line
+// of engine code to exist. That is the whole thesis: later item authoring is
+// authoring, not engineering.
+//
+// A handler's signature is (g, owner, ...): the owner is the scout whose
+// build is paying for the handler, so nothing in here ever reads g.player and
+// two scouts holding the same item do not step on each other.
+// ===========================================================================
+
+DATA.DEBUG_TRAITS = false;
+try {
+  if (typeof location !== 'undefined' && location.search &&
+      /[?&]traits=1/.test(location.search)) {
+    DATA.DEBUG_TRAITS = true;
+  }
+} catch (e) { /* no location off the web, which is fine */ }
+
+DATA.relics = {
+  // 1. Two shot traits, stacked. Works on the slingshot, the roaster and the
+  //    boomerang because it never mentions any of them; chain is 'any' scope
+  //    so it also arcs off a hand axe chop, an orbiting knife, the bug spray
+  //    cloud, a holy water puddle, a firecracker blast and a bugle ring.
+  quartzsplitter: {
+    name: 'Quartz Splitter', icon: 'slingshot',
+    desc: 'Everything you throw goes through the first one and jumps to the next.',
+    shotTraits: [
+      { t: 'pierce', n: 2 },
+      { t: 'chain', jumps: 2, range: 150, falloff: 0.6 },
+    ],
+  },
+
+  // 2. A status and a shape, stacked. burn is 'any' scope and reaches every
+  //    weapon; split is 'shot' scope and reshapes the projectiles, which is
+  //    the honest answer for a swing that has no projectile to split.
+  emberseed: {
+    name: 'Ember Seed', icon: 'roaster',
+    desc: 'Sets what it touches alight, and comes apart into more of itself.',
+    shotTraits: [
+      { t: 'burn', dps: 8, dur: 2.4 },
+      { t: 'split', on: 'expire', n: 3, spread: 1.0, dmg: 0.5, size: 0.7, life: 0.7, gen: 1 },
+    ],
+  },
+
+  // 3. No traits at all: one event handler. Proves the bus is a real second
+  //    surface, and proves an item can MAKE a trait carrying projectile that
+  //    no weapon ever fired. The spark belongs to the scout the kill was
+  //    credited to, which is the owner the bus handed in.
+  tinderfetch: {
+    name: 'Tinder Fetch', icon: 'lodestone',
+    desc: 'Every critter you put down coughs up a spark that goes looking for the next one.',
+    hooks: [{
+      on: 'onKill', pri: 0,
+      fn: function (g, owner, e) {
+        if (!e || e.prop || e.boss) return;
+        if (g.shots.length > 260) return;
+        if (DATA._sparkSet === undefined) {
+          DATA._sparkSet = Traits.compileShot([{ t: 'homing', turn: 7.5, range: 340 }]);
+        }
+        const a = g.rng() * Math.PI * 2;
+        g.shots.push(g.armShot(owner, {
+          kind: 'pebble', x: e.x, y: e.y - 6,
+          vx: Math.cos(a) * 200, vy: Math.sin(a) * 200,
+          dmg: 6, pierce: 0, r: 4, life: 2.4,
+        }, DATA._sparkSet));
+      },
+    }],
+  },
+
+  // 4. The dash surface, end to end: a trait set on the roll, standing
+  //    modifiers on the charges, and an onDodge handler that rewrites the
+  //    roll before it integrates. Works on all three scouts without naming
+  //    any of them: Junie keeps her fire and gains frost beside it, Gus keeps
+  //    his shoulder, Max had nothing and now has this.
+  ghostlace: {
+    name: 'Ghost Lace Boots', icon: 'boots',
+    desc: 'Roll through the crowd, not through the walls. The loot follows you home.',
+    dash: { charges: 1, cdMul: 0.85, iframeAdd: 0.05 },
+    dashTraits: [
+      { t: 'phase', grace: 0.1, smash: 18 },
+      { t: 'magnet', r: 190, pull: 3.4 },
+      { t: 'mark', mul: 1.35, dur: 4, r: 34 },
+      { t: 'trail', effect: 'frost', dur: 1.1, r: 26, rate: 0.35 },
+    ],
+    hooks: [{
+      on: 'onDodge', pri: 0,
+      fn: function (g, owner, opt) {
+        // Handed the roll before it moves: lengthen it by a third. Distance
+        // is authoritative, so dodge.js derives the speed from what is left
+        // here, and nothing about the scout's own numbers is hardcoded.
+        opt.dist *= 1.33;
+      },
+    }],
+  },
 };
 
 // Active skills: the ones on a button, not the auto weapons. The runtime is

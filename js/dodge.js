@@ -2,20 +2,69 @@
 // press into a single-frame p.in.dodge edge; this file spends it, owns the
 // player's position for the length of the dash, and ticks the charge
 // cooldowns every frame regardless of phase.
+//
+// 3.0: the dash is a first class item surface, not a fixed move.
+//
+//   1. onDodge fires the instant a dash is COMMITTED and BEFORE it moves an
+//      inch, with a mutable options object. A handler can lengthen the roll,
+//      widen the invulnerable window, redirect it, or wave it off entirely.
+//      What comes back out of that emit is what integrates.
+//   2. The dash carries a TRAIT SET, exactly as a projectile does, walked
+//      every step by the same kind of pipeline. Junie's burn trail and Gus's
+//      barge are entries in that vocabulary now rather than branches here.
+//   3. THE BOUNDARY RULE. A trait may switch off solid resolution, which is
+//      what phase does. Nothing can switch off the bounds clamp: it is
+//      applied below, unconditionally, outside the trait walk, on every
+//      frame of every dash. A locked room is the woods deciding you stay.
+//
+// Everything here reads the roll off the PLAYER, never off the Game: the
+// charges, the trait set and the modifiers all come from p.build, so a
+// second scout rolling in the same frame is a second build and not a second
+// set of fields somewhere else (COOP_DESIGN.md C1). The roll's contact
+// record is a set of entity ids for the same reason every other hit registry
+// in the game now is (C5).
 'use strict';
 
 (function () {
 
   const DEFAULT_DODGE = { spd: 620, dur: 0.17, iframe: 0.30, cd: 1.05, charges: 1 };
+  const NO_MODS = { charges: 0, cdMul: 1, distMul: 1, iframeAdd: 0 };
 
   function dodgeParams(game) {
     return (game.char && game.char.dodge) || DEFAULT_DODGE;
   }
 
+  // A character authored before the dash vocabulary existed still works: the
+  // old trail and barge flags compile into the traits that replaced them, so
+  // nothing outside this file has to know the shape changed.
+  function legacyTraits(params) {
+    let out = null;
+    if (params.trail === 'burn') {
+      out = [{ t: 'trail', effect: 'burn', dps: 6, dur: 1.2, r: 26, rate: 0.3 }];
+    }
+    if (params.barge) {
+      if (out === null) out = [];
+      out.push({ t: 'barge', knock: 260, stun: 0.3, propDmg: 20, r: 30 });
+    }
+    return out;
+  }
+
+  // Everything riding this scout's dash: their own flavour plus whatever
+  // their build has granted. Compiled when the build changes, not per dash.
+  function dashSet(owner) {
+    const s = owner.build && owner.build.dashTraits;
+    return (s === undefined || s === null) ? Traits.NONE : s;
+  }
+
+  function dashMods(owner) {
+    return (owner.build && owner.build.dashMods) || NO_MODS;
+  }
+
   Game.prototype.updateDodge = function (dt) {
     const p = this.player;
     const params = dodgeParams(this);
-    const charges = params.charges || DEFAULT_DODGE.charges;
+    const mods = dashMods(p);
+    const charges = Math.max(1, (params.charges || DEFAULT_DODGE.charges) + mods.charges);
 
     // lazy init of dash state living on the player
     if (p.dashT == null) {
@@ -24,8 +73,10 @@
       p.dashDx = 0;
       p.dashDy = 0;
       p.dashCds = [];
+      p.dashInfo = null;
     }
     while (p.dashCds.length < charges) p.dashCds.push(0);
+    while (p.dashCds.length > charges) p.dashCds.pop();
 
     // charge cooldowns tick every frame no matter the phase
     for (let i = 0; i < p.dashCds.length; i++) {
@@ -56,33 +107,92 @@
         if (dl > 0.0001) { dx /= dl; dy /= dl; }
         else { dx = p.lastDir.x; dy = p.lastDir.y; }
 
-        p.dashCds[chargeIdx] = params.cd;
-        p.dashT = params.dur;
-        p.dashI = params.iframe;
-        p.dashDx = dx;
-        p.dashDy = dy;
+        // The mutable options every onDodge handler is handed. Distance and
+        // duration are the two numbers an item is most likely to want, so
+        // both are here in their own right and the speed is derived from
+        // whichever one the handler chose to write.
+        const baseDist = params.spd * params.dur * mods.distMul;
+        const opt = {
+          dx: dx, dy: dy,
+          dist: baseDist,
+          dur: params.dur,
+          spd: params.spd * mods.distMul,
+          iframe: params.iframe + mods.iframeAdd,
+          cd: params.cd * mods.cdMul,
+          charge: chargeIdx,
+          charges: p.dashCds.length,
+          traits: dashSet(p),
+          cancel: false,
+        };
+        this.hooks.emit('onDodge', this, p, opt);
 
-        // fresh hit registry for this dash's barge/charge effects
-        this._dashHit = new Set();
+        if (opt.cancel !== true) {
+          // Distance wins if a handler moved it; otherwise speed does.
+          if (opt.dist !== baseDist) opt.spd = opt.dist / Math.max(0.0001, opt.dur);
+          else opt.dist = opt.spd * opt.dur;
 
-        this.spawnPuff(p.x, p.y, 6);
-        AudioSys.play('swing', { pitch: 1.4 });
+          // Re-normalise, but ONLY if a handler actually turned the roll.
+          // Normalising an already normalised vector is not free: hypot of a
+          // unit vector is not exactly one, so dividing again moves the last
+          // bits, and a dash that lands a thousandth of a unit off eventually
+          // kills a squirrel one frame late. A seeded replay notices.
+          if (opt.dx !== dx || opt.dy !== dy) {
+            const ol = Math.hypot(opt.dx, opt.dy);
+            if (ol > 0.0001) { opt.dx /= ol; opt.dy /= ol; }
+          }
+
+          p.dashCds[chargeIdx] = opt.cd;
+          p.dashT = opt.dur;
+          p.dashI = opt.iframe;
+          p.dashDx = opt.dx;
+          p.dashDy = opt.dy;
+
+          // fresh hit registry for this dash's barge/phase effects, holding
+          // entity ids rather than bodies (C5)
+          this._dashHit = new Set();
+
+          const set = (opt.traits === undefined || opt.traits === null) ? Traits.NONE : opt.traits;
+          const dash = {
+            dx: opt.dx, dy: opt.dy,
+            spd: opt.spd, dur: opt.dur, dist: opt.dist,
+            iframe: opt.iframe, charge: chargeIdx,
+            t: 0, traveled: 0,
+            hit: this._dashHit,
+            noSolids: false,
+            traits: set,
+            oid: p.eid,
+          };
+          p.dashInfo = dash;
+          if (set.length !== 0) Traits.dashStart(this, p, set, dash);
+
+          this.spawnPuff(p.x, p.y, 6);
+          AudioSys.play('swing', { pitch: 1.4 });
+        }
       }
     }
 
     // ---- integration: owns the player's position while dashT > 0 ----
     if (p.dashT > 0) {
-      const elapsedBefore = params.dur - p.dashT;
+      const dash = p.dashInfo;
+      const spd = dash ? dash.spd : params.spd;
+      const dur = dash ? dash.dur : params.dur;
+      const elapsedBefore = dur - p.dashT;
 
-      let nx = p.x + p.dashDx * params.spd * dt;
-      let ny = p.y + p.dashDy * params.spd * dt;
-      const solids = (this.room && this.room.solids) || [];
-      const resolved = Collide.resolveCircle(nx, ny, p.r, solids);
-      nx = resolved.x; ny = resolved.y;
+      let nx = p.x + p.dashDx * spd * dt;
+      let ny = p.y + p.dashDy * spd * dt;
+      // phase skips the solids. It cannot skip the walls: the clamp below is
+      // outside the trait walk on purpose, and there is no config that
+      // reaches it.
+      if (!(dash && dash.noSolids)) {
+        const solids = (this.room && this.room.solids) || [];
+        const resolved = Collide.resolveCircle(nx, ny, p.r, solids);
+        nx = resolved.x; ny = resolved.y;
+      }
       if (this.room) {
         const clamped = Collide.clampToBounds(nx, ny, p.r, this.room.bounds);
         nx = clamped.x; ny = clamped.y;
       }
+      if (dash) dash.traveled += Math.hypot(nx - p.x, ny - p.y);
       p.x = nx; p.y = ny;
 
       // keep the legs moving through the dash, subtly
@@ -90,8 +200,8 @@
 
       // four afterimages spaced across the dash duration
       const newDashT = Math.max(0, p.dashT - dt);
-      const elapsedAfter = params.dur - newDashT;
-      const quarter = params.dur / 4;
+      const elapsedAfter = dur - newDashT;
+      const quarter = dur / 4;
       if (quarter > 0) {
         for (let k = 0; k < 4; k++) {
           const th = k * quarter;
@@ -104,37 +214,22 @@
         }
       }
 
-      // ---- character flavor ----
-      if (params.trail === 'burn') {
-        if (this.parts.length < 420 && Math.random() < 0.3) {
-          this.parts.push({
-            kind: 'ember', x: p.x, y: p.y - 4,
-            vx: rand(-16, 16), vy: rand(-16, 16),
-            t: 0, life: rand(0.2, 0.4), size: rand(1.4, 2.4),
-          });
-        }
-        const near = this.queryEnemies(p.x, p.y, 26);
-        for (const e of near) this.applyBurn(e, 6, 1.2);
-      }
-
-      if (params.barge) {
-        const hitSet = this._dashHit || (this._dashHit = new Set());
-        const near = this.queryEnemies(p.x, p.y, 30, true);
-        for (const e of near) {
-          if (hitSet.has(e)) continue;
-          hitSet.add(e);
-          if (e.prop) {
-            this.damageProp(e, 20, {});
-            continue;
-          }
-          const d = Math.max(1, Math.hypot(e.x - p.x, e.y - p.y));
-          e.kx += (e.x - p.x) / d * 260;
-          e.ky += (e.y - p.y) / d * 260;
-          if (!e.boss) e.stunT = Math.max(e.stunT || 0, 0.3);
-        }
+      // The dash trait walk sits exactly where the hand written character
+      // flavour sat: after the roll has moved and after the afterimages have
+      // been laid down, never before. A trait that reads the scout's
+      // position is reading where the roll IS this frame, not where it was
+      // last frame, and moving this call one line up is enough to shove a
+      // barged squirrel a different distance.
+      if (dash && dash.traits.length !== 0) {
+        dash.t += dt;
+        Traits.dashStep(this, p, dash.traits, dash, dt);
       }
 
       p.dashT = newDashT;
+      if (p.dashT <= 0 && dash) {
+        if (dash.traits.length !== 0) Traits.dashEnd(this, p, dash.traits, dash);
+        p.dashInfo = null;
+      }
     }
   };
 
@@ -155,7 +250,14 @@
     for (const c of p.dashCds) if (c < min) min = c;
     if (min <= 0) return 1;
     const params = dodgeParams(this);
-    return 1 - min / (params.cd || DEFAULT_DODGE.cd);
+    const mods = dashMods(p);
+    return 1 - min / ((params.cd || DEFAULT_DODGE.cd) * mods.cdMul);
+  };
+
+  // Exposed so game.rebuildTraits can compile a character's own flavour the
+  // same way it compiles an item's grants: one vocabulary, one compiler.
+  Game.prototype.legacyDashTraits = function (params) {
+    return legacyTraits(params);
   };
 
 })();

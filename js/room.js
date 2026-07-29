@@ -773,6 +773,9 @@ class Room {
       AudioSys.play('chest');
     }
     if (typeof g.toast === 'function') g.toast('ROOM CLEAR', '#f4c542');
+    // A room clearing belongs to the room, not to a scout, so the owner is
+    // null and the bus hands each handler its own.
+    if (g.hooks) g.hooks.emit('onRoomClear', g, null, this);
   }
 
   _onObjective(g) {
