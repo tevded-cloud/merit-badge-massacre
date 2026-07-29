@@ -149,7 +149,7 @@ const FEATS = [
   {
     id: 'naturalist',
     name: 'Naturalist',
-    desc: 'Get a good look at all three of the named ones.',
+    desc: 'Get a good look at three of the named ones.',
     hint: 'Looking is free. Getting away afterwards is the expensive part.',
     have: m => featCodex(m, 'seen'), need: 3,
     reward: { kind: 'weapon', id: 'boomerang', label: 'Compass Boomerang' },
@@ -158,7 +158,7 @@ const FEATS = [
   {
     id: 'trophywall',
     name: 'Trophy Wall',
-    desc: 'Put all three of the named ones down for good.',
+    desc: 'Put three of the named ones down for good.',
     hint: 'The post by the fire has room for exactly three.',
     have: m => featCodex(m, 'killed'), need: 3,
     reward: { kind: 'cosmetic', id: 'trophyrow', label: 'Two more posts by the fire' },

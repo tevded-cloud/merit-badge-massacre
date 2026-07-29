@@ -196,7 +196,14 @@ DATA.enemies = {
 };
 
 // Display names only. The ids are save keys and never change: the journal, the
-// codex and Brock's lines all hang off hare / vicar / antlered.
+// codex and Brock's lines all hang off hare / vicar / antlered / mole / behind.
+// New rows are only ever APPENDED to the end of this array, never inserted and
+// never reordered. meta.js folds the first N ids of this table into the mark on
+// every camp transfer code, so an insertion would refuse every code anyone has
+// already written down. That is why the array below is no longer sorted by at:
+// it does not need to be, the field's boss clock (director.js, updateDirector)
+// tests every row on its own.
+//
 // BRAMBLEBUCK was the wall of the whole run: most losses happened in his den,
 // at three minutes in, on a first night. THE TALLYMAN was the opposite, dead
 // in under half a minute. OLD NOBODY ran a three minute health bar and, in the
@@ -204,10 +211,53 @@ DATA.enemies = {
 // 58 keeps him catchable by the slowest scout in the troop (Gus, 132) with no
 // boot patch on: at 76 he could not be caught by anyone who had not bought
 // speed, and the fight simply never ended.
+//
+// MAWMOLE stands beside THE TALLYMAN at act 2, so the two have to be worth the
+// same night, and the two health bars are not comparable on their own: most of
+// the mole fight is spent shooting at dirt. bossMole parks its health while it
+// is under (director.js), so the only honest window in the first two phases is
+// the 2.5 seconds it spends out, and only phase 3 (below 30 percent) is exposed
+// throughout. underT 3 makes the loop 3 under, 0.8 coming up, 2.5 out, and the
+// stopwatch agrees: it is underground for almost exactly half the fight. The
+// default 5 was worse than slow, it was dead air, because phase 1 has no
+// tunnels venting bodies to shoot at either. 4800 is where that cycle comes
+// out level with him. Ten headless fights each, act 2 arena, same level 13
+// build: MAWMOLE died in a median 89.8 seconds (50.8 to 168), THE TALLYMAN in a
+// median 95.8 (67 to 177). Neither is the half minute the note above complains
+// about, and a bigger bar on the mole would only lengthen the waiting, not the
+// shooting. 70 speed is deliberately walkable: it tracks you at 70 x 1.3 while
+// it is under, so the slowest scout (Gus, 132) can always step off the crater
+// it is about to open, and the blind charge in phase 3 is a flat 360 out of the
+// phase machine and owes nothing to this number. 20 damage puts the eruption
+// (90 percent of it) and its contact just under THE TALLYMAN's 21. xp matches
+// his 120 exactly, because the run must not care which one it drew.
+//
+// THE BEHIND stands beside OLD NOBODY at act 3 and is the opposite kind of
+// fight again: it is untouchable behind a prop and only catchable for the two
+// seconds after the thing it is standing behind comes apart, so a good share of
+// that clock is running rather than shooting. That made the first guess wrong
+// in the interesting direction. 2400 read like the right number on paper (a
+// quarter of his bar for a quarter of the uptime) and measured 35 seconds
+// against his 83, because the windows it does give are point blank, with every
+// weapon connecting, while he is kited at range and wears armour in his last
+// phase. 5400 is the number the stopwatch asked for: ten fights in the act 3
+// arena on a level 19 build killed it in a median 60.7 seconds (39.7 to 161.9,
+// ten kills from ten) against OLD NOBODY's median 67.2 (61 to 99.3, nine from
+// ten). A shade under him on purpose, since part of that time is legwork.
+// 13 damage is set backwards from the last phase, where behindFace sets dmgF 3
+// and walking into it is the entire threat: 13 becomes 39 at the body and about
+// 70 after act 3's damage scale, which is half of Gus and most of Junie. One
+// touch is a lesson and two is a death. 96 speed only ever reads as 96 x 0.55
+// (the phase 3 walk), so it closes at about 53 and every scout in the troop can
+// walk away from it, which is the same lesson OLD NOBODY's speed note above is
+// about. xp is 0 like his, because a tier 3 fight ends the night and nothing
+// ever gets to spend it.
 DATA.bosses = [
   { id: 'hare',     at: 300, name: 'BRAMBLEBUCK',  hp: 1050, dmg: 13, r: 26, w: 96,  spr: 'bramblebuck', move: 'bosshare', hopSpd: 360, xp: 60 },
   { id: 'vicar',    at: 600, name: 'THE TALLYMAN', hp: 5000, dmg: 21, r: 30, w: 88,  spr: 'raccoon', move: 'bossvicar', spd: 58, xp: 120 },
   { id: 'antlered', at: 840, name: 'OLD NOBODY',   hp: 6000, dmg: 26, r: 32, w: 150, spr: 'oldnobody', move: 'bossstag', spd: 54, xp: 0, final: true },
+  { id: 'mole',     at: 450, name: 'MAWMOLE',      hp: 4800, dmg: 20, r: 32, w: 116, spr: 'mawmole', move: 'bossmole', spd: 70, underT: 3, xp: 120 },
+  { id: 'behind',   at: 720, name: 'THE BEHIND',   hp: 5400, dmg: 13, r: 26, w: 84,  spr: 'behind', move: 'bossbehind', spd: 96, xp: 0 },
 ];
 
 DATA.pool = [
@@ -442,20 +492,44 @@ DATA.characters.gus.dodge = {
   name: 'Tuck and Roll', spd: 520, dur: 0.24, iframe: 0.34, cd: 1.4, charges: 1, barge: true,
 };
 
-// Bosses by act tier. These are the same three definitions from DATA.bosses,
-// copied with a tier and an act stamped on, so the room runner can ask for
-// "the act 2 boss" without caring about the field game's clock triggers. The
-// original DATA.bosses array is untouched and still drives the timed field.
+// Bosses by act tier. These are the same definitions from DATA.bosses, copied
+// with a tier and an act stamped on, so the room runner can ask for "the act 2
+// boss" without caring about the field game's clock triggers. The original
+// DATA.bosses array is untouched and still drives the timed field.
+//
+// Acts 2 and 3 deal from a list of two. Nothing new selects them: run.js has
+// carried a weighted pick over this table all along (pickBoss, and bossWeight
+// beside it, which makes a cryptid this camp has never met three times as
+// likely as one it has already put down), and it was picking out of a list of
+// one. Appending is the whole change.
+//
+// Entries are appended within a tier as well, so the run that has always drawn
+// THE TALLYMAN at index 0 still deals exactly what it dealt.
 DATA.bossTiers = (function () {
   const by = {};
   for (const b of DATA.bosses) by[b.id] = b;
   // The tier copies carry the display names set above by construction: hare
-  // is BRAMBLEBUCK, vicar is THE TALLYMAN, antlered is OLD NOBODY. One source
-  // of truth, so a rename can never land in one table and not the other.
+  // is BRAMBLEBUCK, vicar is THE TALLYMAN, antlered is OLD NOBODY, mole is
+  // MAWMOLE and behind is THE BEHIND. One source of truth, so a rename can
+  // never land in one table and not the other.
+  //
+  // final is stamped here rather than on the rows above because of what it
+  // means: killing this one ends the night (game.js, killEnemy -> triggerDawn).
+  // That is a fact about the last room of a run, not about the body, and every
+  // tier 3 boss has to carry it or its arena becomes a cleared room with no
+  // door out of it. Leaving it off the DATA.bosses row is also what keeps the
+  // old timed field exactly as it was: out there THE BEHIND is one more thing
+  // at 720 and OLD NOBODY still ends the night alone at 840.
   return {
     1: [Object.assign({}, by.hare, { tier: 1, act: 1 })],
-    2: [Object.assign({}, by.vicar, { tier: 2, act: 2 })],
-    3: [Object.assign({}, by.antlered, { tier: 3, act: 3, final: true })],
+    2: [
+      Object.assign({}, by.vicar, { tier: 2, act: 2 }),
+      Object.assign({}, by.mole, { tier: 2, act: 2 }),
+    ],
+    3: [
+      Object.assign({}, by.antlered, { tier: 3, act: 3, final: true }),
+      Object.assign({}, by.behind, { tier: 3, act: 3, final: true }),
+    ],
   };
 })();
 

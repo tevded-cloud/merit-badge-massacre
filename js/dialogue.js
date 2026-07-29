@@ -18,6 +18,8 @@ const BARKS = {
       hare: 'Hold still, it says. Like that has ever worked.',
       vicar: 'Nothing here is owed to you. Move.',
       antlered: 'Troop 13. Hold the line. That is an order and a request.',
+      mole: 'It wants noise. Then we give it noise, together, on my mark.',
+      behind: 'Nobody turns around. Nobody. Eyes front, Troop 13.',
     },
   },
   junie: {
@@ -33,6 +35,8 @@ const BARKS = {
       hare: 'BRAMBLEBUCK! I have wanted to meet you since orientation!',
       vicar: 'Ooh, the collector. Collect THIS.',
       antlered: 'Big Nobody! I brought extra matches, just for you!',
+      mole: 'It is blind! HEY! OVER HERE! I am the loudest thing alive!',
+      behind: 'I keep looking and it keeps not being there. I hate it. I love it.',
     },
   },
   gus: {
@@ -48,6 +52,8 @@ const BARKS = {
       hare: 'The hopping one. I have heard the stories. Underwhelming so far.',
       vicar: 'You are not getting my snacks. Try the badges instead.',
       antlered: 'OLD NOBODY. I have skipped fewer meals than you have skipped centuries.',
+      mole: 'MAWMOLE. All that digging and it still has not found lunch.',
+      behind: 'THE BEHIND. Nope. I am facing this way now. Permanently.',
     },
   },
 };
@@ -60,12 +66,12 @@ const SELECT_LINES = {
 
 // Boss ids never change, they are save keys. The prose that goes with each
 // one is the new cryptid lore: BRAMBLEBUCK (hare), THE TALLYMAN (vicar),
-// OLD NOBODY / HOLLOWANTLER (antlered).
+// OLD NOBODY / HOLLOWANTLER (antlered), MAWMOLE (mole), THE BEHIND (behind).
 const KILLER_NAMES = {
   squirrel: 'a squirrel', rabbit: 'a rabbit', doe: 'a doe', bat: 'a bat',
   raccoon: 'a raccoon', owl: 'an owl', boar: 'a boar', fox: 'a fox',
   beaver: 'a beaver', hare: 'BRAMBLEBUCK', vicar: 'THE TALLYMAN',
-  antlered: 'OLD NOBODY',
+  antlered: 'OLD NOBODY', mole: 'MAWMOLE', behind: 'THE BEHIND',
 };
 
 // Battle barks a boss can speak mid fight. Plain strings; any letter spaced,
@@ -74,12 +80,16 @@ const BOSSLINES = {
   hare: 'hold still. it is only a pin.',
   vicar: 'everything you have is owed.',
   antlered: 'somebody tell them about me.',
+  mole: 'say something. anything.',
+  behind: 'turn around. i can wait.',
 };
 
 const BOSS_EPITHETS = {
   hare: 'the one that hops',
   vicar: 'the collector',
   antlered: 'the first story',
+  mole: 'the one that listens',
+  behind: 'the one at your back',
 };
 
 // A dialogue entry is a plain string (spoken neutral) or { t, e } where e is
@@ -106,11 +116,27 @@ const BROCK = {
     hare: '"BRAMBLEBUCK. Signed young, they say, back when the tokens were still hand stamped. Every third landing it sprays. Count the hops, kid."',
     vicar: '"THE TALLYMAN got you. Everything you own, he considers a loan. Stay off his rings and mind the raccoons he calls."',
     antlered: { t: '"OLD NOBODY. HOLLOWANTLER, if you want its whole name, though nobody out there wants to be caught saying it twice. You got further than most of Troop 12 ever did. Again."', e: 'warm' },
+    mole: '"MAWMOLE. Blind since before either of us was born and it has never once needed eyes: every shot you fire is you telling it exactly where to come up. It is only worth hitting when the nose is out, {scout}. The rest is dirt."',
+    behind: { t: '"THE BEHIND. You cannot shoot a thing that is not there, and it is never there. Take the cover away from it. Every stump you break is one less place in the world for it to stand."', e: 'alarmed' },
     generic: '"Back again, {scout}. The forest keeps score, and so do I. Spend some badges before you go back out."',
   },
+  // Spoken once after a night that ended in dawn. A line may carry a gate, in
+  // which case it is only in the running when that is true of this camp: the
+  // act 3 boss is rolled per run now, and Brock naming the wrong cryptid would
+  // be worse than Brock saying something general. The first line has no gate,
+  // so the pool is never empty.
   dawn: [
     { t: '"You saw the dawn. Thirty years I have run this camp and I can count dawn-watchers on one paw." He salutes with the coffee.', e: 'warm' },
-    { t: '"OLD NOBODY is down and the sun came up. Do not get comfortable. Antlers grow back, and so, probably, does he."', e: 'alarmed' },
+    {
+      gate: m => brockKilled(m, 'antlered'),
+      t: '"OLD NOBODY is down and the sun came up. Do not get comfortable. Antlers grow back, and so, probably, does he."',
+      e: 'alarmed',
+    },
+    {
+      gate: m => brockKilled(m, 'behind'),
+      t: '"THE BEHIND is down and the sun came up. Thirty years I have felt something at my shoulder on this ridge. This morning there is nothing there, and I find I do not know what to do with my hands."',
+      e: 'warm',
+    },
   ],
   idle: [
     '"The Badge Board takes badges, not promises."',
@@ -146,9 +172,13 @@ const BROCK = {
     { t: '"{feat}, is it. I stopped writing the requirements down years ago on the grounds that nobody would ever meet them. Consider me corrected."', e: 'deadpan' },
     { t: '"So that is {feat} settled. Sew it on the left side, above the others. And do not do whatever you did again unless you are being paid."', e: 'warm' },
   ],
-  // Twelve gated story beats, delivered one at a time, oldest unseen and
+  // Thirteen gated story beats, delivered one at a time, oldest unseen and
   // gate-passing beat first. Each gate reads META defensively so it still
   // works if a save is missing journal, flags, or codex entirely.
+  //
+  // The ids in this list are only ever APPENDED to. meta.js folds them, in
+  // order, into the mark on every camp transfer code, so inserting a beat in
+  // the middle would refuse every code already written down.
   arc: [
     {
       id: 'firstNight',
@@ -237,7 +267,9 @@ const BROCK = {
     },
     {
       id: 'finalDown',
-      gate: m => arcFlag(m, 'act3boss'),
+      // Was "any act 3 boss went down". The act 3 boss is rolled per run now,
+      // and this beat is about one animal by name, so it asks for that one.
+      gate: m => brockKilled(m, 'antlered'),
       e: 'warm',
       lines: [
         '"OLD NOBODY. HOLLOWANTLER, if you want its whole name, though nothing out there wants to hear it said twice. Down. Thirty years running this camp did not prepare me for how quiet that would be."',
@@ -251,6 +283,15 @@ const BROCK = {
       lines: [
         '"You saw a whole dawn out there and came back to tell me about it. Sit by the fire. The actual seat, not the log with the splinter."',
         '"Thirty years I ran this camp on the theory that somebody eventually would. Thank you for proving the theory. Cocoa is on me tonight."',
+      ],
+    },
+    {
+      id: 'behindDown',
+      gate: m => brockKilled(m, 'behind'),
+      e: 'alarmed',
+      lines: [
+        '"THE BEHIND. In thirty years not one scout has been able to tell me what it looks like, and I notice you have not offered either."',
+        '"Do not. I have thought about it every night since I was younger than you and I have decided I would rather go on not knowing. Eat something."',
       ],
     },
   ],
@@ -277,6 +318,34 @@ function arcCodexCount(m, kind) {
 function arcFlag(m, name) {
   const f = (m && m.flags) || {};
   return !!f[name];
+}
+
+// Has this camp put one named cryptid down for good? Read the same way every
+// other reader of the field guide reads it, because it has been written by
+// several hands: counts, plain true, and the bare strings.
+function brockKilled(m, id) {
+  const c = (m && m.codex) || {};
+  const e = c[id];
+  if (!e) return false;
+  if (e === 'killed') return true;
+  if (typeof e !== 'object') return false;
+  return e.killed === true ||
+    (typeof e.killed === 'number' && e.killed > 0) ||
+    (typeof e.kills === 'number' && e.kills > 0);
+}
+
+// The dawn lines this camp is allowed to hear. An ungated line always counts.
+function brockDawnPool() {
+  const out = [];
+  for (const line of BROCK.dawn) {
+    if (line && typeof line.gate === 'function') {
+      let ok = false;
+      try { ok = !!line.gate(META); } catch (e) { ok = false; }
+      if (!ok) continue;
+    }
+    out.push(line);
+  }
+  return out.length ? out : BROCK.dawn.slice(0, 1);
 }
 
 // First unseen, gate-passing arc beat, or null if none is ready. Marks the
@@ -361,7 +430,10 @@ function brockLinePick() {
   if (last && !last.ack) {
     last.ack = true;
     META.save();
-    if (last.result === 'dawn') return BROCK.dawn[(Math.random() * BROCK.dawn.length) | 0];
+    if (last.result === 'dawn') {
+      const pool = brockDawnPool();
+      return pool[(Math.random() * pool.length) | 0];
+    }
     const line = BROCK.died[last.killer];
     return line || BROCK.died.generic;
   }
