@@ -1,7 +1,33 @@
 {
-  "generatedAt": "2026-07-29T03:12:23.658Z",
+  "generatedAt": "2026-07-29T14:25:00.724Z",
   "groups": {
-    "core": [],
+    "core": [
+      "music/act1_base.16dae592.webm",
+      "music/act1_l1.8d3a2dcb.webm",
+      "music/act1_l2.7d1f1793.webm",
+      "music/act1_l3.93b8c6ca.webm",
+      "music/act2_base.4316bd39.webm",
+      "music/act2_l1.ff3a1998.webm",
+      "music/act2_l2.629caf8c.webm",
+      "music/act2_l3.8e572e47.webm",
+      "music/act3_base.92d50d2e.webm",
+      "music/act3_l1.a41f5591.webm",
+      "music/act3_l2.61ef7cb0.webm",
+      "music/act3_l3.ecf06bc8.webm",
+      "music/behind_base.829c9f7f.webm",
+      "music/behind_p2.76a3f4be.webm",
+      "music/behind_p3.73851ad1.webm",
+      "music/bramblebuck_base.c38c87d2.webm",
+      "music/bramblebuck_p2.9063230b.webm",
+      "music/bramblebuck_p3.aef54f4b.webm",
+      "music/camp_warm.1cfc1181.webm",
+      "music/mawmole_base.9074c834.webm",
+      "music/mawmole_p2.55c4933a.webm",
+      "music/mawmole_p3.b015ca39.webm",
+      "music/oldnobody_base.e0cdcae9.webm",
+      "music/oldnobody_p2.ead3ed31.webm",
+      "music/oldnobody_p3.669003d4.webm"
+    ],
     "camp": [
       "voice/en/brock/arc_actThree_0_5923af69.webm",
       "voice/en/brock/arc_actThree_1_5d799309.webm",
@@ -74,7 +100,8 @@
       "voice/en/brock/totem_2_e2be4679.webm",
       "voice/en/brock/totem_3_1a9fc9d0.webm",
       "voice/en/brock/totem_4_0b6b18a2.webm",
-      "voice/en/brock/totem_5_b5a89227.webm"
+      "voice/en/brock/totem_5_b5a89227.webm",
+      "music/camp_warm.1cfc1181.webm"
     ],
     "voice:antlered": [
       "voice/en/antlered/bossline_0_c077d41e.webm"
@@ -294,6 +321,181 @@
     ]
   },
   "files": {
+    "music/act1_base.16dae592.webm": {
+      "bytes": 354032,
+      "samples": 1588966,
+      "sampleRate": 48000,
+      "theme": "act1",
+      "layer": "base"
+    },
+    "music/act1_l1.8d3a2dcb.webm": {
+      "bytes": 317837,
+      "samples": 1588966,
+      "sampleRate": 48000,
+      "theme": "act1",
+      "layer": "l1"
+    },
+    "music/act1_l2.7d1f1793.webm": {
+      "bytes": 365310,
+      "samples": 1588966,
+      "sampleRate": 48000,
+      "theme": "act1",
+      "layer": "l2"
+    },
+    "music/act1_l3.93b8c6ca.webm": {
+      "bytes": 370086,
+      "samples": 1588966,
+      "sampleRate": 48000,
+      "theme": "act1",
+      "layer": "l3"
+    },
+    "music/act2_base.4316bd39.webm": {
+      "bytes": 420427,
+      "samples": 2003478,
+      "sampleRate": 48000,
+      "theme": "act2",
+      "layer": "base"
+    },
+    "music/act2_l1.ff3a1998.webm": {
+      "bytes": 385105,
+      "samples": 2003478,
+      "sampleRate": 48000,
+      "theme": "act2",
+      "layer": "l1"
+    },
+    "music/act2_l2.629caf8c.webm": {
+      "bytes": 414647,
+      "samples": 2003478,
+      "sampleRate": 48000,
+      "theme": "act2",
+      "layer": "l2"
+    },
+    "music/act2_l3.8e572e47.webm": {
+      "bytes": 370111,
+      "samples": 2003478,
+      "sampleRate": 48000,
+      "theme": "act2",
+      "layer": "l3"
+    },
+    "music/act3_base.92d50d2e.webm": {
+      "bytes": 282347,
+      "samples": 1280000,
+      "sampleRate": 48000,
+      "theme": "act3",
+      "layer": "base"
+    },
+    "music/act3_l1.a41f5591.webm": {
+      "bytes": 263012,
+      "samples": 1280000,
+      "sampleRate": 48000,
+      "theme": "act3",
+      "layer": "l1"
+    },
+    "music/act3_l2.61ef7cb0.webm": {
+      "bytes": 296787,
+      "samples": 1280000,
+      "sampleRate": 48000,
+      "theme": "act3",
+      "layer": "l2"
+    },
+    "music/act3_l3.ecf06bc8.webm": {
+      "bytes": 303161,
+      "samples": 1280000,
+      "sampleRate": 48000,
+      "theme": "act3",
+      "layer": "l3"
+    },
+    "music/behind_base.829c9f7f.webm": {
+      "bytes": 1011494,
+      "samples": 5120000,
+      "sampleRate": 48000,
+      "theme": "behind",
+      "layer": "base"
+    },
+    "music/behind_p2.76a3f4be.webm": {
+      "bytes": 819371,
+      "samples": 5120000,
+      "sampleRate": 48000,
+      "theme": "behind",
+      "layer": "p2"
+    },
+    "music/behind_p3.73851ad1.webm": {
+      "bytes": 1139679,
+      "samples": 5120000,
+      "sampleRate": 48000,
+      "theme": "behind",
+      "layer": "p3"
+    },
+    "music/bramblebuck_base.c38c87d2.webm": {
+      "bytes": 596641,
+      "samples": 2880000,
+      "sampleRate": 48000,
+      "theme": "bramblebuck",
+      "layer": "base"
+    },
+    "music/bramblebuck_p2.9063230b.webm": {
+      "bytes": 637362,
+      "samples": 2880000,
+      "sampleRate": 48000,
+      "theme": "bramblebuck",
+      "layer": "p2"
+    },
+    "music/bramblebuck_p3.aef54f4b.webm": {
+      "bytes": 654459,
+      "samples": 2880000,
+      "sampleRate": 48000,
+      "theme": "bramblebuck",
+      "layer": "p3"
+    },
+    "music/camp_warm.1cfc1181.webm": {
+      "bytes": 458080,
+      "samples": 2710588,
+      "sampleRate": 48000,
+      "theme": "camp",
+      "layer": "warm"
+    },
+    "music/mawmole_base.9074c834.webm": {
+      "bytes": 1029538,
+      "samples": 5266286,
+      "sampleRate": 48000,
+      "theme": "mawmole",
+      "layer": "base"
+    },
+    "music/mawmole_p2.55c4933a.webm": {
+      "bytes": 963345,
+      "samples": 5266286,
+      "sampleRate": 48000,
+      "theme": "mawmole",
+      "layer": "p2"
+    },
+    "music/mawmole_p3.b015ca39.webm": {
+      "bytes": 947359,
+      "samples": 5266286,
+      "sampleRate": 48000,
+      "theme": "mawmole",
+      "layer": "p3"
+    },
+    "music/oldnobody_base.e0cdcae9.webm": {
+      "bytes": 761020,
+      "samples": 3840000,
+      "sampleRate": 48000,
+      "theme": "oldnobody",
+      "layer": "base"
+    },
+    "music/oldnobody_p2.ead3ed31.webm": {
+      "bytes": 703891,
+      "samples": 3840000,
+      "sampleRate": 48000,
+      "theme": "oldnobody",
+      "layer": "p2"
+    },
+    "music/oldnobody_p3.669003d4.webm": {
+      "bytes": 889401,
+      "samples": 3840000,
+      "sampleRate": 48000,
+      "theme": "oldnobody",
+      "layer": "p3"
+    },
     "voice/en/antlered/bossline_0_c077d41e.webm": {
       "bytes": 15970,
       "speaker": "antlered",
@@ -1275,5 +1477,220 @@
       "spokenText": "everything you have is owed."
     }
   },
-  "prune": []
+  "prune": [],
+  "themes": {
+    "act1": {
+      "bpm": 116,
+      "bars": 16,
+      "beatsPerBar": 4,
+      "key": "A minor",
+      "sampleRate": 48000,
+      "samples": 1588966,
+      "seconds": 33.103458,
+      "layers": [
+        {
+          "id": "base",
+          "file": "music/act1_base.16dae592.webm",
+          "samples": 1588966
+        },
+        {
+          "id": "l1",
+          "file": "music/act1_l1.8d3a2dcb.webm",
+          "samples": 1588966
+        },
+        {
+          "id": "l2",
+          "file": "music/act1_l2.7d1f1793.webm",
+          "samples": 1588966
+        },
+        {
+          "id": "l3",
+          "file": "music/act1_l3.93b8c6ca.webm",
+          "samples": 1588966
+        }
+      ]
+    },
+    "act2": {
+      "bpm": 92,
+      "bars": 16,
+      "beatsPerBar": 4,
+      "key": "D minor",
+      "sampleRate": 48000,
+      "samples": 2003478,
+      "seconds": 41.739125,
+      "layers": [
+        {
+          "id": "base",
+          "file": "music/act2_base.4316bd39.webm",
+          "samples": 2003478
+        },
+        {
+          "id": "l1",
+          "file": "music/act2_l1.ff3a1998.webm",
+          "samples": 2003478
+        },
+        {
+          "id": "l2",
+          "file": "music/act2_l2.629caf8c.webm",
+          "samples": 2003478
+        },
+        {
+          "id": "l3",
+          "file": "music/act2_l3.8e572e47.webm",
+          "samples": 2003478
+        }
+      ]
+    },
+    "act3": {
+      "bpm": 144,
+      "bars": 16,
+      "beatsPerBar": 4,
+      "key": "E minor",
+      "sampleRate": 48000,
+      "samples": 1280000,
+      "seconds": 26.666667,
+      "layers": [
+        {
+          "id": "base",
+          "file": "music/act3_base.92d50d2e.webm",
+          "samples": 1280000
+        },
+        {
+          "id": "l1",
+          "file": "music/act3_l1.a41f5591.webm",
+          "samples": 1280000
+        },
+        {
+          "id": "l2",
+          "file": "music/act3_l2.61ef7cb0.webm",
+          "samples": 1280000
+        },
+        {
+          "id": "l3",
+          "file": "music/act3_l3.ecf06bc8.webm",
+          "samples": 1280000
+        }
+      ]
+    },
+    "behind": {
+      "bpm": 72,
+      "bars": 32,
+      "beatsPerBar": 4,
+      "key": "B minor",
+      "sampleRate": 48000,
+      "samples": 5120000,
+      "seconds": 106.666667,
+      "layers": [
+        {
+          "id": "base",
+          "file": "music/behind_base.829c9f7f.webm",
+          "samples": 5120000
+        },
+        {
+          "id": "p2",
+          "file": "music/behind_p2.76a3f4be.webm",
+          "samples": 5120000
+        },
+        {
+          "id": "p3",
+          "file": "music/behind_p3.73851ad1.webm",
+          "samples": 5120000
+        }
+      ]
+    },
+    "bramblebuck": {
+      "bpm": 128,
+      "bars": 32,
+      "beatsPerBar": 4,
+      "key": "G minor",
+      "sampleRate": 48000,
+      "samples": 2880000,
+      "seconds": 60,
+      "layers": [
+        {
+          "id": "base",
+          "file": "music/bramblebuck_base.c38c87d2.webm",
+          "samples": 2880000
+        },
+        {
+          "id": "p2",
+          "file": "music/bramblebuck_p2.9063230b.webm",
+          "samples": 2880000
+        },
+        {
+          "id": "p3",
+          "file": "music/bramblebuck_p3.aef54f4b.webm",
+          "samples": 2880000
+        }
+      ]
+    },
+    "camp": {
+      "bpm": 68,
+      "bars": 16,
+      "beatsPerBar": 4,
+      "key": "C major",
+      "sampleRate": 48000,
+      "samples": 2710588,
+      "seconds": 56.470583,
+      "layers": [
+        {
+          "id": "warm",
+          "file": "music/camp_warm.1cfc1181.webm",
+          "samples": 2710588
+        }
+      ]
+    },
+    "mawmole": {
+      "bpm": 70,
+      "bars": 32,
+      "beatsPerBar": 4,
+      "key": "F minor",
+      "sampleRate": 48000,
+      "samples": 5266286,
+      "seconds": 109.714292,
+      "layers": [
+        {
+          "id": "base",
+          "file": "music/mawmole_base.9074c834.webm",
+          "samples": 5266286
+        },
+        {
+          "id": "p2",
+          "file": "music/mawmole_p2.55c4933a.webm",
+          "samples": 5266286
+        },
+        {
+          "id": "p3",
+          "file": "music/mawmole_p3.b015ca39.webm",
+          "samples": 5266286
+        }
+      ]
+    },
+    "oldnobody": {
+      "bpm": 96,
+      "bars": 32,
+      "beatsPerBar": 4,
+      "key": "A minor",
+      "sampleRate": 48000,
+      "samples": 3840000,
+      "seconds": 80,
+      "layers": [
+        {
+          "id": "base",
+          "file": "music/oldnobody_base.e0cdcae9.webm",
+          "samples": 3840000
+        },
+        {
+          "id": "p2",
+          "file": "music/oldnobody_p2.ead3ed31.webm",
+          "samples": 3840000
+        },
+        {
+          "id": "p3",
+          "file": "music/oldnobody_p3.669003d4.webm",
+          "samples": 3840000
+        }
+      ]
+    }
+  }
 }
