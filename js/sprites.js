@@ -2421,6 +2421,711 @@ const SPR = (() => {
     g.restore();
   });
 
+  // ---------------- composed item icons ----------------
+  //
+  // WHY THIS EXISTS. The catalogue is ninety six ledger items and eight
+  // keystones, growing later toward three hundred, and every one of them needs
+  // an icon on a level up card. The fourteen emblems above measure about fifty
+  // two lines each, so hand painting the catalogue is five thousand lines of
+  // drawing and roughly eight days that appear in no estimate. So an item icon
+  // is COMPOSED from the item's own verbs rather than drawn.
+  //
+  // THE TEMPLATE WAS ALREADY IN THIS FILE. The emblems above are one frame,
+  // one field colour and one symbol, and only the last two change. A composed
+  // icon is the same three parts (BUILD_ARCHITECTURE.md 5.2):
+  //
+  //   1. FRAME.   mbRound for a ledger item, mbShield for a keystone. Both are
+  //               written above and neither is touched here.
+  //   2. FIELD.   One of six family colours (BUILD_ARCHITECTURE.md 4.5). The
+  //               same six are the family strip marks and the door sigils, so
+  //               the family read is one read at 34 px on a card, at 14 on the
+  //               strip, and on a door plaque.
+  //   3. SYMBOL.  One to three glyphs in a fixed three slot grid, laid out in
+  //               the pipeline order js/traits.js sorts a trait set into, so
+  //               the arrangement is deterministic and a player learns it.
+  //
+  // AGREEMENT WITH THE WORLD, WHICH IS THE WHOLE POINT. The glyph list is not
+  // authored per item and it is not read from a table kept beside the
+  // renderer's, because a second table drifts. It comes out of
+  // Traits.compileShot and Traits.compileDash, the two doors Game.armShot puts
+  // every projectile through, and the ink comes out of the visual descriptor
+  // those doors hang on the compiled set (js/traits.js:1029), which is the
+  // same object js/render.js reads off the shot when it draws it
+  // (js/render.js:192). A card showing a splitting, burning arc shows it
+  // because the shot splits, burns and arcs, and a combination nobody authored
+  // still gets a correct card.
+  //
+  // THE 34 PIXEL VERDICT, MEASURED RATHER THAN ASSUMED. Icons were baked and
+  // read back pixel by pixel at card size. Three glyphs DO read at 34 px: a
+  // three glyph icon comes back as three separate ink masses with nothing
+  // merged, and any two icons differ across at least 46 percent of their
+  // combined symbol ink. What decides it is the slot geometry rather than the
+  // glyph count, which is the note on ICON_SLOTS below.
+  //
+  // WHAT IS BAKED AND WHEN. One bake per distinct combination, keyed by family
+  // plus frame plus glyph ids, made on first draw and never again, so a night
+  // only pays for the cards it actually offers. Everything goes through the
+  // ordinary P registry, which means composed icons ride the tint cache and
+  // the white cache exactly like every other sprite in the game.
+
+  const ICON_BOX = 40;             // same bake box as the emblems above
+
+  // THE SIX FAMILIES. Closed set, BUILD_ARCHITECTURE.md 4.5. Chosen for hue
+  // separation first (measured pairwise in CIE Lab, worst pair reported in the
+  // A1 report) because the family read at 14 px is colour alone.
+  const ICON_FAM = {
+    // size, shot count, reach, pierce, split, orbit, ricochet, bounce
+    geometry: { field: '#4a4a8c', rim: RIM_COOL, mid: 'rgba(10,8,30,0.14)', shade: 'rgba(10,8,30,0.24)' },
+    // burn, rend, effect duration, damage over time
+    heat: { field: '#9c3212', rim: RIM_WARM, mid: 'rgba(46,10,2,0.14)', shade: 'rgba(46,10,2,0.24)' },
+    // freeze, slow, force floored to zero, crowd holding
+    cold: { field: '#1f6e8c', rim: RIM_COOL, mid: 'rgba(4,20,30,0.14)', shade: 'rgba(4,20,30,0.24)' },
+    // attack speed, move speed, dodge recharge, all seven dash traits
+    motion: { field: '#487a2c', rim: RIM_GREEN, mid: 'rgba(12,26,4,0.14)', shade: 'rgba(12,26,4,0.22)' },
+    // crit, armour, regeneration, max health, the on damaged hooks
+    blood: { field: '#8c1f4a', rim: RIM_WARM, mid: 'rgba(34,2,14,0.14)', shade: 'rgba(34,2,14,0.24)' },
+    // drawbacks and trades, coin income, badge XP, luck, pickup radius
+    take: { field: '#c09030', rim: RIM_WARM, mid: 'rgba(60,38,6,0.12)', shade: 'rgba(60,38,6,0.2)' },
+  };
+
+  // THREAD COLOURS. bone is the default embroidery. The other three are the
+  // status inks, and they are the colours js/render.js paints on the
+  // projectile: hot is the inner stop of the burn glow (js/render.js:404),
+  // cold the inner stop of the freeze glow (js/render.js:422), rend the thorn
+  // violet the trail already sheds (js/traits.js:772), lightened to the value
+  // a thread needs to read on a dark felt field. They are literals in two
+  // files today. The right home is one shared palette constant, and that is
+  // named as a follow up rather than done here, because js/render.js belongs
+  // to another unit.
+  const ICON_INK = {
+    bone: { body: '#f0ead8', deep: '#a89876', dark: 'rgba(18,10,3,0.92)', hi: 'rgba(255,252,240,0.55)' },
+    hot: { body: '#ffbe6e', deep: '#c83c0a', dark: 'rgba(38,10,2,0.92)', hi: 'rgba(255,246,214,0.7)' },
+    cold: { body: '#b4e1ff', deep: '#4f8ec0', dark: 'rgba(6,18,32,0.92)', hi: 'rgba(255,255,255,0.7)' },
+    rend: { body: '#c98cff', deep: '#5e3084', dark: 'rgba(20,6,30,0.92)', hi: 'rgba(252,242,255,0.6)' },
+  };
+
+  // The pen. Every glyph is embroidery, so it is drawn as THREAD: one dark
+  // couching pass under one bright satin pass on the same path. A stroked
+  // glyph survives at nine pixels where an outlined fill turns to mud, because
+  // the weight is a fraction of the glyph radius instead of a fixed hairline,
+  // so one painter serves a big primary symbol and a small pip unchanged.
+  //
+  // Unit space: the caller has translated to the slot centre and scaled by the
+  // slot radius, so every glyph below is drawn inside a box from -1 to 1 and
+  // every weight is a fraction of that box.
+  function satin(g, path, ink, w) {
+    w = (w === undefined) ? 0.30 : w;
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    g.strokeStyle = ink.dark; g.lineWidth = w + 0.26;
+    path(g); g.stroke();
+    g.strokeStyle = ink.body; g.lineWidth = w;
+    path(g); g.stroke();
+    if (ink.detail) {
+      g.strokeStyle = ink.hi; g.lineWidth = w * 0.30;
+      path(g); g.stroke();
+    }
+  }
+
+  // A filled glyph mass: bright thread, a baked underside shade, one outline.
+  // Same top light and belly shade the rest of the file bakes, at glyph scale.
+  function satinFill(g, path, ink) {
+    path(g); g.fillStyle = ink.body; g.fill();
+    g.save(); path(g); g.clip();
+    g.globalAlpha = 0.5; g.fillStyle = ink.deep;
+    g.fillRect(-1.3, 0.08, 2.6, 1.5);
+    g.restore();
+    g.lineJoin = 'round'; g.lineCap = 'round';
+    g.strokeStyle = ink.dark; g.lineWidth = 0.22;
+    path(g); g.stroke();
+  }
+
+  // An arrowhead pointing along `a`, tip at radius `t`.
+  function gArrow(c, a, t, back, spread) {
+    const ux = Math.cos(a), uy = Math.sin(a);
+    const px = -uy, py = ux;
+    c.moveTo(ux * (t - back) + px * spread, uy * (t - back) + py * spread);
+    c.lineTo(ux * t, uy * t);
+    c.lineTo(ux * (t - back) - px * spread, uy * (t - back) - py * spread);
+  }
+
+  // THE GLYPH VOCABULARY. Twenty six painters: the twelve shot verbs, the
+  // seven dash verbs, and seven stat marks for the ledger items that carry no
+  // verb at all (most of Blood and Take are stats, and a family whose cards
+  // were all empty fields would be a hole in the catalogue).
+  //
+  // Every one is designed to the same rule the critters are: at nine pixels a
+  // player reads GROSS SILHOUETTE and nothing else, so no two glyphs share a
+  // mass distribution. Fine cues inside a glyph are for 3x.
+  const ICON_GLYPH = {};
+
+  // ---- the twelve shot verbs, in SHOT_ORDER ----
+
+  // giant: a mass that outgrew its box, pushing out along one diagonal.
+  ICON_GLYPH.giant = (g, ink) => {
+    satinFill(g, (c) => { c.beginPath(); c.arc(0, 0, 0.54, 0, TAU); }, ink);
+    const spur = (a) => satinFill(g, (c) => {
+      const ux = Math.cos(a), uy = Math.sin(a), px = -uy, py = ux;
+      c.beginPath();
+      c.moveTo(ux * 1.04, uy * 1.04);
+      c.lineTo(ux * 0.64 + px * 0.36, uy * 0.64 + py * 0.36);
+      c.lineTo(ux * 0.64 - px * 0.36, uy * 0.64 - py * 0.36);
+      c.closePath();
+    }, ink);
+    spur(-2.36); spur(0.79);
+  };
+
+  // seek: three marks drifting off on a diagonal, no lock and no target.
+  ICON_GLYPH.seek = (g, ink) => {
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(-0.98, 0.74); c.lineTo(-0.6, 0.42);
+      c.moveTo(-0.28, 0.2); c.lineTo(0.08, -0.14);
+    }, ink, 0.26);
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(0.34, -0.42); c.lineTo(0.72, -0.78);
+      gArrow(c, -0.78, 1.06, 0.42, 0.34);
+    }, ink, 0.26);
+  };
+
+  // homing: it picked one and it is not letting go. Ring around a struck dot.
+  ICON_GLYPH.homing = (g, ink) => {
+    satin(g, (c) => { c.beginPath(); c.arc(0.16, -0.1, 0.62, 0, TAU); }, ink, 0.24);
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(-0.98, 0.92); c.lineTo(-0.02, 0.06);
+      gArrow(c, -0.78, 0.0, 0.0, 0.0);
+      c.moveTo(-0.42, 0.16); c.lineTo(-0.02, 0.06); c.lineTo(-0.12, 0.46);
+    }, ink, 0.24);
+    g.fillStyle = ink.body;
+    g.beginPath(); g.arc(0.16, -0.1, 0.2, 0, TAU); g.fill();
+  };
+
+  // orbit: out to a distance and home again, which is the boomerang's own
+  // motion, so it is the boomerang's own shape. A ring here would collide
+  // with homing at nine pixels, measured, and a bent wing cannot.
+  ICON_GLYPH.orbit = (g, ink) => {
+    satinFill(g, (c) => {
+      c.beginPath();
+      c.moveTo(-0.94, -0.66);
+      c.quadraticCurveTo(0.3, -0.56, 0.74, 0.14);
+      c.quadraticCurveTo(0.72, 0.68, 0.3, 0.96);
+      c.quadraticCurveTo(0.24, 0.48, -0.06, 0.1);
+      c.quadraticCurveTo(-0.44, -0.2, -0.94, -0.66);
+      c.closePath();
+    }, ink);
+  };
+
+  // ricochet: a corner of the room, and a stone that left it at an angle.
+  ICON_GLYPH.ricochet = (g, ink) => {
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(-0.94, -0.62); c.lineTo(-0.94, 0.9); c.lineTo(0.74, 0.9);
+    }, ink, 0.3);
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(0.5, -0.72); c.lineTo(-0.42, 0.36); c.lineTo(0.62, 0.24);
+      gArrow(c, -0.44, 0.0, 0.0, 0.0);
+    }, ink, 0.24);
+    g.fillStyle = ink.body;
+    g.beginPath(); g.arc(0.66, 0.18, 0.19, 0, TAU); g.fill();
+  };
+
+  // bounce: off a body and away after somebody else. Two humps on a floor.
+  ICON_GLYPH.bounce = (g, ink) => {
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(-0.96, 0.86); c.quadraticCurveTo(-0.5, -0.9, -0.04, 0.86);
+      c.quadraticCurveTo(0.36, -0.36, 0.8, 0.7);
+    }, ink, 0.26);
+    satin(g, (c) => { c.beginPath(); c.moveTo(-1.0, 0.98); c.lineTo(0.98, 0.98); }, ink, 0.2);
+  };
+
+  // pierce: it goes through, and the bar it went through stays behind it.
+  ICON_GLYPH.pierce = (g, ink) => {
+    satin(g, (c) => { c.beginPath(); c.moveTo(0.34, -0.96); c.lineTo(-0.34, 0.96); }, ink, 0.3);
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(-0.92, -0.66); c.lineTo(0.92, 0.34);
+      gArrow(c, 0.5, 1.06, 0.4, 0.34);
+    }, ink, 0.26);
+  };
+
+  // chain: an arc that found a second body. Bolt between two of them.
+  ICON_GLYPH.chain = (g, ink) => {
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(-0.66, -0.66); c.lineTo(-0.06, -0.14); c.lineTo(-0.34, 0.24);
+      c.lineTo(0.62, 0.66);
+    }, ink, 0.26);
+    g.fillStyle = ink.body; g.strokeStyle = ink.dark; g.lineWidth = 0.2;
+    g.beginPath(); g.arc(-0.78, -0.78, 0.22, 0, TAU); g.fill(); g.stroke();
+    g.beginPath(); g.arc(0.76, 0.78, 0.22, 0, TAU); g.fill(); g.stroke();
+  };
+
+  // split: one thing became several. A stem and three prongs.
+  ICON_GLYPH.split = (g, ink) => {
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(0, 1.0); c.lineTo(0, 0.1);
+      c.moveTo(0, 0.16); c.quadraticCurveTo(-0.1, -0.5, -0.72, -0.86);
+      c.moveTo(0, 0.16); c.lineTo(0, -0.94);
+      c.moveTo(0, 0.16); c.quadraticCurveTo(0.1, -0.5, 0.72, -0.86);
+    }, ink, 0.26);
+  };
+
+  // burn: one flame with a hot core, threaded in the shot's own orange.
+  ICON_GLYPH.burn = (g, ink) => {
+    satinFill(g, (c) => {
+      c.beginPath();
+      c.moveTo(0.02, -1.04);
+      c.bezierCurveTo(0.5, -0.4, 0.84, -0.1, 0.84, 0.32);
+      c.bezierCurveTo(0.84, 0.8, 0.44, 1.04, 0, 1.04);
+      c.bezierCurveTo(-0.44, 1.04, -0.84, 0.8, -0.84, 0.32);
+      c.bezierCurveTo(-0.84, -0.04, -0.6, -0.3, -0.28, -0.6);
+      c.quadraticCurveTo(-0.16, -0.26, 0.0, -0.42);
+      c.quadraticCurveTo(0.08, -0.72, 0.02, -1.04);
+      c.closePath();
+    }, ink);
+    g.fillStyle = ink.hi;
+    g.beginPath(); g.ellipse(0.02, 0.44, 0.28, 0.4, 0, 0, TAU); g.fill();
+  };
+
+  // freeze: six spokes, forked, threaded in the shot's own pale blue.
+  ICON_GLYPH.freeze = (g, ink) => {
+    satin(g, (c) => {
+      c.beginPath();
+      for (let i = 0; i < 3; i++) {
+        const a = i * Math.PI / 3 + Math.PI / 2;
+        c.moveTo(-Math.cos(a) * 0.96, -Math.sin(a) * 0.96);
+        c.lineTo(Math.cos(a) * 0.96, Math.sin(a) * 0.96);
+      }
+    }, ink, 0.26);
+    satin(g, (c) => {
+      c.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = i * Math.PI / 3 + Math.PI / 2;
+        const bx = Math.cos(a) * 0.54, by = Math.sin(a) * 0.54;
+        c.moveTo(bx, by); c.lineTo(bx + Math.cos(a + 0.95) * 0.34, by + Math.sin(a + 0.95) * 0.34);
+        c.moveTo(bx, by); c.lineTo(bx + Math.cos(a - 0.95) * 0.34, by + Math.sin(a - 0.95) * 0.34);
+      }
+    }, ink, 0.15);
+  };
+
+  // rend: three parallel tears, threaded in the thorn violet.
+  ICON_GLYPH.rend = (g, ink) => {
+    satin(g, (c) => {
+      c.beginPath();
+      for (let i = 0; i < 3; i++) {
+        const x = -0.62 + i * 0.62;
+        c.moveTo(x - 0.2, -0.94);
+        c.quadraticCurveTo(x + 0.16, 0, x - 0.04, 0.94);
+      }
+    }, ink, 0.24);
+  };
+
+  // ---- the seven dash verbs, in DASH_ORDER ----
+
+  // phase: through the crowd and not through the walls. An arrow through a
+  // wall that is drawn as a broken line, because for one roll it is not there.
+  ICON_GLYPH.phase = (g, ink) => {
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(0.4, -0.88); c.lineTo(0.4, -0.46);
+      c.moveTo(0.4, -0.18); c.lineTo(0.4, 0.18);
+      c.moveTo(0.4, 0.46); c.lineTo(0.4, 0.88);
+    }, ink, 0.22);
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(-0.98, 0.0); c.lineTo(0.78, 0.0);
+      c.moveTo(0.42, -0.42); c.lineTo(0.92, 0.0); c.lineTo(0.42, 0.42);
+    }, ink, 0.3);
+  };
+
+  // magnet: the loot comes with you.
+  ICON_GLYPH.magnet = (g, ink) => {
+    satin(g, (c) => { c.beginPath(); c.arc(0, 0.06, 0.66, Math.PI * 1.0, Math.PI * 2.0); }, ink, 0.36);
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(-0.66, 0.1); c.lineTo(-0.66, 0.72);
+      c.moveTo(0.66, 0.1); c.lineTo(0.66, 0.72);
+    }, ink, 0.36);
+    g.fillStyle = ink.dark;
+    g.fillRect(-0.86, 0.5, 0.42, 0.34);
+    g.fillRect(0.44, 0.5, 0.42, 0.34);
+  };
+
+  // reflect: their shell, turned round and sent back.
+  ICON_GLYPH.reflect = (g, ink) => {
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(0.62, -0.98); c.quadraticCurveTo(0.98, 0, 0.62, 0.98);
+    }, ink, 0.3);
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(-0.94, -0.62); c.lineTo(0.34, -0.14); c.lineTo(-0.9, 0.62);
+      c.moveTo(-0.9, 0.62); c.lineTo(-0.42, 0.6);
+      c.moveTo(-0.9, 0.62); c.lineTo(-0.82, 0.16);
+    }, ink, 0.24);
+  };
+
+  // barge: a shoulder, and everything it moved.
+  ICON_GLYPH.barge = (g, ink) => {
+    satinFill(g, (c) => {
+      c.beginPath();
+      c.moveTo(-0.1, -0.8); c.lineTo(0.86, 0.06); c.lineTo(-0.1, 0.9);
+      c.closePath();
+    }, ink);
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(-0.5, -0.62); c.lineTo(-0.5, 0.7);
+      c.moveTo(-0.86, -0.44); c.lineTo(-0.86, 0.52);
+    }, ink, 0.22);
+  };
+
+  // mark: tagged on the way past. A ring with four ticks and a centre.
+  ICON_GLYPH.mark = (g, ink) => {
+    satin(g, (c) => { c.beginPath(); c.arc(0, 0, 0.56, 0, TAU); }, ink, 0.24);
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(0, -0.72); c.lineTo(0, -1.0);
+      c.moveTo(0, 0.72); c.lineTo(0, 1.0);
+      c.moveTo(-0.72, 0); c.lineTo(-1.0, 0);
+      c.moveTo(0.72, 0); c.lineTo(1.0, 0);
+    }, ink, 0.22);
+    g.fillStyle = ink.body;
+    g.beginPath(); g.arc(0, 0, 0.2, 0, TAU); g.fill();
+  };
+
+  // trail: something left in the lane. Inked by what the trail actually lays.
+  ICON_GLYPH.trail = (g, ink) => {
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(-1.0, -0.34);
+      c.bezierCurveTo(-0.4, -0.86, -0.1, 0.1, 0.4, -0.32);
+      c.quadraticCurveTo(0.76, -0.62, 1.0, -0.4);
+    }, ink, 0.3);
+    g.fillStyle = ink.body; g.strokeStyle = ink.dark; g.lineWidth = 0.18;
+    for (let i = 0; i < 3; i++) {
+      const x = -0.66 + i * 0.66;
+      g.beginPath(); g.arc(x, 0.62 + (i % 2) * 0.22, 0.19, 0, TAU); g.fill(); g.stroke();
+    }
+  };
+
+  // decoy: something else to swing at.
+  ICON_GLYPH.decoy = (g, ink) => {
+    satinFill(g, (c) => {
+      c.beginPath();
+      c.moveTo(-0.62, 0.86);
+      c.lineTo(-0.62, -0.2);
+      c.quadraticCurveTo(-0.62, -0.98, 0, -0.98);
+      c.quadraticCurveTo(0.62, -0.98, 0.62, -0.2);
+      c.lineTo(0.62, 0.86);
+      c.lineTo(0.31, 0.56); c.lineTo(0, 0.86); c.lineTo(-0.31, 0.56);
+      c.closePath();
+    }, ink);
+    g.fillStyle = ink.dark;
+    g.beginPath(); g.arc(-0.26, -0.3, 0.15, 0, TAU); g.fill();
+    g.beginPath(); g.arc(0.26, -0.3, 0.15, 0, TAU); g.fill();
+  };
+
+  // ---- seven stat marks, for the ledger items that carry no verb ----
+  // These are authored on the item rather than derived, because the stat block
+  // is a later unit and there is nothing to derive them from yet. When it
+  // lands they should come off it the same way the verbs come off Traits.
+
+  // crit: a struck spark, four points and a filled core.
+  ICON_GLYPH.crit = (g, ink) => {
+    satinFill(g, (c) => {
+      c.beginPath();
+      c.moveTo(0, -1.04);
+      c.quadraticCurveTo(0.16, -0.2, 0.94, -0.06);
+      c.quadraticCurveTo(0.2, 0.14, 0.34, 0.98);
+      c.quadraticCurveTo(-0.04, 0.3, -0.72, 0.76);
+      c.quadraticCurveTo(-0.28, 0.06, -0.96, -0.24);
+      c.quadraticCurveTo(-0.2, -0.24, 0, -1.04);
+      c.closePath();
+    }, ink);
+  };
+
+  // armour: a breastplate. Square shoulders and a flat hem, because the one
+  // silhouette it must never be mistaken for is the heart two slots away.
+  ICON_GLYPH.armour = (g, ink) => {
+    satinFill(g, (c) => {
+      c.beginPath();
+      c.moveTo(-1.0, -0.48); c.lineTo(-0.38, -0.72); c.lineTo(0, -0.38);
+      c.lineTo(0.38, -0.72); c.lineTo(1.0, -0.48);
+      c.lineTo(0.84, 0.36); c.lineTo(0.54, 0.7);
+      c.lineTo(-0.54, 0.7); c.lineTo(-0.84, 0.36);
+      c.closePath();
+    }, ink);
+    satin(g, (c) => { c.beginPath(); c.moveTo(-0.92, -0.02); c.lineTo(0.92, -0.02); }, ink, 0.18);
+    g.fillStyle = ink.dark;
+    g.beginPath(); g.arc(-0.54, -0.28, 0.13, 0, TAU); g.fill();
+    g.beginPath(); g.arc(0.54, -0.28, 0.13, 0, TAU); g.fill();
+  };
+
+  // heart: health, regeneration, the things that keep a scout upright.
+  ICON_GLYPH.heart = (g, ink) => {
+    satinFill(g, (c) => {
+      c.beginPath();
+      c.moveTo(0, 1.0);
+      c.bezierCurveTo(-1.06, 0.2, -0.94, -0.62, -0.48, -0.82);
+      c.bezierCurveTo(-0.16, -0.96, 0, -0.6, 0, -0.44);
+      c.bezierCurveTo(0, -0.6, 0.16, -0.96, 0.48, -0.82);
+      c.bezierCurveTo(0.94, -0.62, 1.06, 0.2, 0, 1.0);
+      c.closePath();
+    }, ink);
+  };
+
+  // coin: cookie money. Three of them, because a single disc is the one
+  // silhouette that collides with every other filled mass in the vocabulary.
+  ICON_GLYPH.coin = (g, ink) => {
+    const one = (x, y, r) => {
+      satinFill(g, (c) => { c.beginPath(); c.arc(x, y, r, 0, TAU); }, ink);
+      g.fillStyle = ink.dark;
+      g.beginPath(); g.arc(x - r * 0.3, y - r * 0.2, r * 0.22, 0, TAU); g.fill();
+      g.beginPath(); g.arc(x + r * 0.34, y + r * 0.26, r * 0.2, 0, TAU); g.fill();
+    };
+    one(-0.54, -0.4, 0.44); one(0.54, -0.36, 0.4); one(0, 0.56, 0.44);
+  };
+
+  // luck: four leaves, and one of them is the point.
+  ICON_GLYPH.luck = (g, ink) => {
+    const leaf = (a) => satinFill(g, (c) => {
+      const ux = Math.cos(a), uy = Math.sin(a);
+      c.beginPath();
+      c.moveTo(0, 0);
+      c.quadraticCurveTo(ux * 0.5 - uy * 0.62, uy * 0.5 + ux * 0.62, ux * 0.94, uy * 0.94);
+      c.quadraticCurveTo(ux * 0.5 + uy * 0.62, uy * 0.5 - ux * 0.62, 0, 0);
+      c.closePath();
+    }, ink);
+    leaf(-2.36); leaf(-0.79); leaf(0.79); leaf(2.36);
+    satin(g, (c) => { c.beginPath(); c.moveTo(0.1, 0.3); c.quadraticCurveTo(0.5, 0.8, 0.36, 1.04); }, ink, 0.18);
+  };
+
+  // swift: rate, in the one shape that never means anything else.
+  ICON_GLYPH.swift = (g, ink) => {
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(-0.9, -0.8); c.lineTo(-0.1, 0); c.lineTo(-0.9, 0.8);
+    }, ink, 0.3);
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(0.14, -0.8); c.lineTo(0.94, 0); c.lineTo(0.14, 0.8);
+    }, ink, 0.3);
+  };
+
+  // trade: a drawback taken on purpose. A beam and two pans.
+  ICON_GLYPH.trade = (g, ink) => {
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(-0.94, -0.34); c.lineTo(0.94, -0.62);
+      c.moveTo(0, -0.48); c.lineTo(0, 0.86);
+      c.moveTo(-0.44, 0.96); c.lineTo(0.44, 0.96);
+    }, ink, 0.22);
+    satin(g, (c) => {
+      c.beginPath();
+      c.moveTo(-0.94, -0.34); c.lineTo(-0.94, 0.06);
+      c.moveTo(0.94, -0.62); c.lineTo(0.94, -0.22);
+    }, ink, 0.16);
+    satinFill(g, (c) => {
+      c.beginPath();
+      c.moveTo(-1.04, 0.06); c.quadraticCurveTo(-0.94, 0.46, -0.84, 0.06);
+      c.closePath();
+    }, ink);
+    satinFill(g, (c) => {
+      c.beginPath();
+      c.moveTo(0.84, -0.22); c.quadraticCurveTo(0.94, 0.18, 1.04, -0.22);
+      c.closePath();
+    }, ink);
+  };
+
+  // WHICH THREAD A GLYPH IS SEWN IN. Three verbs carry the projectile's own
+  // status colour so a burning card and a burning shot are the same orange;
+  // the trail glyph asks the trait what it actually lays. Everything else is
+  // bone, which is what keeps the field colour doing the family job alone.
+  function iconInkFor(id, cfg) {
+    if (id === 'burn') return 'hot';
+    if (id === 'freeze') return 'cold';
+    if (id === 'rend') return 'rend';
+    if (id === 'trail') {
+      const eff = (cfg && cfg.effect) || 'burn';
+      if (eff === 'frost') return 'cold';
+      if (eff === 'thorn') return 'rend';
+      return 'hot';
+    }
+    return 'bone';
+  }
+
+  // THE SLOT GRID. Three equal slots, read in the item's pipeline order: top
+  // centre, then lower left, then lower right. Numbers are in the 40 unit bake
+  // box, measured from the field centre.
+  //
+  // THE ONE CONSTRAINT THE MEASUREMENT FOUND, and it is the whole difference
+  // between this reading and turning to mud: THE SLOT DISCS MUST NOT OVERLAP.
+  // The first geometry tried here packed a big primary and two small pips and
+  // the discs overlapped by about 0.7 units. At 34 px that put all three
+  // symbols into ONE connected ink mass, so a player saw one shape instead of
+  // three. Pulling the slots apart to a positive gap (2.0 px at card size)
+  // gives three separate masses with no merging at all. Any future change to
+  // these numbers has to keep the gap positive.
+  const ICON_SLOTS = {
+    1: [[0, 0, 9.6]],
+    2: [[-6.8, 0, 6.0], [6.8, 0, 6.0]],
+    3: [[0, -6.4, 5.4], [-6.6, 5.0, 5.4], [6.6, 5.0, 5.4]],
+  };
+
+  // The renderer's two glows, on the felt. A burning build's card carries the
+  // same warm halo its shots carry, a freezing build's the same pale blue, and
+  // a build that is both mixes them additively into the same strange colour
+  // the shot mixes (js/render.js:399 and :417). Kept light on purpose: the
+  // family colour has to survive it at 14 px.
+  function iconWash(g, vis, cx, cy) {
+    if (!vis) return;
+    if (!vis.hot && !vis.cold) return;
+    g.save();
+    g.globalCompositeOperation = 'lighter';
+    if (vis.hot) {
+      const r = 12.5;
+      const grd = g.createRadialGradient(cx, cy, 0, cx, cy, r);
+      grd.addColorStop(0, 'rgba(255,190,110,0.3)');
+      grd.addColorStop(1, 'rgba(255,90,20,0)');
+      g.fillStyle = grd;
+      g.beginPath(); g.arc(cx, cy, r, 0, TAU); g.fill();
+    }
+    if (vis.cold) {
+      const r = 12;
+      const grd = g.createRadialGradient(cx, cy, 0, cx, cy, r);
+      grd.addColorStop(0, 'rgba(180,225,255,0.26)');
+      grd.addColorStop(1, 'rgba(120,190,255,0)');
+      g.fillStyle = grd;
+      g.beginPath(); g.arc(cx, cy, r, 0, TAU); g.fill();
+    }
+    g.restore();
+  }
+
+  function traitsAPI() {
+    return (typeof Traits !== 'undefined' && Traits) ? Traits : null;
+  }
+
+  // The descriptor the RENDERER reads, not a second one. compileShot already
+  // hangs it on the compiled set and Traits.arm copies that same object onto
+  // the projectile, so the card and the shot read one object built by one
+  // function. The dash half is folded in by running the dash traits' own vis
+  // hooks, which is exactly what buildVis does for the shot half.
+  function iconVis(T, shot, dash) {
+    let out = null;
+    if (shot && shot.vis) out = Object.assign({}, shot.vis);
+    for (let i = 0; i < dash.length; i++) {
+      const d = T.DASH[dash[i].t];
+      if (d === undefined || d.vis === undefined) continue;
+      if (out === null) {
+        out = { hot: false, cold: false, rend: false, arc: false, split: false, bulk: 0, trail: 0, ghost: false };
+      }
+      d.vis(out, dash[i]);
+    }
+    return out;
+  }
+
+  // Turn an item into a frame, a field colour and a glyph list.
+  //
+  // spec = {
+  //   family: one of the six above,
+  //   keystone: true for the shield frame,
+  //   traits: the item's trait grants, exactly as the item hands them to
+  //           Game.armShot. Split by vocabulary, compiled through the same
+  //           doors, and the compiled order IS the slot order.
+  //   glyphs: extra glyph ids for a stats-only item, appended after the verbs.
+  // }
+  function iconResolve(spec) {
+    const T = traitsAPI();
+    const list = (spec && spec.traits) || [];
+    const out = [];
+    let vis = null;
+    if (T !== null) {
+      const shotList = [], dashList = [];
+      for (let i = 0; i < list.length; i++) {
+        const t = list[i];
+        if (!t || typeof t.t !== 'string') continue;
+        if (T.SHOT[t.t] !== undefined) shotList.push(t);
+        else if (T.DASH[t.t] !== undefined) dashList.push(t);
+      }
+      const shot = T.compileShot(shotList);
+      const dash = T.compileDash(dashList);
+      vis = iconVis(T, shot, dash);
+      for (let i = 0; i < shot.length; i++) out.push(shot[i]);
+      for (let i = 0; i < dash.length; i++) out.push(dash[i]);
+    } else {
+      // Traits has not loaded (sprites.js is parsed before it). Nothing here
+      // guesses an order in that case: a local copy of SHOT_ORDER is exactly
+      // the second table this system exists to avoid.
+      for (let i = 0; i < list.length; i++) if (list[i] && list[i].t) out.push(list[i]);
+    }
+    const ids = [], inks = [], keys = [];
+    for (let i = 0; i < out.length; i++) {
+      const id = out[i].t;
+      if (ICON_GLYPH[id] === undefined || ids.indexOf(id) !== -1) continue;
+      const k = iconInkFor(id, out[i]);
+      ids.push(id); inks.push(k); keys.push(k === 'bone' ? id : id + '-' + k);
+    }
+    const extra = (spec && spec.glyphs) || [];
+    for (let i = 0; i < extra.length; i++) {
+      const id = extra[i];
+      if (ICON_GLYPH[id] === undefined || ids.indexOf(id) !== -1) continue;
+      ids.push(id); inks.push(iconInkFor(id, null)); keys.push(id);
+    }
+    return {
+      family: (spec && ICON_FAM[spec.family]) ? spec.family : 'geometry',
+      keystone: !!(spec && spec.keystone),
+      ids: ids.slice(0, 3), inks: inks.slice(0, 3), keys: keys.slice(0, 3),
+      all: ids, vis: vis,
+    };
+  }
+
+  // Paint a resolved icon. Frame, wash, then the glyphs in their slots.
+  function iconPaint(g, r) {
+    const fam = ICON_FAM[r.family] || ICON_FAM.geometry;
+    const o = { rim: fam.rim, mid: fam.mid, shade: fam.shade };
+    // A shield's field sits a little higher and a little tighter than a
+    // circle's, so one slot table serves both frames.
+    const cx = MB_C, cy = r.keystone ? MB_C - 1.4 : MB_C;
+    const k = r.keystone ? 0.9 : 1;
+    if (r.keystone) mbShield(g, fam.field, o); else mbRound(g, fam.field, o);
+    g.save();
+    if (r.keystone) mbClipShield(g); else mbClipRound(g);
+    iconWash(g, r.vis, cx, cy);
+    const slots = ICON_SLOTS[Math.min(3, Math.max(1, r.ids.length))];
+    for (let i = 0; i < r.ids.length && i < 3; i++) {
+      const s = slots[i];
+      const rad = s[2] * k;
+      const ink = Object.assign({}, ICON_INK[r.inks[i]] || ICON_INK.bone, { detail: rad >= 7 });
+      g.save();
+      g.translate(cx + s[0] * k, cy + s[1] * k);
+      g.scale(rad, rad);
+      ICON_GLYPH[r.ids[i]](g, ink);
+      g.restore();
+    }
+    g.restore();
+  }
+
+  // One bake per distinct combination. The resolved icon is frozen into the
+  // painter, so the bake is decided by the name and can never be re-resolved
+  // into something else later.
+  function iconName(spec) {
+    const r = iconResolve(spec);
+    const name = 'ic_' + r.family + (r.keystone ? '_k' : '_l') +
+      (r.keys.length ? '_' + r.keys.join('.') : '_none');
+    if (P[name] === undefined) P[name] = () => mk(ICON_BOX, ICON_BOX, (g) => iconPaint(g, r));
+    return name;
+  }
+
+  // Draw an item icon. Goes through draw(), so o.tint and o.white ride the
+  // caches every other sprite in the game rides.
+  function drawItemIcon(ctx, spec, x, y, size, o) {
+    draw(ctx, iconName(spec), x, y, size, o);
+  }
+
   P.cocoa = () => mk(24, 22, (g) => {
     g.fillStyle = '#8a5a34'; g.strokeStyle = OUT; g.lineWidth = 1.5;
     g.beginPath(); g.roundRect(4, 7, 13, 12, 2.5); g.fill(); g.stroke();
@@ -4909,5 +5614,20 @@ const SPR = (() => {
     ctx.restore();
   }
 
-  return { get, draw, drawBottom, drawScout, eyePositions, height, icon, star: star5 };
+  // itemIcon is the composed card icon: see the section above the emblems'
+  // neighbours. FAMILIES, GLYPHS and SLOTS are exposed so a dev overlay can
+  // show the vocabulary and the grid without a second copy of either.
+  const itemIcon = {
+    FAMILIES: ICON_FAM,
+    GLYPHS: ICON_GLYPH,
+    INK: ICON_INK,
+    SLOTS: ICON_SLOTS,
+    BOX: ICON_BOX,
+    resolve: iconResolve,
+    paint: iconPaint,
+    name: iconName,
+    draw: drawItemIcon,
+  };
+
+  return { get, draw, drawBottom, drawScout, eyePositions, height, icon, itemIcon, star: star5 };
 })();
