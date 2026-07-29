@@ -193,16 +193,14 @@
   }
 
   // =========================================================================
-  // TIER 2: passive magnitudes. recalc() in game.js hardcodes each patch's
-  // per level number (0.12 damage per Trail Mix level, and so on); DATA.
-  // passives only carries the description text, not the number. There is no
-  // way to make that number live-tunable without either editing game.js
-  // (forbidden) or mirroring its formula here and re-applying it after the
-  // original runs. This does the second thing: it copies recalc's own
-  // formula, unchanged, and only swaps in an overridable magnitude in place
-  // of each hardcoded constant. If game.js's recalc ever changes shape this
-  // mirror goes stale and needs a resync; everything else in the game keeps
-  // working regardless, since the original recalc still runs first, in full.
+  // TIER 2: passive magnitudes. This control used to MIRROR recalc's formula,
+  // constant for constant, because there was nowhere else the numbers lived
+  // and this file could not edit game.js. That mirror is gone: js/stats.js
+  // owns the eight per level magnitudes as Stats.PATCH_MAG and recalc reads
+  // them live, so the control writes straight into the one table and there is
+  // nothing left to go stale. The defaults below are kept as the SHIPPED
+  // record, which is what the reset button and the export diff compare
+  // against.
   // =========================================================================
   const PASSIVE_MAG_DEFAULTS = {
     trailmix: 0.12,   // +damage multiplier per level
@@ -216,36 +214,28 @@
   };
 
   function installPassiveMagnitudes() {
-    DT.tuning.passiveMag = Object.assign({}, PASSIVE_MAG_DEFAULTS);
+    // POINTED AT THE SOURCE OF TRUTH, not a copy of it. tuning.passiveMag IS
+    // Stats.PATCH_MAG, so every write below lands on the table recalc reads
+    // and there is no second formula to resync. If stats.js is somehow not
+    // loaded the control falls back to a private copy and simply does nothing
+    // to the game, which is better than throwing inside the overlay.
+    DT.tuning.passiveMag = (typeof Stats !== 'undefined' && Stats && Stats.PATCH_MAG)
+      ? Stats.PATCH_MAG
+      : Object.assign({}, PASSIVE_MAG_DEFAULTS);
     DT.shipped.passiveMag = Object.assign({}, PASSIVE_MAG_DEFAULTS);
-    if (typeof Game === 'undefined' || !Game || !Game.prototype || Game.prototype.__mbmRecalcWrapped) return;
-    const origRecalc = Game.prototype.recalc;
-    Game.prototype.recalc = function () {
-      origRecalc.call(this);
-      const mag = DT.tuning.passiveMag;
-      const c = this.char, p = this.passives;
-      const lv = id => p[id] || 0;
-      this.dmgMul = (1 + c.dmg) * (1 + mag.trailmix * lv('trailmix')) * (1 + 0.05 * META.rank('sharp'));
-      this.speed = c.speed * (1 + mag.boots * lv('boots')) * (1 + 0.04 * META.rank('swift'));
-      this.cdMul = Math.pow(mag.whistle, lv('whistle'));
-      this.armor = c.armor + mag.skillet * lv('skillet') + META.rank('grit');
-      this.magnetR = 65 * (1 + c.pickup) * (1 + mag.lodestone * lv('lodestone')) * (1 + 0.12 * META.rank('packrat'));
-      this.xpMul = (1 + mag.fieldguide * lv('fieldguide')) * (1 + 0.08 * META.rank('scholar'));
-      this.critCh = c.crit + mag.rabbitfoot * lv('rabbitfoot');
-      this.regen = mag.firstaid * lv('firstaid');
-    };
-    Game.prototype.__mbmRecalcWrapped = true;
   }
 
   function applyPassiveMagChange(id, val) {
     DT.tuning.passiveMag[id] = val;
     markDirty('tune:passive:' + id);
     const g = activeGame();
-    if (g) g.recalc(); // forces the live fields (dmgMul, speed, ...) to update now
+    if (g) g.recalc(); // forces the live block (damage, move speed, ...) to update now
   }
 
   function resetPassiveMag() {
-    DT.tuning.passiveMag = Object.assign({}, DT.shipped.passiveMag);
+    // In place, never a fresh object: replacing it would break the alias onto
+    // Stats.PATCH_MAG and the control would go back to tuning nothing.
+    Object.assign(DT.tuning.passiveMag, DT.shipped.passiveMag);
     const g = activeGame();
     if (g) g.recalc();
   }
@@ -875,12 +865,12 @@
     if (DT.tuning.passiveMag) {
       for (const id in DT.tuning.passiveMag) {
         if (DT.tuning.passiveMag[id] !== DT.shipped.passiveMag[id]) {
-          magLines.push('// DATA.passives has no magnitude field; ' + id + ' per level is hardcoded in game.js recalc().');
-          magLines.push('//   ' + id + ': ' + fmtNum(DT.tuning.passiveMag[id]) + '  (was ' + fmtNum(DT.shipped.passiveMag[id]) + ') -- edit the matching constant in Game.prototype.recalc');
+          magLines.push('// DATA.passives has no magnitude field; ' + id + ' per level lives in Stats.PATCH_MAG.');
+          magLines.push('//   ' + id + ': ' + fmtNum(DT.tuning.passiveMag[id]) + '  (was ' + fmtNum(DT.shipped.passiveMag[id]) + ') -- edit the matching entry in PATCH_MAG');
         }
       }
     }
-    if (magLines.length) { lines.push('// js/game.js -- Game.prototype.recalc, passive magnitudes'); lines.push(...magLines); lines.push(''); }
+    if (magLines.length) { lines.push('// js/stats.js -- Stats.PATCH_MAG, patch magnitudes'); lines.push(...magLines); lines.push(''); }
 
     if (DT.tuning.xp && JSON.stringify(DT.tuning.xp) !== JSON.stringify(DT.shipped.xp)) {
       const t = DT.tuning.xp;
@@ -1174,7 +1164,7 @@
 
     // Passive magnitudes
     const sP = section('PATCH MAGNITUDES (per level)');
-    sP.appendChild(el('div', { cls: 'mbmdt-hint', text: 'DATA.passives only stores the description text; the real number is a constant inside recalc() in game.js. This mirrors that formula so it can stay tunable without editing that file. Applies immediately (recalculated on change).' }));
+    sP.appendChild(el('div', { cls: 'mbmdt-hint', text: 'DATA.passives only stores the description text; the real number lives in Stats.PATCH_MAG in js/stats.js, which is what the stat block reads. These fields write straight into it. Applies immediately (recalculated on change).' }));
     const fullPassivesForMag = fullTable('passives');
     for (const id in PASSIVE_MAG_DEFAULTS) {
       const r = row();

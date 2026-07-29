@@ -60,6 +60,27 @@
     return (owner.build && owner.build.dashMods) || NO_MODS;
   }
 
+  // DODGE RECHARGE (stat 15), and the correction that makes it safe. The
+  // committed plan gave it one 2.50x ceiling for everybody. That ceiling means
+  // three different things across the three scouts, because they do not start
+  // level: with no items at all Junie already runs 2 charges * 0.24s of
+  // invulnerability / 0.8s of recharge = 0.60 uptime, Max runs 0.30 and Gus
+  // 0.243. At 2.50x Junie is at 1.50, which is not a fast dodge, it is being
+  // permanently untouchable.
+  //
+  // So the bound is on the UPTIME, capped at 0.75, and the multiplier is
+  // computed backwards from it per scout: 2.50x for Max, 1.25x for Junie,
+  // 3.09x for Gus. Stats.dodgeMax does that arithmetic and the block has
+  // already clamped the stat to it by the time this reads it, so this file
+  // divides and nothing more.
+  function rechargeOf(game, owner) {
+    if (typeof Stats === 'undefined' || !Stats) return 1;
+    const st = (owner && owner.build && owner.build.stats) ||
+      (game && typeof game.statsOf === 'function' ? game.statsOf(owner) : null);
+    const r = st && st.dodgeRecharge;
+    return r > 0 ? r : 1;
+  }
+
   Game.prototype.updateDodge = function (dt) {
     const p = this.player;
     const params = dodgeParams(this);
@@ -118,7 +139,7 @@
           dur: params.dur,
           spd: params.spd * mods.distMul,
           iframe: params.iframe + mods.iframeAdd,
-          cd: params.cd * mods.cdMul,
+          cd: params.cd * mods.cdMul / rechargeOf(this, p),
           charge: chargeIdx,
           charges: p.dashCds.length,
           traits: dashSet(p),
@@ -196,7 +217,7 @@
       p.x = nx; p.y = ny;
 
       // keep the legs moving through the dash, subtly
-      this.walkPhase = (this.walkPhase || 0) + dt * (this.speed / 13);
+      this.walkPhase = (this.walkPhase || 0) + dt * (this.statsOf(p).moveSpeed / 13);
 
       // four afterimages spaced across the dash duration
       const newDashT = Math.max(0, p.dashT - dt);
@@ -251,7 +272,9 @@
     if (min <= 0) return 1;
     const params = dodgeParams(this);
     const mods = dashMods(p);
-    return 1 - min / ((params.cd || DEFAULT_DODGE.cd) * mods.cdMul);
+    // The same divisor the charge was spent with, or the cooldown ring on the
+    // HUD says one thing and the dodge does another.
+    return 1 - min / ((params.cd || DEFAULT_DODGE.cd) * mods.cdMul / rechargeOf(this, p));
   };
 
   // Exposed so game.rebuildTraits can compile a character's own flavour the

@@ -60,6 +60,19 @@ const ROOM_AMBIENCE_MAX = 12;
 function newBuild() {
   return {
     items: [],
+    // The stat block's item channel. stacks is a COUNT VECTOR over the
+    // nineteen stat keys and flat/pct/mult are the three composition terms, so
+    // a whole build is numbers over a fixed key list and travels in a few
+    // hundred bytes with no object reference in it (C15). Empty here is the
+    // tested state, not a special case: with every term at its identity the
+    // block returns the shipped numbers bit for bit.
+    grants: Stats.grants(),
+    // The nineteen stats, composed. Derived from grants plus the scout's own
+    // row plus the patches, rebuilt by recalc whenever any of those change and
+    // never per frame. Never saved, for the same reason a compiled trait set
+    // is never saved: a save that stored it would be a save that could not
+    // survive a balance change.
+    stats: null,
     shotTraits: Traits.NONE,    // rides every projectile this scout fires
     strikeTraits: Traits.NONE,  // the strike subset: every point of damage
     fieldTraits: Traits.NONE,   // the field subset: swings, blasts, puddles,
@@ -79,6 +92,12 @@ class Game {
     // registered can reach this one and two Games in one page cannot write
     // into each other's handler lists.
     this.hooks = Hooks.create();
+    // The offer builder's memory: one Map, made here and therefore cleared at
+    // run start, holding which cards this night has already put in front of
+    // somebody and had turned down (pool rule 1).
+    this.pool = Pool.memory();
+    this._statFrame = null;           // this scout's resolved bases and bounds
+    this._lastOffer = null;           // the cards the open panel is showing
     this._tDepth = 0;                 // reentrancy guard for the trait pipeline
     this._chainSet = new Set();       // scratch for chain, allocated once, holds ids
     this._dashBuf = [];               // scratch for the dash grid queries
@@ -493,17 +512,63 @@ class Game {
   }
 
   // ---------------- stats ----------------
-  recalc() {
-    const c = this.char, p = this.passives;
-    const lv = id => p[id] || 0;
-    this.dmgMul = (1 + c.dmg) * (1 + 0.12 * lv('trailmix')) * (1 + 0.05 * META.rank('sharp'));
-    this.speed = c.speed * (1 + 0.10 * lv('boots')) * (1 + 0.04 * META.rank('swift'));
-    this.cdMul = Math.pow(0.91, lv('whistle'));
-    this.armor = c.armor + 2 * lv('skillet') + META.rank('grit');
-    this.magnetR = 65 * (1 + c.pickup) * (1 + 0.45 * lv('lodestone')) * (1 + 0.12 * META.rank('packrat'));
-    this.xpMul = (1 + 0.15 * lv('fieldguide')) * (1 + 0.08 * META.rank('scholar'));
-    this.critCh = c.crit + 0.08 * lv('rabbitfoot');
-    this.regen = 0.6 * lv('firstaid');
+  // THE NINETEEN STAT BLOCK, composed. Every number that used to be a literal
+  // in here now lives in js/stats.js, which is the single source of truth the
+  // dev overlay tunes and the card renderer reads its deltas from.
+  //
+  // The block itself belongs to the SCOUT, on owner.build.stats, because a
+  // build is an object owned by a player and no stat lives on the Game (C1).
+  // The eight fields written onto `this` below are a COMPATIBILITY MIRROR and
+  // nothing more: js/ui.js, js/reticle.js, js/director.js and js/traits.js all
+  // read g.dmgMul and g.cdMul today and every one of those files belongs to
+  // another unit, so the mirror stays until they land on the block. Grep for
+  // statMirror to find every line that goes when they do.
+  recalc(owner) {
+    const o = owner || this.players[0];
+    const b = o.build;
+    const rank = id => (typeof META !== 'undefined' && META ? META.rank(id) : 0);
+    const fr = Stats.frame(this.char, this.passives, rank);
+    // The scout's resolved bases and bounds, kept for the offer builder's dead
+    // card guard and for anything that needs to ask what a stat's ceiling is.
+    this._statFrame = fr;
+    const st = Stats.compute(fr, b.grants);
+    b.stats = st;
+    // Max health accumulates across a night rather than being recomputed, so
+    // the block takes the live value and the bounds do the work.
+    o.maxhp = Stats.clampTo('maxHealth', o.maxhp > 0 ? o.maxhp : fr.base.maxHealth, fr);
+    st.maxHealth = o.maxhp;
+
+    // statMirror: the 2.0 field names, for the files this unit does not own.
+    this.dmgMul = st.damage;
+    this.speed = st.moveSpeed;
+    this.cdMul = st.cdMul;
+    this.armor = st.armourFlat;
+    this.magnetR = st.pickupRadius;
+    this.xpMul = st.badgeXP;
+    this.critCh = st.critChance;
+    this.regen = st.regen;
+    return st;
+  }
+
+  // The block for whoever is asking. One call site's worth of defaulting, so
+  // nothing downstream has to remember that a missing owner means scout one.
+  statsOf(owner) {
+    const o = owner || this.players[0];
+    if (!o.build.stats) this.recalc(o);
+    return o.build.stats;
+  }
+
+  // Max health is the one stat that ACCUMULATES during a night instead of
+  // being recomputed: two per rank up, ten from a supply patch. Those five
+  // scattered mutations went through no bound at all, so this is the door they
+  // go through now and the 40 to 600 bound is real without the value being
+  // rebuilt out from under them.
+  addMaxHp(owner, n) {
+    const o = owner || this.players[0];
+    const fr = this._statFrame || Stats.frame(this.char, this.passives, id => (typeof META !== 'undefined' && META ? META.rank(id) : 0));
+    o.maxhp = Stats.clampTo('maxHealth', o.maxhp + n, fr);
+    if (o.build && o.build.stats) o.build.stats.maxHealth = o.maxhp;
+    return o.maxhp;
   }
 
   computeWeaponStats(id, lvl) {
@@ -541,60 +606,32 @@ class Game {
   // answer at one player. Every one of those shifts is deleted the day those
   // files land on the new signature, and grepping for `argShift` finds them
   // all.
+  // The pool now lives in js/pool.js: the candidate list, the eight gating
+  // rules and the draw. This is the door those go through, and it keeps the
+  // argShift because ui.js still calls levelPool(3).
   levelPool(owner, n) {
     if (n === undefined) { n = owner; owner = null; }   // argShift, see above
     owner = owner || this.players[0];
-    const pool = [];
-    const owned = id => this.weapons.find(w => w.id === id);
-    for (const w of this.weapons) {
-      if (w.lvl < DATA.WEAPON_MAX) {
-        pool.push({ kind: 'weapon', id: w.id, isNew: false, lvl: w.lvl + 1, wgt: 10 });
-      }
-    }
-    if (this.weapons.length < DATA.WEAPON_SLOTS) {
-      for (const id in DATA.weapons) {
-        if (!owned(id)) pool.push({ kind: 'weapon', id, isNew: true, lvl: 1, wgt: 6 });
-      }
-    }
-    const pcount = Object.keys(this.passives).length;
-    for (const id in DATA.passives) {
-      const cur = this.passives[id] || 0;
-      if (cur > 0 && cur < DATA.passives[id].max) {
-        pool.push({ kind: 'passive', id, isNew: false, lvl: cur + 1, wgt: 8 });
-      } else if (cur === 0 && pcount < DATA.PASSIVE_SLOTS) {
-        pool.push({ kind: 'passive', id, isNew: true, lvl: 1, wgt: 5 });
-      }
-    }
-    // 3.0 demonstration items. These exist to prove the substrate composes,
-    // not to be balance, so they sit behind a flag a normal run never sets:
-    // DATA.DEBUG_TRAITS is false in data.js and is turned on only by the
-    // verification harness, by ?traits=1, or by hand from a console.
-    if (DATA.DEBUG_TRAITS && DATA.relics) {
-      for (const id in DATA.relics) {
-        if (owner.build.items.indexOf(id) === -1) {
-          pool.push({ kind: 'relic', id, isNew: true, lvl: 1, wgt: 12 });
-        }
-      }
-    }
-    const out = [];
-    if (pool.length === 0) {
+    const entries = Pool.candidates(owner, this);
+    let out;
+    if (entries.length === 0) {
+      // The supply cards, which are the pool's floor and not part of it.
+      // Rule 7 deletes them from the level up path entirely, and that deletion
+      // belongs to unit S1 along with DATA.PASSIVE_SLOTS and the patch ranks,
+      // so they stay reachable here until the pool they backstop is unbounded.
+      out = [];
       const fillers = DATA.fillers.slice();
       while (out.length < n && fillers.length) {
         const i = (Math.random() * fillers.length) | 0;
         const f = fillers.splice(i, 1)[0];
         out.push({ kind: 'filler', id: f.id, isNew: false, lvl: 0 });
       }
-      return out;
+    } else {
+      out = Pool.offer(owner, n, this, { entries });
     }
-    let guard = 0;
-    while (out.length < Math.min(n, pool.length) && guard++ < 200) {
-      let total = 0;
-      for (const p of pool) total += p.wgt;
-      let roll = Math.random() * total;
-      let chosen = pool[0];
-      for (const p of pool) { roll -= p.wgt; if (roll <= 0) { chosen = p; break; } }
-      if (!out.some(o => o.kind === chosen.kind && o.id === chosen.id)) out.push(chosen);
-    }
+    // What the open panel is showing, so applyChoice can tell the pool's
+    // memory which of these cards was turned down (rule 1).
+    this._lastOffer = out;
     return out;
   }
 
@@ -637,8 +674,17 @@ class Game {
     } else {
       const p = owner;
       if (c.id === 'smore') p.hp = Math.min(p.maxhp, p.hp + 40);
-      if (c.id === 'patch') { p.maxhp += 10; p.hp = Math.min(p.maxhp, p.hp + 10); }
+      if (c.id === 'patch') { this.addMaxHp(p, 10); p.hp = Math.min(p.maxhp, p.hp + 10); }
       if (c.id === 'stash') this.gainXP(owner, 25);
+    }
+    // RULE 1: taken deletes, seen decays. The cards this panel offered and
+    // this player walked past are marked declined, so a card turned down at
+    // rank 3 is not exactly as likely at rank 4. Nothing anywhere recorded
+    // this before, which is why the same three cards could chase a player all
+    // night.
+    if (this._lastOffer) {
+      Pool.recordOutcome(this.pool, this._lastOffer, c, 'declined');
+      this._lastOffer = null;
     }
     this.flashGold = 0.35;
     this.spawnBurst(owner.x, owner.y, '#f4c542', 14);
@@ -668,14 +714,14 @@ class Game {
   gainXP(owner, v) {
     if (v === undefined) { v = owner; owner = null; }    // argShift, see levelPool
     owner = owner || this.players[0];
-    this.xp += v * this.xpMul;
+    this.xp += v * this.statsOf(owner).badgeXP;
     this.badges += v;
     while (this.xp >= this.xpNext) {
       this.xp -= this.xpNext;
       this.level++;
       this.xpNext = DATA.xpNext(this.level);
       this.pendingLevelups++;
-      owner.maxhp += 2;
+      this.addMaxHp(owner, 2);
       owner.hp = Math.min(owner.maxhp, owner.hp + 6);
       // rank-up moment: freeze frame, gold ring, spark shower
       this.hitstop = Math.max(this.hitstop, 0.2);
@@ -686,17 +732,33 @@ class Game {
     }
   }
 
-  statsSummary() {
-    return [
-      ['Damage', Math.round(this.dmgMul * 100) + '%'],
-      ['Crit chance', Math.round(this.critCh * 100) + '%'],
-      ['Move speed', Math.round(this.speed)],
-      ['Armor', this.armor],
-      ['Regen', this.regen.toFixed(1) + '/s'],
-      ['Cooldowns', Math.round(this.cdMul * 100) + '%'],
-      ['Pickup radius', Math.round(this.magnetR)],
-      ['Badge XP', Math.round(this.xpMul * 100) + '%'],
+  // The pause list. The eight rows the 2.0 block printed come first and in
+  // their old order, because a player who knows where their armour number sits
+  // should still find it there. The eleven new rows only appear once they are
+  // off their neutral value, so a build with no items reads exactly as it did
+  // and a build that bought Reach can see it.
+  statsSummary(owner) {
+    const st = this.statsOf(owner);
+    const rows = [
+      ['Damage', Math.round(st.damage * 100) + '%'],
+      ['Crit chance', Math.round(st.critChance * 100) + '%'],
+      ['Move speed', Math.round(st.moveSpeed)],
+      ['Armor', st.armourFlat],
+      ['Regen', st.regen.toFixed(1) + '/s'],
+      ['Cooldowns', Math.round(st.cdMul * 100) + '%'],
+      ['Pickup radius', Math.round(st.pickupRadius)],
+      ['Badge XP', Math.round(st.badgeXP * 100) + '%'],
     ];
+    // Max health is not here because the HP bar is already the whole of it.
+    const extra = [
+      ['armourPct', 0], ['critDamage', 2], ['area', 1], ['reach', 1],
+      ['extraShots', 0], ['pierce', 0], ['effectDuration', 1], ['force', 1],
+      ['dodgeRecharge', 1], ['luck', 0],
+    ];
+    for (const [key, neutral] of extra) {
+      if (st[key] !== neutral) rows.push([Stats.SPEC[key].name, Stats.format(key, st[key])]);
+    }
+    return rows;
   }
 
   get activeBoss() {
@@ -739,25 +801,37 @@ class Game {
   dealDamage(e, base, o) {
     o = o || {};
     if (e.dead) return;
-    if (e.prop) return this.damageProp(e, base * this.dmgMul, o);
+    // The block belongs to whoever swung. ownerOf answers scout one when
+    // nothing said otherwise, which is the same answer at one player.
+    const hitter = this.ownerOf(o);
+    const hs = this.statsOf(hitter);
+    if (e.prop) return this.damageProp(e, base * hs.damage, o);
     if (e._hpHold != null) return this.blockHit(e, o);
-    let dmg = base * this.dmgMul;
+    let dmg = base * hs.damage;
     let crit = false;
-    if (!o.noCrit && Math.random() < this.critCh) { crit = true; dmg *= 2; }
+    // Crit damage was the literal 2 in `dmg *= 2` and is stat 8 now. Without a
+    // second axis, crit chance is a dead pick the moment it nears 100 percent,
+    // which is a failure Isaac accepts and a 96 item catalogue cannot.
+    if (!o.noCrit && Math.random() < hs.critChance) { crit = true; dmg *= hs.critDamage; }
     // A dash that marked this body on the way past. Undefined on every
     // critter nobody marked, so the compare is the whole cost.
     if (e.markT > 0) dmg *= (e.markMul || 1);
     e.hp -= dmg;
     e.flash = 0.1;
-    if (o.knock && !e.boss) {
+    // Force (stat 10) is applied HERE, at the one door every point of player
+    // damage comes through, rather than at the nine call sites that pass a
+    // knock. Its floor is genuinely zero: a build that wants bodies to stay in
+    // the burning puddle wants no shove at all.
+    const knock = o.knock ? o.knock * hs.force : 0;
+    if (knock && !e.boss) {
       const d = Math.max(12, Math.hypot(e.x - (o.fx != null ? o.fx : this.player.x), e.y - (o.fy != null ? o.fy : this.player.y)));
       const fx = o.fx != null ? o.fx : this.player.x;
       const fy = o.fy != null ? o.fy : this.player.y;
-      e.kx += (e.x - fx) / d * o.knock;
-      e.ky += (e.y - fy) / d * o.knock;
+      e.kx += (e.x - fx) / d * knock;
+      e.ky += (e.y - fy) / d * knock;
     }
     if (!o.quiet) AudioSys.play('hit', { pitch: rand(0.9, 1.15) });
-    if (o.knock >= 60 && this.parts.length < 380 && Math.random() < 0.45) {
+    if (knock >= 60 && this.parts.length < 380 && Math.random() < 0.45) {
       for (let i = 0; i < 2; i++) {
         const a = rand(0, TAU), s = rand(50, 130);
         this.parts.push({
@@ -776,7 +850,7 @@ class Game {
     // walks the owner's pre-filtered 'any' scope subset. The depth guard
     // means a handler that deals damage of its own (a chain arc) cannot
     // re-enter the pipeline while the pipeline is on the stack.
-    const owner = this.ownerOf(o);
+    const owner = hitter;
     if (this._tDepth === 0 && !o.noTraits) {
       this._tDepth = 1;
       const tt = o.src !== undefined ? o.src.traits : owner.build.strikeTraits;
@@ -942,7 +1016,16 @@ class Game {
   damagePlayer(dmg, fx, fy, kind) {
     const p = this.player;
     if (p.iframe > 0 || p.dashI > 0 || p.god || this.phase !== 'play') return;
-    const taken = Math.max(1, Math.round(dmg - this.armor));
+    // ARMOUR IS TWO ROWS, and the flat term subtracts first. Converting flat
+    // armour to a percentage would have been a silent nerf no automated gate
+    // catches: at the shipped ceiling of 11 (2 from Gus's row, 6 from three
+    // Skillet ranks, 3 from three Camp Grit ranks) the flat subtraction puts
+    // every chaff body in DATA.enemies on the 1 damage floor, and that
+    // immunity to small bodies is the entire reason Gus can stand still in a
+    // crowd. The percentage rides on top of it and is what keeps a late
+    // armour pick alive against a boss.
+    const st = this.statsOf(p);
+    const taken = Stats.damageTaken(dmg, st.armourFlat, st.armourPct);
     p.hp -= taken;
     if (kind) this.lastKiller = kind;
     if (p.hp > 0 && p.hp < p.maxhp * 0.3) this.bark('lowhp');
@@ -1198,9 +1281,16 @@ class Game {
     this.updateSkill(dt);      // the one active skill, below
 
     // movement (a dash owns the player's position while it runs). Reveille's
-    // haste is a temporary multiplier on the way out, never on this.speed
-    // itself: dodge.js reads that and recalc() owns it.
-    const spd = this.speed * (p.hasteT > 0 ? HASTE_MUL : 1);
+    // haste is a temporary multiplier on the way out, never on the stat block
+    // itself: dodge.js reads the block and recalc() owns it.
+    //
+    // MOVE SPEED'S FLOOR IS 132, NOT 90, and it is enforced in the block. A
+    // boss was cut from 76 speed to 58 specifically so that Gus at 132 with no
+    // boot patch still catches him, because at 76 he could not be caught by
+    // anyone who had not bought speed and the fight simply never ended. A
+    // floor of 90 puts that bug back.
+    const pst = this.statsOf(p);
+    const spd = pst.moveSpeed * (p.hasteT > 0 ? HASTE_MUL : 1);
     const ax = p.in.moveX, ay = p.in.moveY;
     p.moving = (ax !== 0 || ay !== 0);
     if (p.moving && !(p.dashT > 0)) {
@@ -1215,7 +1305,7 @@ class Game {
       p.x = c.x; p.y = c.y;
     }
     p.iframe = Math.max(0, p.iframe - dt);
-    if (this.regen > 0) p.hp = Math.min(p.maxhp, p.hp + this.regen * dt);
+    if (pst.regen > 0) p.hp = Math.min(p.maxhp, p.hp + pst.regen * dt);
 
     // positional audio (campfire/torch/water/hazard emitters) tracks the
     // player from here every frame
@@ -1329,9 +1419,12 @@ class Game {
   // ---------------- weapons ----------------
   updateWeapons(dt) {
     const p = this.player;
+    // This scout's block, read once for the whole pass rather than per weapon.
+    const bs = this.statsOf(p);
     for (const w of this.weapons) {
       const st = w.stats;
       const def = DATA.weapons[w.id];
+      const gs = Stats.attackScale(bs.area, bs.damage, w.lvl);
 
       // FIELD CALL SITE 5 of 6: the knife orbit. The field is the circle the
       // knives ride, so giant widens the orbit and every knife with it. The
@@ -1340,9 +1433,12 @@ class Game {
       // that window instead of against a registry: 1 + budget bites per
       // window, and with no budget this is the same `continue` it always was.
       if (w.id === 'knives') {
-        const fld = this.weaponField(p, w, 'orbit', st.radius);
+        // Area covers the knife orbit: it is one of the five unrelated
+        // per-weapon fields that were all called "radius" and it is the one
+        // that never got the hidden area term, so it is on the stat now.
+        const fld = this.weaponField(p, w, 'orbit', st.radius * bs.area);
         w.angle += st.rot * dt;
-        const n = st.count;
+        const n = st.count + bs.extraShots;
         for (let i = 0; i < n; i++) {
           const a = w.angle + i * TAU / n;
           const kx = p.x + Math.cos(a) * fld.r;
@@ -1370,14 +1466,14 @@ class Game {
       // for a hit budget to extend, and it never ends, so there is no moment
       // for a split to happen at.
       if (w.id === 'bugspray') {
-        const fld = this.weaponField(p, w, 'aura', st.radius);
+        const fld = this.weaponField(p, w, 'aura', st.radius * bs.area);
         w.tickT -= dt;
         if (w.tickT <= 0) {
           w.tickT += st.tick;
           const hits = this.queryEnemies(p.x, p.y, fld.r, true);
           for (const e of hits) {
             this.dealDamage(e, st.dps * st.tick, { small: true, quiet: true, noCrit: true, color: '#9ed88a', owner: p });
-            if (st.slow > 0) e.slowT = Math.max(e.slowT || 0, 0.5);
+            if (st.slow > 0) e.slowT = Math.max(e.slowT || 0, 0.5 * bs.effectDuration);
           }
         }
         continue;
@@ -1387,33 +1483,45 @@ class Game {
       if (w.t > 0) continue;
       const wantsFire = def.kind === 'manual' ? p.in.fire : true;
       if (!wantsFire) { w.t = 0; continue; }
-      this.fireWeapon(w);
-      w.t = Math.max(0.06, st.cd * st.cdFactor * this.cdMul);
+      this.fireWeapon(w, gs);
+      // cdMul is Attack Speed in the units the timer wants: the shipped
+      // Scoutmaster Whistle expression divided by whatever the items bought.
+      w.t = Math.max(0.06, st.cd * st.cdFactor * bs.cdMul);
     }
   }
 
   // Attacks grow with power: damage passives and weapon level fatten every
-  // projectile, blast and swing, Isaac-style.
-  attackScale(w) {
-    return clamp(0.9 + (this.dmgMul - 1) * 0.65 + (w.lvl - 1) * 0.09, 0.9, 2.3);
+  // projectile, blast and swing, Isaac-style. THIS WAS THE HIDDEN AREA STAT
+  // and it is folded into the Area stat now rather than deleted, because
+  // deleting it hands every existing damage build a smaller stone and a
+  // shorter axe. The legacy term is the base and Area multiplies it, with the
+  // Area bounds applied to the product. Stats.attackScale is the only copy.
+  attackScale(w, owner) {
+    const bs = this.statsOf(owner);
+    return Stats.attackScale(bs.area, bs.damage, w.lvl);
   }
 
-  fireWeapon(w) {
+  fireWeapon(w, scale) {
     const p = this.player;
     const st = w.stats;
     const aim = this.aimAngle;
-    const gs = this.attackScale(w);
+    const bs = this.statsOf(p);
+    const gs = scale !== undefined ? scale : Stats.attackScale(bs.area, bs.damage, w.lvl);
+    // Extra Shots is an integer stat capped at six, and it is the one thing a
+    // GENERATED weapon level may never do (4.2), which is exactly why the
+    // player has to be able to buy it deliberately.
+    const extra = bs.extraShots;
 
     switch (w.id) {
       case 'slingshot': {
-        const n = st.count;
+        const n = st.count + extra;
         for (let i = 0; i < n; i++) {
           const off = (i - (n - 1) / 2) * 0.11 + rand(-st.spread, st.spread);
           const a = aim + off;
           this.shots.push(this.armShot(p, {
             kind: 'pebble', x: p.x + Math.cos(a) * 16, y: p.y + Math.sin(a) * 16 - 8,
             vx: Math.cos(a) * st.speed, vy: Math.sin(a) * st.speed,
-            dmg: st.dmg, pierce: st.pierce, r: 4.5 * gs, life: 1.5,
+            dmg: st.dmg, pierce: st.pierce + bs.pierce, r: 4.5 * gs, life: 1.5 * bs.reach,
           }));
         }
         this.recoil = 0.15;
@@ -1421,14 +1529,19 @@ class Game {
         break;
       }
       case 'roaster': {
-        for (let i = 0; i < st.count; i++) {
+        // Reach lengthens the gout, and C13's 455 unit fence is applied to it
+        // like every other reach in the game.
+        const rrange = Stats.reachOf(st.range, bs.reach);
+        const rlife = rrange / st.speed;
+        for (let i = 0; i < st.count + extra; i++) {
           const a = aim + rand(-st.spread, st.spread);
           const sp = st.speed * rand(0.85, 1.2);
           this.shots.push(this.armShot(p, {
             kind: 'flame', x: p.x + Math.cos(a) * 18, y: p.y + Math.sin(a) * 18 - 8,
             vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-            dmg: st.dmg, r: 9 * gs, life: st.range / st.speed, maxlife: st.range / st.speed,
-            burnDps: st.burnDps, burnDur: st.burnDur,
+            dmg: st.dmg, r: 9 * gs, life: rlife, maxlife: rlife,
+            pierce: bs.pierce,
+            burnDps: st.burnDps, burnDur: st.burnDur * bs.effectDuration,
           }));
         }
         AudioSys.play('flame');
@@ -1440,9 +1553,17 @@ class Game {
       // same numbers. Now the damage pass reads the swing, so arming it BEFORE
       // the pass is what makes giant a wider CHOP rather than a wider picture.
       case 'hatchet': {
+        // THE AXE'S REACH IS THE SPECIFIC REGRESSION THIS UNIT WAS WARNED
+        // ABOUT. `0.8 + gs * 0.25` is the whole of it: gs carries the hidden
+        // area term, so replacing gs with a bare Area stat that does not
+        // include the damage coupling shortens the swing for every damage
+        // build that already exists. Measured, Gus, hatchet level 1, no
+        // patches: 84 * (0.8 + 0.9 * 0.25) = 86.1 before and after. Reach
+        // multiplies the composed number, so the standoff build lengthens it
+        // deliberately rather than damage lengthening it by accident.
         const sw = this.armField(p, {
           fkind: 'swing', x: p.x, y: p.y, a: aim, t: 0, dur: 0.2,
-          range: st.range * (0.8 + gs * 0.25), arc: st.arc,
+          range: Stats.reachOf(st.range * (0.8 + gs * 0.25), bs.reach), arc: st.arc,
           dmg: st.dmg, knock: st.knock,
         }, null);
         this.swings.push(sw);
@@ -1452,11 +1573,12 @@ class Game {
         break;
       }
       case 'firecracker': {
-        for (let i = 0; i < st.count; i++) {
+        const throwR = Stats.reachOf(st.range, bs.reach);
+        for (let i = 0; i < st.count + extra; i++) {
           let tx = p.in.aimX + (i > 0 ? rand(-40, 40) : 0);
           let ty = p.in.aimY + (i > 0 ? rand(-40, 40) : 0);
           const d = Math.hypot(tx - p.x, ty - p.y);
-          if (d > st.range) { tx = p.x + (tx - p.x) / d * st.range; ty = p.y + (ty - p.y) / d * st.range; }
+          if (d > throwR) { tx = p.x + (tx - p.x) / d * throwR; ty = p.y + (ty - p.y) / d * throwR; }
           if (this.room) {
             const hit = Collide.segmentBlocked(this.room, p.x, p.y, tx, ty);
             if (hit) {
@@ -1481,15 +1603,17 @@ class Game {
         break;
       }
       case 'boomerang': {
-        for (let i = 0; i < st.count; i++) {
-          const a = aim + (i - (st.count - 1) / 2) * 0.22;
+        const n = st.count + extra;
+        const flight = Stats.reachOf(st.range, bs.reach);
+        for (let i = 0; i < n; i++) {
+          const a = aim + (i - (n - 1) / 2) * 0.22;
           // hits is a per-target cooldown keyed by ENTITY ID, never by the
           // body itself: a registry of objects cannot be written to a save
           // and cannot say whose kill it was (COOP_DESIGN.md C5).
           this.shots.push(this.armShot(p, {
             kind: 'boomer', x: p.x, y: p.y - 6,
             dirx: Math.cos(a), diry: Math.sin(a), speed: st.speed,
-            traveled: 0, range: st.range, r: st.size * gs, dmg: st.dmg,
+            traveled: 0, range: flight, r: st.size * gs, dmg: st.dmg,
             phase: 'out', spin: rand(0, TAU), hits: new Map(), life: 6,
           }));
         }
@@ -1497,9 +1621,10 @@ class Game {
         break;
       }
       case 'canteen': {
-        for (let i = 0; i < st.count; i++) {
+        const seek = Stats.reachOf(st.range, bs.reach);
+        for (let i = 0; i < st.count + extra; i++) {
           let tx, ty;
-          const targets = this.queryEnemies(p.x, p.y, st.range);
+          const targets = this.queryEnemies(p.x, p.y, seek);
           if (targets.length) {
             const e = pick(targets);
             tx = e.x + rand(-20, 20); ty = e.y + rand(-20, 20);
@@ -1511,7 +1636,7 @@ class Game {
           // and hurts nobody. It still carries both ids (C4). The FIELD is
           // the puddle it leaves, and that is armed where it lands, in
           // updateBombs.
-          this.bombs.push({ type: 'puddle', sx: p.x, sy: p.y - 10, tx, ty, x: p.x, y: p.y, t: 0, fuse: 0.5, radius: st.radius, dps: st.dps, dur: st.dur, owner: p, oid: p.eid, eid: this.nextId++ });
+          this.bombs.push({ type: 'puddle', sx: p.x, sy: p.y - 10, tx, ty, x: p.x, y: p.y, t: 0, fuse: 0.5, radius: st.radius * bs.area, dps: st.dps, dur: st.dur * bs.effectDuration, owner: p, oid: p.eid, eid: this.nextId++ });
         }
         break;
       }
@@ -1522,8 +1647,9 @@ class Game {
       // budget of 2 is worth exactly three hits and cannot become four.
       case 'bugle': {
         this.rings.push(this.armField(p, {
-          fkind: 'ring', x: p.x, y: p.y, r: 14, max: st.radius, speed: 460,
-          dmg: st.dmg, knock: st.knock, stun: st.stun, fhit: new Set(),
+          fkind: 'ring', x: p.x, y: p.y, r: 14,
+          max: Math.min(Stats.RANGE_CAP, st.radius * bs.area), speed: 460,
+          dmg: st.dmg, knock: st.knock, stun: st.stun * bs.effectDuration, fhit: new Set(),
         }, null));
         AudioSys.play('bugle');
         break;
@@ -1765,9 +1891,13 @@ class Game {
           if (rg.dmg > 0) {
             this.dealDamage(e, rg.dmg, { knock: rg.knock, fx: rg.x, fy: rg.y, owner: rg.owner });
           } else if (!e.prop && rg.knock && !e.boss) {
+            // The one shove in the game that does not travel through
+            // dealDamage, so Force is applied by hand here rather than being
+            // silently missing on the shout.
+            const push = rg.knock * this.statsOf(rg.owner).force;
             const kd = Math.max(12, d);
-            e.kx = (e.kx || 0) + (e.x - rg.x) / kd * rg.knock;
-            e.ky = (e.ky || 0) + (e.y - rg.y) / kd * rg.knock;
+            e.kx = (e.kx || 0) + (e.x - rg.x) / kd * push;
+            e.ky = (e.ky || 0) + (e.y - rg.y) / kd * push;
           }
           if (rg.stun > 0 && !e.boss) e.stunT = Math.max(e.stunT || 0, rg.stun);
         }
@@ -2147,9 +2277,10 @@ Game.prototype.gainCoins = function (n) {
     // A shout, not a weapon: it carries no damage and no traits, so it is not
     // armed. Its exclusion set is spelled fhit because updateRings reads the
     // one field registry name for every ring in the game.
+    const st = this.statsOf(p);
     this.rings.push({
-      x: p.x, y: p.y, r: 14, max: 340, speed: 560,
-      dmg: 0, knock: 90, stun: REVEILLE_STUN, fhit: new Set(),
+      x: p.x, y: p.y, r: 14, max: Math.min(Stats.RANGE_CAP, 340 * st.area), speed: 560,
+      dmg: 0, knock: 90, stun: REVEILLE_STUN * st.effectDuration, fhit: new Set(),
       owner: p, oid: p.eid, eid: this.nextId++,
     });
     p.hasteT = REVEILLE_HASTE;
@@ -2204,7 +2335,7 @@ Game.prototype.gainCoins = function (n) {
         for (const e of hits) {
           // applyBurn is written for critters; dealDamage routes props to
           // damageProp on its own, so the second call is safe for both.
-          if (!e.prop) this.applyBurn(e, NODE_BURN_DPS, NODE_BURN_DUR);
+          if (!e.prop) this.applyBurn(e, NODE_BURN_DPS, NODE_BURN_DUR * this.statsOf(nd.owner).effectDuration);
           this.dealDamage(e, NODE_DMG, { small: true, quiet: true, noCrit: true, color: '#ffb347', owner: nd.owner });
         }
       }
@@ -2247,7 +2378,20 @@ Game.prototype.gainCoins = function (n) {
     if (b && Array.isArray(b.items)) {
       for (const id of b.items) if (typeof id === 'string' && id) items.push(id);
     }
-    return { items };
+    // The stat block's stack counts: a COUNT VECTOR over the nineteen fixed
+    // stat keys, which is what makes a whole build a few hundred bytes with no
+    // object reference in it (C15). Only non-zero entries are written, and an
+    // unknown key on the way back in is dropped rather than trusted, exactly
+    // as an unknown item id is.
+    const stacks = {};
+    const g = b && b.grants;
+    if (g && g.stacks) {
+      for (const k of Stats.KEYS) {
+        const n = g.stacks[k] | 0;
+        if (n > 0) stacks[k] = n;
+      }
+    }
+    return { items, stacks };
   }
 
   Game.prototype.snapshot = function () {
@@ -2349,8 +2493,20 @@ Game.prototype.gainCoins = function (n) {
     // register in the same order they were picked up in.
     for (let i = 0; i < builds.length && i < g.players.length; i++) {
       const held = builds[i].items;
-      if (!Array.isArray(held)) continue;
-      for (const iid of held) g.addItem(g.players[i], iid);
+      if (Array.isArray(held)) {
+        for (const iid of held) g.addItem(g.players[i], iid);
+      }
+      // The stack counts back onto the block. A key this build no longer
+      // ships is dropped rather than restored, because the alternative is a
+      // stat nobody can name feeding a number nobody can find.
+      const sv = builds[i].stacks;
+      if (sv && typeof sv === 'object') {
+        const dst = g.players[i].build.grants.stacks;
+        for (const k of Stats.KEYS) {
+          const n = sv[k] | 0;
+          if (n > 0) dst[k] = n;
+        }
+      }
     }
 
     // Gear, exactly as it stood: the same ids at the same levels, with the
@@ -2395,7 +2551,12 @@ Game.prototype.gainCoins = function (n) {
     }
 
     const maxhp = num(s.maxhp, 0);
-    if (maxhp > 0) g.player.maxhp = maxhp;
+    // Through the same bound the live grants go through, so a save cannot
+    // carry a health total the block would refuse.
+    if (maxhp > 0) {
+      g.player.maxhp = Stats.clampTo('maxHealth', maxhp, g._statFrame);
+      if (g.player.build.stats) g.player.build.stats.maxHealth = g.player.maxhp;
+    }
     const hp = num(s.hp, 0);
     g.player.hp = Math.max(1, Math.min(g.player.maxhp, hp > 0 ? hp : g.player.maxhp));
     g.player.x = num(s.px, g.player.x);
