@@ -27,8 +27,10 @@
 //                 assertion pass: 2 to 5 per combat room, never closer than 130
 //                 to any wall, never closer than 75 to each other, so they can
 //                 never seal a pocket the player can walk into and not out of.
-//                 spr names the painter: 'brock' exists today (sprites.js), and
-//                 'log', 'wall', 'slab' come with the room render unit.
+//                 spr picks the look, not a painter name: 'log' draws the log
+//                 wall family, and anything else ('wall', 'slab') draws the
+//                 rock family. Which rock is chosen by the box aspect ratio in
+//                 render.js rdBuildSolidDecos, so callers never name a rock.
 //   props         [{ id, x, y }] hand placed props, room-local coordinates
 //   scatter       { propId: [min, max] } extra props the room seeds at random
 //   spawnMarkers  [{ x, y }] anchors for waves that spawn at 'marker'
@@ -355,7 +357,7 @@ const ROOMS = {
       entry: { side: 'n', t: 0.45 },
       anchor: { solid: 0 },
       solids: [
-        { x: 500, y: 470, w: 46, h: 66, spr: 'brock' },
+        { x: 500, y: 470, w: 46, h: 66, spr: 'slab' },
         { x: 190, y: 200, w: 70, h: 36, spr: 'log' },
         { x: 850, y: 200, w: 70, h: 36, spr: 'log' },
       ],
@@ -415,9 +417,9 @@ const ROOMS = {
       doors: [{ side: 'n', t: 0.5 }, { side: 'e', t: 0.6 }, { side: 's', t: 0.5 }],
       entry: { side: 'w', t: 0.5 },
       solids: [
-        { x: 415, y: 252, w: 64, h: 44, spr: 'brock' },
-        { x: 415, y: 518, w: 64, h: 44, spr: 'brock' },
-        { x: 1000, y: 190, w: 66, h: 66, spr: 'brock' },
+        { x: 415, y: 252, w: 64, h: 44, spr: 'slab' },
+        { x: 415, y: 518, w: 64, h: 44, spr: 'slab' },
+        { x: 1000, y: 190, w: 66, h: 66, spr: 'slab' },
       ],
       props: [
         { id: 'boulder', x: 720, y: 290 },
@@ -1070,8 +1072,8 @@ const ROOMS = {
       doors: [{ side: 'n', t: 0.45 }, { side: 'e', t: 0.5 }],
       entry: { side: 's', t: 0.5 },
       solids: [
-        { x: 330, y: 400, w: 60, h: 44, spr: 'brock' },
-        { x: 760, y: 400, w: 60, h: 44, spr: 'brock' },
+        { x: 330, y: 400, w: 60, h: 44, spr: 'slab' },
+        { x: 760, y: 400, w: 60, h: 44, spr: 'slab' },
         { x: 250, y: 170, w: 60, h: 44, spr: 'slab' },
         { x: 980, y: 180, w: 60, h: 44, spr: 'slab' },
         { x: 250, y: 620, w: 60, h: 44, spr: 'slab' },
@@ -1127,8 +1129,8 @@ const ROOMS = {
       solids: [
         { x: 430, y: 220, w: 30, h: 30, spr: 'slab' },
         { x: 900, y: 190, w: 30, h: 30, spr: 'slab' },
-        { x: 465, y: 575, w: 30, h: 30, spr: 'brock' },
-        { x: 785, y: 575, w: 30, h: 30, spr: 'brock' },
+        { x: 465, y: 575, w: 30, h: 30, spr: 'slab' },
+        { x: 785, y: 575, w: 30, h: 30, spr: 'slab' },
       ],
       props: [
         { id: 'urn', x: 275, y: 645 },
@@ -1188,9 +1190,9 @@ const ROOMS = {
       solids: [
         { x: 330, y: 340, w: 30, h: 30, spr: 'slab' },
         { x: 870, y: 460, w: 30, h: 30, spr: 'slab' },
-        { x: 585, y: 600, w: 30, h: 30, spr: 'brock' },
-        { x: 160, y: 160, w: 30, h: 30, spr: 'brock' },
-        { x: 160, y: 560, w: 30, h: 30, spr: 'brock' },
+        { x: 585, y: 600, w: 30, h: 30, spr: 'slab' },
+        { x: 160, y: 160, w: 30, h: 30, spr: 'slab' },
+        { x: 160, y: 560, w: 30, h: 30, spr: 'slab' },
       ],
       props: [
         { id: 'bush', x: 640, y: 180 },
@@ -1240,9 +1242,9 @@ const ROOMS = {
       doors: [{ side: 'e', t: 0.3 }, { side: 'e', t: 0.7 }],
       entry: { side: 'w', t: 0.4 },
       solids: [
-        { x: 320, y: 530, w: 30, h: 30, spr: 'brock' },
-        { x: 605, y: 600, w: 30, h: 30, spr: 'brock' },
-        { x: 890, y: 600, w: 30, h: 30, spr: 'brock' },
+        { x: 320, y: 530, w: 30, h: 30, spr: 'slab' },
+        { x: 605, y: 600, w: 30, h: 30, spr: 'slab' },
+        { x: 890, y: 600, w: 30, h: 30, spr: 'slab' },
         { x: 350, y: 170, w: 30, h: 30, spr: 'slab' },
         { x: 660, y: 170, w: 30, h: 30, spr: 'slab' },
       ],
@@ -1297,9 +1299,9 @@ const ROOMS = {
       solids: [
         { x: 300, y: 320, w: 30, h: 30, spr: 'slab' },
         { x: 810, y: 400, w: 30, h: 30, spr: 'slab' },
-        { x: 585, y: 240, w: 30, h: 30, spr: 'brock' },
-        { x: 1000, y: 220, w: 30, h: 30, spr: 'brock' },
-        { x: 1000, y: 560, w: 30, h: 30, spr: 'brock' },
+        { x: 585, y: 240, w: 30, h: 30, spr: 'slab' },
+        { x: 1000, y: 220, w: 30, h: 30, spr: 'slab' },
+        { x: 1000, y: 560, w: 30, h: 30, spr: 'slab' },
       ],
       props: [
         { id: 'bush', x: 200, y: 560 },
@@ -1353,9 +1355,9 @@ const ROOMS = {
       solids: [
         { x: 215, y: 175, w: 30, h: 30, spr: 'slab' },
         { x: 215, y: 655, w: 30, h: 30, spr: 'slab' },
-        { x: 505, y: 265, w: 30, h: 30, spr: 'brock' },
-        { x: 655, y: 415, w: 30, h: 30, spr: 'brock' },
-        { x: 445, y: 565, w: 30, h: 30, spr: 'brock' },
+        { x: 505, y: 265, w: 30, h: 30, spr: 'slab' },
+        { x: 655, y: 415, w: 30, h: 30, spr: 'slab' },
+        { x: 445, y: 565, w: 30, h: 30, spr: 'slab' },
       ],
       props: [
         { id: 'urn', x: 850, y: 415 },
@@ -1413,8 +1415,8 @@ const ROOMS = {
       doors: [{ side: 'e', t: 0.4 }, { side: 'n', t: 0.5 }],
       entry: { side: 'w', t: 0.5 },
       solids: [
-        { x: 246, y: 580, w: 40, h: 40, spr: 'brock' },
-        { x: 834, y: 580, w: 40, h: 40, spr: 'brock' },
+        { x: 246, y: 580, w: 40, h: 40, spr: 'slab' },
+        { x: 834, y: 580, w: 40, h: 40, spr: 'slab' },
       ],
       props: [
         { id: 'stump', x: 442, y: 580 },
@@ -1576,9 +1578,9 @@ const ROOMS = {
       doors: [{ side: 'e', t: 0.4 }, { side: 'n', t: 0.5 }],
       entry: { side: 'w', t: 0.5 },
       solids: [
-        { x: 475, y: 455, w: 40, h: 40, spr: 'brock' },
-        { x: 585, y: 525, w: 40, h: 40, spr: 'brock' },
-        { x: 900, y: 590, w: 40, h: 40, spr: 'brock' },
+        { x: 475, y: 455, w: 40, h: 40, spr: 'slab' },
+        { x: 585, y: 525, w: 40, h: 40, spr: 'slab' },
+        { x: 900, y: 590, w: 40, h: 40, spr: 'slab' },
       ],
       props: [
         { id: 'stump', x: 285, y: 570 },
@@ -1689,8 +1691,8 @@ const ROOMS = {
       doors: [{ side: 'e', t: 0.4 }, { side: 'n', t: 0.55 }],
       entry: { side: 'w', t: 0.5 },
       solids: [
-        { x: 475, y: 500, w: 30, h: 30, spr: 'brock' },
-        { x: 735, y: 500, w: 30, h: 30, spr: 'brock' },
+        { x: 475, y: 500, w: 30, h: 30, spr: 'slab' },
+        { x: 735, y: 500, w: 30, h: 30, spr: 'slab' },
         { x: 350, y: 600, w: 30, h: 30, spr: 'slab' },
         { x: 605, y: 600, w: 30, h: 30, spr: 'slab' },
         { x: 860, y: 500, w: 30, h: 30, spr: 'slab' },
@@ -2049,8 +2051,8 @@ const ROOMS = {
       doors: [{ side: 'e', t: 0.5 }, { side: 'n', t: 0.5 }],
       entry: { side: 'w', t: 0.5 },
       solids: [
-        { x: 392, y: 390, w: 90, h: 90, spr: 'brock' },
-        { x: 798, y: 420, w: 90, h: 90, spr: 'brock' },
+        { x: 392, y: 390, w: 90, h: 90, spr: 'slab' },
+        { x: 798, y: 420, w: 90, h: 90, spr: 'slab' },
       ],
       props: [
         { id: 'stump', x: 271, y: 225 },
@@ -2100,8 +2102,8 @@ const ROOMS = {
       doors: [{ side: 'e', t: 0.5 }, { side: 'n', t: 0.5 }],
       entry: { side: 'w', t: 0.5 },
       solids: [
-        { x: 421, y: 422, w: 98, h: 98, spr: 'brock' },
-        { x: 888, y: 422, w: 98, h: 98, spr: 'brock' },
+        { x: 421, y: 422, w: 98, h: 98, spr: 'slab' },
+        { x: 888, y: 422, w: 98, h: 98, spr: 'slab' },
       ],
       props: [
         { id: 'urn', x: 715, y: 226 },

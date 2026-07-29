@@ -3238,7 +3238,11 @@ const SPR = (() => {
     g.beginPath(); g.ellipse(28, 33, 1.4, 2.4, 0, 0, TAU); g.fill();
   });
 
-  P.brock = () => mk(50, 60, (g) => {
+  // Scoutmaster Brock himself. NOT a rock: the name is the old word for badger
+  // and it read as "b-rock" to whoever laid out the rooms, so 31 room solids
+  // spent 2.0 rendering him squashed into boulders. Rocks are chosen by aspect
+  // ratio in render.js rdBuildSolidDecos and are never named by a caller.
+  P.scoutmaster = () => mk(50, 60, (g) => {
     // torso: shoulders and a settled, comfortable taper
     apoly(g, [[11, 30, 6], [25, 26.5, 7], [39, 30, 6], [40.5, 42, 5], [34, 52.5, 4], [16, 52.5, 4], [9.5, 42, 5]], '#6e6a62', { rim: RIM_COOL, mid: 'rgba(28,26,22,0.13)', shade: 'rgba(28,26,22,0.22)' });
     blob(g, 25, 45.5, 8, 6, '#8a867c', { flat: true, noline: true });

@@ -3071,7 +3071,7 @@ class Camp {
       const squash = 1 + Math.sin(this.t * 2.2) * 0.02;
       c2.fillStyle = CPAL.shadow;
       c2.beginPath(); c2.ellipse(64, -44, 16, 5.4, 0, 0, TAU); c2.fill();
-      SPR.drawBottom(c2, 'brock', 58, -46, 40, { flip: true, squash });
+      SPR.drawBottom(c2, 'scoutmaster', 58, -46, 40, { flip: true, squash });
     });
     push(-340, (c2) => {
       const squash = 1 + Math.sin(this.t * 1.9) * 0.018;

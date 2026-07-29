@@ -1773,9 +1773,7 @@
       const yB = (box ? box.y1 : sd.y + bh / 2) + 4;
       const a = bw / Math.max(1, bh);
       let name, tw, th, uniform = false;
-      if (sd.spr === 'brock') {
-        name = 'brock'; uniform = true; tw = Math.max(bw, bh) * 1.02; th = 0;
-      } else if (sd.spr === 'log') {
+      if (sd.spr === 'log') {
         if (a >= 1) { name = 'logwall'; tw = bw * 1.14 + 8; th = bh + 26; }
         else { name = 'logwallv'; tw = Math.max(46, bw * 1.3); th = bh + 20; }
       } else if (a >= 1.35) { name = 'rockspan'; tw = bw * 1.12 + 8; th = bh + 30; }

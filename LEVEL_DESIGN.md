@@ -1621,7 +1621,10 @@ Symmetry check per C5: snap `(740, 585)` back to `(789, 492)` and the six bodies
 are perfectly `rot180` symmetric with zero unmatched. Exactly one declared
 violation. Passes.
 
-**The brock is retired.** Its old position sat on the entry sightline and its role
+**The boulder is retired.** (This document called it "the brock" throughout, inheriting the naming
+mistake corrected 2026-07-29: `brock` was never a rock, it was Scoutmaster Brock's own sprite, and
+31 room solids rendered him as boulders. Solids now say `slab` and the rock is chosen by aspect
+ratio.) Its old position sat on the entry sightline and its role
 as a centre mass is now taken by the crossing, which must be **open**. Solids drop
 from 3 to 2, which is the house-rule floor and legal. This is a deliberate
 deletion: the Crossroads' crossing is empty by definition, and adding a third
