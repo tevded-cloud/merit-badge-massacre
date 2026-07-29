@@ -162,24 +162,65 @@ function main() {
   // sidecar because Opus cannot carry them and the stem player needs them to
   // loop sample accurately. Merge them when present: per file fields onto the
   // matching entries, and the per theme table (bpm, bars, layers) wholesale.
+  //
+  // A non-voice entry is stored above as a PLAIN NUMBER, its byte count, and a
+  // number is a primitive: assigning a property to it does nothing at all in
+  // sloppy mode and throws a TypeError under 'use strict', which this file is
+  // in. Music stems are non-voice, so every single merge threw on its first
+  // assignment, and because the whole loop used to sit inside the try below,
+  // one throw discarded the remaining files AND the themes table with them.
+  // The entry is therefore promoted to the { bytes, ... } object form first.
+  // That promotion is not cosmetic: js/assets.js sizeOf() reads .bytes on an
+  // object and the value itself otherwise, and js/music.js musicEntries() only
+  // keeps an entry's metadata when the entry IS an object, so object form is
+  // the only shape in which the counts reach the game at all.
+  //
+  // The try now covers reading and parsing the sidecar and nothing else, so a
+  // mistake in the merge itself is a crash the author sees rather than a
+  // warning that quietly ships a manifest with no loop truth in it.
   let themes = null;
   const sidecarPath = path.join(__dirname, 'render', 'out', 'samplecounts.json');
   if (fs.existsSync(sidecarPath)) {
+    let sc = null;
     try {
-      const sc = JSON.parse(fs.readFileSync(sidecarPath, 'utf8'));
-      Object.keys(sc.files || {}).forEach((rel) => {
-        if (filesMap[rel]) {
-          const m = sc.files[rel];
-          filesMap[rel].samples = m.samples;
-          filesMap[rel].sampleRate = m.sampleRate;
-          filesMap[rel].theme = m.theme;
-          filesMap[rel].layer = m.layer;
-        }
-      });
-      themes = sc.themes || null;
+      sc = JSON.parse(fs.readFileSync(sidecarPath, 'utf8'));
     } catch (e) {
-      console.warn('manifest.cjs: samplecounts sidecar unreadable, music loops fall back to decoded length');
+      sc = null;
+      console.warn('manifest.cjs: samplecounts sidecar unreadable (' + e.message +
+        '), music loops fall back to decoded length');
     }
+    if (sc && typeof sc === 'object') {
+      const scFiles = (sc.files && typeof sc.files === 'object') ? sc.files : {};
+      Object.keys(scFiles).forEach((rel) => {
+        const have = filesMap[rel];
+        if (have === undefined) return; // sidecar names a file that is not on disk
+        const entry = (have && typeof have === 'object') ? have : { bytes: Number(have) || 0 };
+        const m = scFiles[rel] || {};
+        entry.samples = m.samples;
+        entry.sampleRate = m.sampleRate;
+        entry.theme = m.theme;
+        entry.layer = m.layer;
+        filesMap[rel] = entry;
+      });
+      themes = (sc.themes && typeof sc.themes === 'object') ? sc.themes : null;
+    }
+  }
+
+  // The loop seam net, restated at the last gate before the game sees the data:
+  // every layer of a theme has to be exactly the same number of samples long or
+  // the stems drift apart at the loop point. encode.cjs already refuses to write
+  // a sidecar that fails this, so a failure here means the sidecar or a stem was
+  // edited by hand afterwards. Warn, never fail: this script has to succeed on
+  // an empty or half-built assets folder.
+  if (themes) {
+    Object.keys(themes).forEach((id) => {
+      const th = themes[id] || {};
+      const layers = Array.isArray(th.layers) ? th.layers : [];
+      const bad = layers.filter((l) => l && l.samples !== th.samples);
+      if (!bad.length) return;
+      console.warn('manifest.cjs: theme "' + id + '" has layers of different lengths, its loop seam will drift:');
+      layers.forEach((l) => console.warn('  ' + (l && l.id) + ': ' + (l && l.samples) + ' samples'));
+    });
   }
 
   const manifest = {

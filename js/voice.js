@@ -46,7 +46,7 @@ const Voice = (() => {
   const missingLogged = new Set(); // speaker + KEY_SEP + text already warned about
   const unloadedLogged = new Set();// manifest path already warned about (bytes not fetched yet)
 
-  let current = null;    // { token, rank, src, gain, duckHandle, dur } or null when idle
+  let current = null;    // { token, rank, src, gain, duckHandle, dur, onDur } or null when idle
   let seq = 0;
   let lastStartMs = -Infinity;
 
@@ -140,6 +140,15 @@ const Voice = (() => {
       if (typeof Assets.loadGroup === 'function') {
         Assets.loadGroup('voice:' + speaker).catch(() => {});
         Assets.loadGroup('camp').catch(() => {});
+        // The Quartermaster stands at the same fire as Brock and is talked to
+        // the same way, but tools/manifest.cjs builds the 'camp' group out of
+        // Brock's files plus the campfire music and nothing else, so his pack
+        // is not in that group and nothing else asks for it. Without this his
+        // lines resolve and then find no bytes in hand, which is the one
+        // failure mode that looks exactly like having no recording at all.
+        // An unknown group loads nothing and still resolves (see js/assets.js),
+        // so this is free on a build with no Quartermaster audio yet.
+        Assets.loadGroup('voice:qm').catch(() => {});
       }
       return true;
     }, () => { voiceAvailable = false; return false; });
@@ -257,6 +266,21 @@ const Voice = (() => {
       try { src.disconnect(); gainNode.disconnect(); } catch (e) {}
     };
     try { src.start(0); } catch (e) {}
+
+    // opts.onDur: how long this line runs, reported the moment it starts.
+    // A caller that has to time something to land AFTER a line (js/director.js
+    // holds the scout's answer until the boss has finished speaking) cannot use
+    // speak()'s return value for it, because a line whose bytes still need
+    // decoding returns a null duration and only learns its length a decode
+    // later. This fires in both cases: inside the speak() call itself for an
+    // already-decoded line, one decode later for a cold one. Once only, and
+    // only for a line that actually started, since a line superseded while
+    // decoding returns from the top of this function and never reaches here.
+    const cb = current.onDur;
+    if (cb) {
+      current.onDur = null;
+      try { cb(buffer.duration); } catch (e) {}
+    }
   }
 
   function speak(speakerId, text, opts) {
@@ -276,7 +300,10 @@ const Voice = (() => {
     }
 
     const token = ++seq;
-    current = { token, rank, src: null, gain: null, duckHandle: null, dur: null };
+    current = {
+      token, rank, src: null, gain: null, duckHandle: null, dur: null,
+      onDur: (opts && typeof opts.onDur === 'function') ? opts.onDur : null,
+    };
     lastStartMs = nowMs;
 
     const cached = cacheGet(path);
@@ -307,7 +334,7 @@ const Voice = (() => {
       if (current && current.token === token) current = null;
     });
 
-    return { dur: null }; // duration is unknown until decode resolves; caller already treats a falsy dur as "keep default timing"
+    return { dur: null }; // duration is unknown until decode resolves; caller already treats a falsy dur as "keep default timing", and opts.onDur reports the real length once it is known
   }
 
   function stop() {

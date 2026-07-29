@@ -40,6 +40,24 @@
     };
   }
 
+  // Every scout has a pair of chest barks in BARKS and nothing ever asked for
+  // them: bark('chest') had no caller anywhere in the game, so the pool was
+  // written, priced into the voice ladder (js/voice.js ranks 'chest' between
+  // 'win' and 'runstart') and then never triggered. The pool is fine; the
+  // trigger was missing. grantChest() in js/game.js is the one door every
+  // chest goes through, the elite drop and the loot room cache alike, so the
+  // bark hangs off that door here, the same way gainCoins is wrapped above.
+  // (A future pass that owns js/game.js can move this to a plain
+  // `this.bark('chest')` at the end of grantChest and delete this wrap.)
+  const rawGrantChest = Game.prototype.grantChest;
+  if (typeof rawGrantChest === 'function') {
+    Game.prototype.grantChest = function () {
+      const out = rawGrantChest.apply(this, arguments);
+      this.bark('chest');
+      return out;
+    };
+  }
+
   Game.prototype.viewRadius = function () {
     return Math.hypot(window.innerWidth, window.innerHeight) / (2 * ZOOM) + 70;
   };
@@ -379,12 +397,58 @@
       t: 0,
     };
 
+    // The boss says its own line, in its own voice. The speaker id is the boss
+    // id itself (hare, vicar, antlered): that is what tools/voice/voices.json
+    // keys its recipes on and what tools/voice/dump_lines.cjs stamps on these
+    // lines, so no translation table is needed or wanted. A boss with no line
+    // in BOSSLINES says nothing, exactly as before.
+    //
+    // How long that line runs is what the scout's answer waits on, so the
+    // length is asked for here. It arrives by callback rather than by return
+    // value because a line whose bytes still need decoding does not know its
+    // own length yet: onDur fires inside this call for a warmed line and one
+    // decode later for a cold one. See js/voice.js.
+    let bossDur = null;
+    if (this.bossCard.line && typeof Voice !== 'undefined' && Voice.available) {
+      Voice.speak(def.id, this.bossCard.line, {
+        priority: 'boss',
+        onDur: (d) => {
+          bossDur = d;
+          // The answer may already be waiting on the blind beat by the time
+          // this lands. Only ever push it later, never pull it earlier, so a
+          // late measurement cannot drop the answer on top of the line it is
+          // waiting for.
+          const a = this.bossAnswer;
+          if (a && a.enemy === e) a.wait = Math.max(a.wait, d + BOSS_ANSWER_GAP);
+        },
+      });
+    }
+
     // The scout answers by name when they know it, and falls back to the
     // generic boss bark when they do not.
+    //
+    // The named answer used to fire in this same instant, at the same 'boss'
+    // priority as the boss's own line above, and Voice drops a tie rather than
+    // talking over itself: the boss won every time, so every named answer was
+    // audio nobody could ever hear. It is held back now instead, which is how
+    // the beat should read anyway. The thing announces itself, then the scout
+    // answers. The wait is the measured length of the boss's line plus a gap
+    // when there is a recording, and a fixed beat when there is not, so a build
+    // with no audio at all plays the same scene on subtitles alone. updateZones
+    // owns the countdown and the firing.
     const named = ((typeof BARKS !== 'undefined' && BARKS[this.charId]) || {}).bossnamed;
     const line = named && named[def.id];
-    if (line) this.barkNow = { text: line, t: 3.4 };
-    else this.bark('boss');
+    if (line) {
+      this.bossAnswer = {
+        text: line,
+        enemy: e,
+        wait: bossDur != null ? bossDur + BOSS_ANSWER_GAP : BOSS_ANSWER_BEAT,
+        lastMs: null,
+      };
+    } else {
+      this.bossAnswer = null;
+      this.bark('boss');
+    }
     return e;
   };
 
@@ -530,6 +594,19 @@
         this.spawnBoss(DATA.bosses[i]);
       }
     }
+
+    // Voice packs load on demand, and a boss line that arrives with no bytes in
+    // hand is a line nobody hears. Each boss's pack is warmed a while before its
+    // entrance so the line on its name card can actually play. Failure here is
+    // silence, which is a supported state, so nothing waits on this.
+    if (!this._bossVoiceWarm) this._bossVoiceWarm = [];
+    for (let i = 0; i < DATA.bosses.length; i++) {
+      if (this._bossVoiceWarm[i] || this.time < DATA.bosses[i].at - BOSS_VOICE_WARM) continue;
+      this._bossVoiceWarm[i] = true;
+      try {
+        if (typeof Voice !== 'undefined' && Voice && typeof Voice.preload === 'function') Voice.preload(DATA.bosses[i].id);
+      } catch (e) {}
+    }
   };
 
   // opts is optional and additive: a destructible shot passes { hp: 3, r: 12 }
@@ -560,6 +637,11 @@
 
   const ZONE_FIRE = 0.25;      // how long a fired zone lingers as a flash
   const BOSS_CARD_LIFE = 4.4;  // name card holds four seconds, then fades out
+  const BOSS_VOICE_WARM = 25;  // seconds before a boss lands that its voice pack starts loading
+  const BOSS_ANSWER_GAP = 0.45;   // held silence between the boss finishing its line and the scout answering
+  const BOSS_ANSWER_BEAT = 1.2;   // the same beat, held blind, when nothing can say how long the boss's line runs
+  const BOSS_ANSWER_BUBBLE = 3.4; // floor on how long the answer's subtitle stays up, unchanged from before
+  const BOSS_ANSWER_MAX_STEP = 0.25; // most of the wait any one frame may spend, so a pause does not fire it on resume
   const PHASE_GUARD = 1.2;     // untouchable roar and reposition between phases
 
   // Hiding is done by parking the hit radius at zero: nothing queries a body
@@ -640,6 +722,41 @@
     if (this.bossCard) {
       this.bossCard.t += dt;
       if (this.bossCard.t > BOSS_CARD_LIFE) this.bossCard = null;
+    }
+
+    // The scout's answer to a named boss, held until the boss has said its
+    // piece (see spawnBoss). Counted in real seconds rather than in the dt
+    // above, because it is chasing audio and audio runs on the wall clock: the
+    // boss entrance sets four tenths of a second of hitstop, hitstop scales dt
+    // to about a tenth, and a dt countdown would stretch the beat well past the
+    // line it is waiting on. A frame that took longer than a moment (a paused
+    // menu, a backgrounded tab) may only spend a quarter second of the wait, so
+    // coming back from a pause does not fire the answer on the spot.
+    if (this.bossAnswer) {
+      const a = this.bossAnswer;
+      const nowMs = (typeof performance !== 'undefined' && performance && performance.now)
+        ? performance.now() : Date.now();
+      if (a.lastMs == null) a.lastMs = nowMs;
+      a.wait -= Math.min((nowMs - a.lastMs) / 1000, BOSS_ANSWER_MAX_STEP);
+      a.lastMs = nowMs;
+      if (this.phase !== 'play' || p.hp <= 0 || a.enemy.dead || this.enemies.indexOf(a.enemy) < 0) {
+        // Fight already over, or the scout is in no state to answer anything.
+        this.bossAnswer = null;
+      } else if (a.wait <= 0) {
+        this.bossAnswer = null;
+        // Same shape the pool barks get in game.js bark(): the bubble is the
+        // words, and it stretches to cover the audio when there is audio. The
+        // stretch goes through onDur rather than the return value so a line
+        // being decoded for the first time still gets its bubble held open.
+        const bubble = { text: a.text, t: BOSS_ANSWER_BUBBLE, trigger: 'boss' };
+        this.barkNow = bubble;
+        if (typeof Voice !== 'undefined' && Voice.available) {
+          Voice.speak(this.charId, a.text, {
+            priority: 'boss',
+            onDur: (d) => { if (this.barkNow === bubble) bubble.t = Math.max(bubble.t, d + 0.4); },
+          });
+        }
+      }
     }
     if (this._destructT > 0) {
       this._destructT -= dt;

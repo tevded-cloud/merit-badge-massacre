@@ -534,6 +534,29 @@ function campGrassClump(q, x, y, s, rng) {
   }
 }
 
+// --------------------------------------------------------------- voice ----
+// Camp dialogue rides Voice the same way a run bark does (js/game.js bark()):
+// the words are already on screen, the audio is the optional half, and with no
+// assets at all Voice.available stays false and every call here is a no-op.
+//
+// Two differences from a run bark, both deliberate:
+//   - a line may be the { t, e } portrait shape, so the words are unwrapped
+//     before they are handed over;
+//   - Voice.stop() runs first. The run's priority ladder is for lines that
+//     compete for the same moment; in camp there is only ever one speaker, and
+//     a new line replaces the old one exactly the way the dialog box does.
+// Returns whatever Voice.speak returned (or null), so a caller holding a timed
+// subtitle can stretch it to the audio the way the bark bubble does.
+function campSpeak(speaker, line) {
+  if (typeof Voice === 'undefined' || !Voice || !Voice.available) return null;
+  const text = (line && typeof line === 'object') ? line.t : line;
+  if (typeof text !== 'string' || !text) return null;
+  try {
+    Voice.stop();
+    return Voice.speak(speaker, text, null);
+  } catch (e) { return null; }
+}
+
 // ------------------------------------------------------------------ Camp ---
 class Camp {
   constructor() {
@@ -604,6 +627,11 @@ class Camp {
       stillT: 0, landed: false,
     };
     this.lastRuns = META.runs;
+    // Live ambience handles (the fire, the lake) and the name of the sound
+    // scene they were built for. Both are rebuilt from scratch whenever that
+    // name changes, so nothing survives a scene it does not belong to.
+    this.amb = [];
+    this._ambKey = null;
     this.bakedTier = -1;
     this.bakedFeatSig = null;
     this._interior = null;
@@ -870,9 +898,16 @@ class Camp {
     META.selected = newId;
     META.save();
     this.selId = newId;
+    // Voice only warms the scout you were already playing, so the incoming
+    // scout's pack is usually not in hand yet and speaking right now would
+    // resolve the line and then find no bytes. Say it in the preload's wake
+    // instead: the subtitle set below is already up for four seconds either
+    // way, and if the swap has been replaced by another one by then, the
+    // stale line stays quiet.
+    let voicePreload = null;
     try {
-      if (typeof Voice !== 'undefined' && Voice && typeof Voice.preload === 'function') Voice.preload(newId);
-    } catch (e) {}
+      if (typeof Voice !== 'undefined' && Voice && typeof Voice.preload === 'function') voicePreload = Voice.preload(newId);
+    } catch (e) { voicePreload = null; }
 
     this.p.x = target.x;
     this.p.y = target.y;
@@ -887,6 +922,14 @@ class Camp {
       });
     }
     this.msg = { text: SELECT_LINES[newId], t: 4 };
+    const msg = this.msg;
+    const say = () => {
+      if (this.msg !== msg) return; // a newer line owns the subtitle now
+      const v = campSpeak(newId, msg.text);
+      if (v && v.dur) msg.t = Math.max(msg.t, v.dur + 0.4);
+    };
+    if (voicePreload && typeof voicePreload.then === 'function') voicePreload.then(say, say);
+    else say();
     return { type: 'select', id: newId };
   }
 
@@ -928,6 +971,7 @@ class Camp {
     }
 
     this.clampWalk(p);
+    this.updateAmbience();
 
     // walking into the cabin door steps inside
     if (this.tier() >= 1 && this.sceneT <= 0) {
@@ -1001,6 +1045,52 @@ class Camp {
     const y0 = CAMP_G.y0 - CAMP_PEEK, y1 = CAMP_G.y1 + CAMP_PEEK;
     this.cam.x = (x1 - x0) < hw * 2 ? (x0 + x1) / 2 : clamp(this.cam.x, x0 + hw, x1 - hw);
     this.cam.y = (y1 - y0) < hh * 2 ? (y0 + y1) / 2 : clamp(this.cam.y, y0 + hh, y1 - hh);
+  }
+
+  // ------------------------------------------------------------- sound -----
+  // The ear rides the scout, and the fire is a place rather than a track: walk
+  // at it and it swells and brightens, walk out to the trail sign and it has
+  // gone. Called from both camp updates, once per frame, right after the walk
+  // is resolved, so the ear is never a frame behind the feet.
+  //
+  // Saying the scene's name every frame is also what keeps it alive: stop
+  // updating (a run starts, a menu opens, the tab goes away) and audio.js
+  // quiets the loops on its own and eventually gives the nodes back. Nothing
+  // here has to be told that the camp is over.
+  updateAmbience() {
+    if (typeof AudioSys === 'undefined' || !AudioSys || typeof AudioSys.setScene !== 'function') return;
+    // Tier is in the name because the lake only exists from tier 2: the night
+    // it opens, the scene is a new scene and the shoreline is built with it.
+    const key = this.scene === 'cabin' ? 'camp:cabin' : ('camp:grounds:' + this.tier());
+    AudioSys.setListener(this.p.x, this.p.y);
+    if (AudioSys.setScene(key) || this._ambKey !== key) this.buildAmbience(key);
+  }
+
+  buildAmbience(key) {
+    for (const h of (this.amb || [])) { try { h.stop(0.12); } catch (e) {} }
+    this.amb = [];
+    this._ambKey = null;
+    // No audio context yet (nobody has clicked anything): leave the key unset
+    // so the next frame tries again, rather than believing a dead handle.
+    if (!AudioSys.started) return;
+    if (this.scene === 'grounds') {
+      // The fire circle, the one thing the whole camp is arranged around. This
+      // is the fire's own coordinate: the keep-out, the sparks and the sound
+      // all read it from the same place.
+      this.amb.push(AudioSys.emitter('campfire', { x: 0, y: -70 }));
+      // The lake, once the trail down to it is cleared. A shoreline is not a
+      // point, and one voice in the middle of it would read as a puddle, so
+      // three sit on the water line far enough apart to cover the whole bank
+      // and close enough that walking the bank never crosses a gap.
+      if (this.tier() >= 2) {
+        for (const lx of [-260, 0, 260]) {
+          this.amb.push(AudioSys.emitter('water', { x: lx, y: this.bankY(lx) }));
+        }
+      }
+    }
+    // Inside the cabin you hear the room you are in, which is nothing yet: the
+    // door shuts the fire out, and the empty list is what does it.
+    this._ambKey = key;
   }
 
   // Scouts live here: they sleep by their tents when locked, drift from tent
@@ -1286,6 +1376,7 @@ class Camp {
     p.x = clamp(p.x, -150, 150);
     p.y = clamp(p.y, -70, 118);
     if (this.sceneT <= 0 && p.y > 108 && Math.abs(p.x) < 30) { this.exitCabin(); return; }
+    this.updateAmbience();
 
     this.near = null;
     let best = Infinity;
@@ -1407,10 +1498,20 @@ class Camp {
       // older feats.js has no revealLine at all, which reads as nothing to say.
       let ln = null;
       try { if (typeof Totem !== 'undefined' && Totem && Totem.revealLine) ln = Totem.revealLine(META); } catch (e) { ln = null; }
-      if (ln) return { type: 'talk', line: ln, speaker: 'SCOUTMASTER BROCK' };
-      return { type: 'talk', line: brockLine(), speaker: 'SCOUTMASTER BROCK' };
+      if (!ln) ln = brockLine();
+      campSpeak('brock', ln);
+      return { type: 'talk', line: ln, speaker: 'SCOUTMASTER BROCK' };
     }
-    if (id === 'qm') return { type: 'talk', line: quartermasterLine(), speaker: 'THE QUARTERMASTER' };
+    if (id === 'qm') {
+      const ln = quartermasterLine();
+      campSpeak('qm', ln);
+      return { type: 'talk', line: ln, speaker: 'THE QUARTERMASTER' };
+    }
+    // The squirrel is deliberately silent, and should stay that way. Its lines
+    // are a squeak plus a stage direction in brackets, and two of the five are
+    // stage direction only. A speaking voice reading those out loud would give
+    // an unmarked woodland animal a person's voice, which is the one thing this
+    // scene is about it not having. Subtitles carry it, which is all it needs.
     if (id === 'critter') return { type: 'talk', line: critterLine(), speaker: 'A SMALL SQUIRREL' };
     if (id === 'cabindoor') { this.enterCabin(); return null; }
     if (id === 'cabinhint') {
