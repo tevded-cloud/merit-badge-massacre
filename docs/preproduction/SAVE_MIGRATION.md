@@ -11,9 +11,11 @@ layout) is a separate, much larger body of work. Where a blast radius row is
 really a content gap rather than a save bug, it is marked as such, because
 fixing the save logic alone will not make the game run with the new cast.
 
-At the time of writing, `docs\preproduction\RULINGS.md` does not exist yet
-(checked: not present in `docs\preproduction\`). The repo's own
-`CLAUDE.md` was updated while this document was being written and now names
+`docs\preproduction\RULINGS.md` DID NOT EXIST when this document was written
+and it exists now. It outranks this document, so check it before acting on
+anything below: it is where the cast, the roster size and the arrival rules
+are settled, and this document deliberately treated those as open. The repo's
+own `CLAUDE.md` was updated while this document was being written and now names
 the new cast: five non-scout survivors, Dez, Junior, Vic, Hollis, and Mikey,
 working title PAST THE TREELINE. Nothing else about them (stats, unlock
 order, starting scout) is known from any file opened for this pass, so this
