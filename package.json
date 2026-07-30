@@ -15,6 +15,7 @@
     "audio:music:test": "node tools/render/selftest.cjs",
     "audio:manifest": "node tools/manifest.cjs",
     "rooms:check": "node tools/validate_rooms.cjs",
+    "masters:check": "node tools/validate_masters.cjs",
     "test": "node tools/smoke.cjs"
   },
   "devDependencies": {

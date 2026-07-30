@@ -37,6 +37,7 @@ Verified against package.json:
 - `npm run audio:manifest` -> `node tools/manifest.cjs` : rebuilds `assets\manifest.json`.
 - `npm run rooms:check` -> `node tools/validate_rooms.cjs` : the layout validator, see below.
 - `npm test` -> `node tools/smoke.cjs` : the engine smoke test, see below.
+- `npm run masters:check` -> `node tools/validate_masters.cjs` : the master file gate, see below.
 
 There is no tsconfig, no eslint config and no `.github` directory (checked:
 none present at repo root).
@@ -96,6 +97,17 @@ stops below `js\ui.js`, which takes a 2d canvas context at file scope, so no
 Node harness can load that file. It also prints a `Math.random` call site
 count as a RATCHET rather than a gate: 51 real sites, and the number should
 only ever go down.
+
+`validate_masters.cjs` is `npm run masters:check`, the third gate, and it keeps
+the master file system honest. START AT `merit-badge-massacre.md`: every
+significant folder holds a master named after itself that lists every file in
+it and links to the masters below it, so following the links from the root
+gives you the whole project's scope before you open any source. The gate fails
+when a folder gains a file its master does not name, when a master cites a path
+that does not exist, when a master stops being reachable from the root, or when
+one picks up a dash or a non-ASCII byte. It derives which folders need a master
+from the tree rather than a hard-coded list, and it honours nested `.gitignore`
+files. It exits 0 today.
 
 New tooling copies this shape: load real engine code headlessly, expose a CLI
 with `--json` and `--selftest`, and return a real nonzero exit code on
