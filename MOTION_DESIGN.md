@@ -1,6 +1,8 @@
 # MOTION_DESIGN.md
 
-Binding law for Merit Badge Massacre, alongside ART_STYLE.md and LEVEL_DESIGN.md.
+Binding law for Merit Badge Massacre, alongside docs/preproduction/RULINGS.md and LEVEL_DESIGN.md,
+and RULINGS.md outranks this file where they disagree. (ART_STYLE.md was superseded 2026-07-30 and
+is a stub; every reference to it below is historical.)
 Written 2026-07-28 against main at commit c0740d2. Every claim about the game as it
 stands today carries a file path and a line number. Where a number is inference
 rather than a measurement, it says so.
@@ -210,7 +212,8 @@ be true for a thing to become a live stroke part:
 2. **It carries no `shadePass` lighting**, therefore no rim, therefore no fixed light
    direction to disagree with.
 3. **It is separable from the silhouette contract**: moving it does not delete the
-   species tell named in ART_STYLE rule 6.
+   species tell required by the readability rule (`docs/preproduction/RULINGS.md`,
+   correction 1, which carries the old ART_STYLE rule 6 forward verbatim).
 
 Everything else stays in the bake and moves only through the whole-body pose channel.
 
@@ -388,7 +391,8 @@ game | painter `js/sprites.js:272-325`
   **head** turns to the real landing spot 0.10 s before takeoff. A veteran reads the head.
   That is real skill expression out of one head rotation.
 - **CHANGED FROM THE PROPOSED DESIGN.** Design 2 wanted the ears laid flat back along the
-  spine. Rejected: ART_STYLE rule 6 names the ears as the rabbit's silhouette tell, and a
+  spine. Rejected: the readability rule (`docs/preproduction/RULINGS.md`, correction 1, carrying the
+  old ART_STYLE rule 6 forward) names the ears as the rabbit's silhouette tell, and a
   rabbit with its ears removed from its outline collapses toward the bogfrog (both
   hoppers, w 30 and 32) during the exact 0.22 seconds a player must name the threat. Ears
   forward and pinned **adds** to the outline instead of subtracting from it.
@@ -1034,8 +1038,10 @@ rim. Hard, not a suggestion.
 
 Today: `killEnemy` (`js/game.js:413-449`) queues a corpse with `dur` 0.18 (0.34 boss), capped
 at 40, plus 7 puffs and one wisp, and `js/render.js:115-121` inflates a white silhouette to
-1.45x while flattening it and fading it out. Eleven frames. `ART_STYLE.md:118-119` promises
-"deaths are scenes, not fades", and that is a fade with extra steps.
+1.45x while flattening it and fading it out. Eleven frames. The superseded ART_STYLE.md promised
+"deaths are scenes, not fades", and that is a fade with extra steps. That promise died with the
+file (`docs/preproduction/RULINGS.md`) and needs re-ruling in the new art bible; the observation
+about the shipped code stands either way.
 
 **LAYER 1, THE FALL. Never toggleable. 0.35 to 0.60 s.** One authored collapse per
 **movement law**, not per species, which is six of them for twenty-one bodies:
@@ -1486,8 +1492,10 @@ the rule as written is: **no new effect, debris, decal or projectile may use a r
 distance threshold of the Mark.** Enforce it in the recipe schema at authoring time.
 
 **And add a per-screen colour budget**, because the one-accent rule caps colour per creature
-and nothing caps it per screen. Weapon and effect accents come only from the ART_STYLE palette
-anchors, never invented. Gold is already triple-booked (the ticktot's back dot, the badger's
+and nothing caps it per screen. Weapon and effect accents come only from the project palette, never
+invented. The ART_STYLE.md anchors that used to define it are superseded
+(`docs/preproduction/RULINGS.md`) and the new palette is owed by the art bible, so this rule is
+live but its source list is pending. Gold is already triple-booked (the ticktot's back dot, the badger's
 rivets, the progress flash, the bugle ring) and should stay reserved for progress.
 
 ### World reaction
@@ -2031,10 +2039,12 @@ Everything else is genuinely independent.
 concept of motion at all. Below is exactly what to add. **Do not let a painter ship without it**,
 or every new critter arrives unable to animate and has to be reopened.
 
-Also amend `ART_STYLE.md`: the "Adding a new critter" checklist item 4 currently reads that a new
-gait is "built from rotation, squash, and hover only". That is now wrong in one direction (the
-pose channel is wider) and right in another (baked forms still do not rotate independently). It
-needs rewriting deliberately and in writing, not quietly outgrown.
+This also lands on the "Adding a new critter" checklist, which the superseded `ART_STYLE.md` used to
+own: its item 4 read that a new gait is "built from rotation, squash, and hover only". That is now
+wrong in one direction (the pose channel is wider) and right in another (baked forms still do not
+rotate independently). The checklist has no home until the new art bible exists
+(`docs/preproduction/RULINGS.md`), and it needs rewriting deliberately and in writing there, not
+quietly outgrown.
 
 ### Add to `.claude/agents/sprite-artist.md`, after the five laws
 
@@ -2097,8 +2107,11 @@ needs rewriting deliberately and in writing, not quietly outgrown.
     back dot are the references.
 
     SILHOUETTE IS STILL THE CONTRACT, AND ANIMATION CAN BREAK IT. A pose may ADD
-    to the outline. It may never SUBTRACT the species tell named in ART_STYLE
-    rule 6, and it may never move the outline into another roster member's read.
+    to the outline. It may never SUBTRACT the species tell required by the
+    readability rule (`docs/preproduction/RULINGS.md`, correction 1, carrying the
+    old ART_STYLE rule 6 forward), and it may never move the outline into the read
+    of another creature THAT SHARES A ROOM WITH IT (correction 1 again: creatures
+    that never spawn together carry no separation obligation).
     Ears laid flat make a rabbit read as a frog; a crouched fox with a vertical
     tail reads as a squirrel. Both fail during the exact half second the player
     must name the threat.

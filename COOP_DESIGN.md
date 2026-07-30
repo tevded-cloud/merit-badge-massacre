@@ -395,7 +395,8 @@ What survives from that study, and it is the good half:
   no off-screen arrow, no camera fight.
 - **Zoom never changes, for anybody, ever.** The smallest enemy, ticktot, is
   authored at `w: 20` (`js/data.js:179`) and draws at exactly 30 CSS pixels at
-  ZOOM 1.5, which is exactly the silhouette floor in `ART_STYLE.md`. There is zero
+  ZOOM 1.5, which is exactly the 30 pixel readability floor carried forward at
+  `docs/preproduction/RULINGS.md` `[spec]` (the old `ART_STYLE.md` is superseded). There is zero
   headroom to zoom out. Any framing zoom is also a permanent camera pump, which
   MOTION_DESIGN's screen effects doctrine forbids outside boss entrance and death.
 - **Raise ticktot from `w: 20` to `w: 24` anyway, as a solo art fix.** It is 24 of

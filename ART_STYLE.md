@@ -1,172 +1,75 @@
-# Merit Badge Massacre: art style guide
+# ART_STYLE.md: SUPERSEDED 2026-07-30
 
-Everything on screen is drawn in code (js/sprites.js). No image assets. This
-document is the contract: follow it and any new character, enemy, item, or
-prop will sit naturally next to the existing cast.
+**This document is dead. Do not follow it, do not cite it, do not amend it.** Its previous contents
+are in git history and nowhere else. The replacement art bible is NOT YET WRITTEN.
 
-## The style in one line
+## Why it could not be amended
 
-Storybook cartoon: soft rounded forms, warm flat colors with baked-in top
-light and belly shade, a single dark outline, glossy demon eyes on anything
-corrupted, and everything alive through motion, not frames.
+Two of its foundations were ruled dead, and one of them was its stated method, which governed every
+other rule in the file.
 
-## Hard rules
+1. **The method.** The old line 3 read: "Everything on screen is drawn in code (js/sprites.js). No
+   image assets." Procedural and code-generated art was tested and rejected by the creator on
+   2026-07-29. Art is authored, made with the creator's own tool, and handed over as assets
+   (`docs/preproduction/PREMISE_2.md:36-39`).
+2. **The register.** The old lines 9 to 11 specified "Storybook cartoon: soft rounded forms, warm
+   flat colors with baked-in top light and belly shade, a single dark outline, glossy demon eyes on
+   anything corrupted." Cute is dead everywhere by creator ruling
+   (`docs/preproduction/PREMISE_2.md:36-39`), the tone is eerie and adult played straight, and the
+   `cuteEye` contract the old file carried at its line 149 does not survive.
 
-1. **One outline color everywhere**: `#181008`. Line weight is two tier
-   since the 2026-07-27 amendment: silhouette edges 2.4, interior details
-   1.0. Nothing on screen uses a different outline color.
-2. **Shading is baked, never gradient-banded**: every major form is drawn
-   with the `apoly()` or `blob()` helper, which adds one lower shade pass
-   (about 24% dark) and one upper-left highlight pass (about 17% warm
-   white). Do not hand paint gradients on bodies.
-3. **Supersample 2x**: all painters bake through `mk(w, h, fn)` which renders
-   at double resolution. Draw in logical units, never pixels.
-4. **Corrupted creatures get `demonEye()`**: glossy red iris, vertical slit,
-   white specular dot. The helper also registers the eye position so the
-   renderer can pulse a red glow. Friendly characters get `cuteEye()`: black
-   bead plus specular. This is the single strongest theme signal, never skip it.
-5. **Every critter carries one tell that it has been Signed**: the stamped tin
-   Token (`pendant()`), red eyes, or the eye-in-ring Sign. Cute first, then
-   wrong, AND THE WRONG IS ALLOWED TO STAY: do not resolve the discomfort
-   inside the sprite. (Amended 2026-07-28 for the Steam repositioning. The old
-   rule ended "cute first, wrong second", with a joke chasing every heavy beat,
-   and that flinch is exactly what capped the eeriness. Humour belongs to
-   characters now, not to reassurance. Gore is permitted at Isaac's level but
-   is a separate toggleable layer, so nothing load-bearing may depend on it:
-   see the Steam bar section in .claude/agents/sprite-artist.md, which is the
-   fuller statement and governs.)
-6. **Silhouette carries identity**: each species must read at 30 pixels by
-   outline alone (squirrel tail, rabbit ears, boar tusks, owl discs, beaver
-   tail, fox ears, stag antlers). Design the silhouette before the details.
+A style guide whose stated method and stated register are both void cannot be patched into
+compliance, because every rule under them was written to serve them.
 
-## Palette anchors (bumped 2026-07-27: hotter, more chroma)
+## The one rule that survives, quoted
 
-- Outline `#181008`, night ground `#131a11`, clearing `#1c2415` (the two
-  ground colors are render side and unchanged)
-- Fur brown mid `#b85a24`, dark `#8f3f18`, light `#cc6d2c`, tan `#d7a45f`
-- Cream and bone `#e8cfa5 #e9e4da #d8cfc0`, grey `#98a4b2`
-- Mark red `#d4402c`, glow red `#ff4a20`, gold `#f4c542 #e3b341`
-- Scout khaki `#c9a86a`, forest green `#5c7248`, navy `#3a4a63`
-- Fire `#ffdc8c #ff8c28 #c83c0a`, creek water `#7ec8e8`
+From the old line 38 to 40, carried forward verbatim:
 
-## Amendment 2026-07-27: structured high fidelity
+> **Silhouette carries identity**: each species must read at 30 pixels by outline alone (squirrel
+> tail, rabbit ears, boar tusks, owl discs, beaver tail, fox ears, stag antlers). Design the
+> silhouette before the details.
 
-The cast moved off single-blob construction onto structured, painted
-characters. The bar: at 40 pixels each character looks like a more skilled
-artist drew the same character; at 3x it has twice the drawing in it. This
-section supersedes anything above that it contradicts; everything it does
-not mention stays binding.
+This is a READABILITY rule, measured per creature: does it read as what it is, at true game scale,
+in motion, with its tell named. It is method-independent, so it survives the rejection of the
+drawing method. The 30 versus 32 pixel question is open and belongs to the new art bible.
 
-1. **Construction**: carrying forms are structured shapes drawn with
-   `apoly()` (rounded corner polygons, corner radius per vertex: 2 to 5 on
-   big forms, tighter on points). Structure is a tool, not the mandate:
-   use it where it adds craft (shoulders and tailoring, hat brims, wedge
-   snouts, haunch masses, ear and tail points) and keep organic curves
-   wherever they serve the animal. Faces stay big, readable, and forward:
-   if a shape change costs face readability, the shape change loses.
-   Anatomy overlaps: head over chest, haunch over belly, hands over body,
-   with a soft contact shadow tucked under each overlap. Acute tips (hat
-   brims, leaf ears) use `lens()` because arcTo trims sharp corners.
-2. **Five level lighting**, baked by the shared `shadePass()` in both
-   `blob()` and `apoly()`: midtone band, core shadow, warm ground bounce
-   on the underside, upper-left highlight, and an opt-in hue shifted rim
-   arc along the upper left (browns rim warm orange, greys cool blue,
-   greens yellow green: `rim` flag, never on small details).
-3. **Fur is shaped clumps, not noise**: `clump()` petals laid in rows
-   (`furRow()`) back to front with alternating value steps, 3 to 5 value
-   levels per material, micro highlights on clumps where the eye goes.
-   Deliberate fur breaks may cut into a silhouette as notch vertices or
-   outlined edge clumps; richest detail lives on face, chest, and paws,
-   lower bodies stay simpler.
-4. **Two tier outlines**: silhouette edges lineWidth 2.4, interior details
-   1.0. Same outline color `#181008` everywhere.
-5. **Craft details carry speculars**: claws (`claw()`), teeth, noses, and
-   eyes each get a wet dot; thin parts (inner ears, wing membranes) get a
-   translucency hint (a hot lighter core).
-6. **Eyes**: `demonEye()` renders 20 percent bigger than its call radius,
-   with a second wet specular at lower right and a lower lid crescent in
-   a darker head tint (painters pass the tint). The eye pair owns at
-   least a third of the head width. `cuteEye()` renders 15 percent
-   bigger, plus the lower lid highlight. SCOUTS ARE TEENAGERS: see the
-   age amendment at the end of this file, which supersedes the "about
-   eleven" reading this line used to carry.
-7. **One accent each**: every creature carries exactly one saturated non
-   brown accent. Pink inner ears, bone tusks, and the owl's gold beak and
-   talons count. The raccoon carries a `#4a76a8` bandana scrap. The
-   beaver's incisors are iron orange, like a real beaver's.
-8. **Scouts**: defined shoulder line, tapered torso with a hem, pocket
-   flaps, collar points, kerchief as a sharp triangle with a proper knot,
-   segmented limbs with knee and boot breaks in `drawScout`'s procedural
-   legs, hats with crisp wedge brims and structured crowns.
-9. **Palette**: the anchors above are the bumped set. Night ground and
-   clearing colors are render side, leave them.
-10. **Supersample is 3x** in `mk()` (was 2x) so the added detail survives
-    the bake. Everything still bakes once at load; runtime cost unchanged.
-11. **Hit readability rules over depth**: shapes must read under squash,
-    rot, flip, white flash, and tint, and silhouettes must read at 30
-    pixels. Depth that turns to mud at game scale is wasted.
+## What replaced the distinctness requirement
 
-## Animation rules (procedural, no frame sheets)
+Canon previously claimed a pairwise silhouette distinctness bar, citing this file's lines 38 to 40
+for a 0.60 IoU threshold. **This file never contained that number.** The full correction is at
+`docs/preproduction/RULINGS.md`, correction 1. In short:
 
-- **Scouts** use `SPR.drawScout()`: articulated legs swinging from the hips
-  with lift and ground bounce, torso leaning into the run, weapon arm aimed
-  at the cursor with recoil. Idle is a slow breathing sway.
-- **Critters** animate by gait in `renderEnemy`: walkers waddle (rotation
-  oscillation), hoppers squash on landing and stretch mid-air, bats wingbeat
-  by fast vertical squash plus hover bob, chargers lean headlong and tremble
-  during windup, stunned things wobble.
-- **Deaths are scenes, not fades**: enemies inflate into a white silhouette
-  pop with a smoke puff and an escaping red soul wisp. The player death is
-  staged: hitstop, hat physics, body down, ghost rises, camera pushes in.
-- **Big moments chew time**: level ups, boss entrances, chests, and revives
-  all use hitstop plus a screen flash in their signature color (gold for
-  progress, red for threat).
+- The 0.60 came from a research report where it is a FIDELITY check (how closely a traced sprite
+  matches its own reference, where HIGH is good). It was applied as a DISTINCTNESS bar between
+  different creatures (where LOW would be good), which inverts pass and fail.
+- The creator replaced the requirement rather than correcting the number: two creatures that
+  resemble each other in life are supposed to resemble each other on screen.
+- What binds now: in-play readability per creature (the rule quoted above), and separation required
+  ONLY between creatures that share a room, checkable against the real spawn tables in
+  `js/rooms.js` (per-room `cast` maps, the `waves` arrays, and `WAVE_TEMPLATES` at `js/rooms.js:107`).
+- Non-convergence (two users never getting the same thing) is a property of a generator, not of a
+  shipped asset. It belongs to the creator's separate tool track and is not a requirement of this
+  game.
 
-## Amendment 2026-07-28: the scouts are teenagers
+## Two things that died with this file and need a decision in the new bible
 
-The story spine settled today (STORY_DESIGN.md, section 0) makes age a load
-bearing mechanic rather than a look. Belief is sight and it fades as you grow
-up: small children see everything and cannot be sent anywhere, ADULTS CANNOT
-SEE THE SIGNED AT ALL, and teenagers are the narrow window where somebody can
-still see and is finally old enough to carry a pack all night. The player
-characters are in that window and it is closing on them.
+Recorded so they are not lost, not carried forward as law:
 
-SO MAX, JUNIE AND GUS ARE TEENAGERS. Every earlier line in this file that reads
-as "small child" is superseded. What actually changes:
+1. **The two-tier line weight rule** (old lines 15 to 17), which `GROUNDING_AUDIT_3.md:285` named as
+   the one clean survivor of the old file. It is a rendering convention tied to the rejected method.
+   Decide it fresh.
+2. **The teenage proportion amendment** (old lines 125 to 159), a CONTENT decision that sat inside a
+   dead METHOD document. `AUTHENTICITY.md:783`, `docs/preproduction/DIALOGUE_DESIGN.md:17`,
+   `docs/preproduction/PREMISE_2.md:942` and `.claude/agents/sprite-artist.md:151` all depend on it.
+   It needs re-homing, not deleting.
 
-- PROPORTION. A child is roughly five heads tall with a large cranium and a
-  short neck. A teenager is closer to seven, with a longer neck, real
-  shoulders, and limbs that have outgrown the torso. Keep the faces big and
-  readable, because that rule outranks realism and always has, but the BODY
-  stops being a child's body.
-- POSTURE. Children stand square and open. Teenagers do not. Weight on one
-  leg, one shoulder lower, a slouch that a scoutmaster would correct. This is
-  most of the read at 40 px and it is free.
-- HOW GEAR SITS. A pack on a child rides high and looks borrowed. A pack on a
-  teenager sits on the hips and looks owned. Sleeves get pushed up. A
-  neckerchief gets worn slightly wrong on purpose rather than by accident,
-  which is a different kind of wrong from the way the Signed wear it.
-- WHAT DOES NOT CHANGE: cuteEye stays for friendlies, the silhouette contract
-  stays, one accent each stays, and they are still recognisably the same three
-  characters. This is an age pass, not a redesign.
+## Where the replacement lives
 
-THE REASON THIS AMENDMENT EXISTS RATHER THAN A NOTE IN A TASK: the three scouts
-are painted once and then drawn in the camp, the portraits, the field guide,
-the select screen and every frame of every run. Getting the age wrong means
-painting them twice, and their voice recipes (tools/voice/voices.json, which
-pitch them up by three, five and one semitones with formant shift to sound like
-small bodies) are wrong for the same reason and must be re-tuned before any
-voice set is generated.
+The art bible that replaces this file is not written. It is tracked in the plan at
+`~\.claude\plans\` and recorded as outstanding in `docs/preproduction/RULINGS.md` under WHAT THESE
+RULINGS OPENED. Size L.
 
-## Adding a new critter (checklist)
-
-1. Pick the silhouette tell and one Signed tell.
-2. Painter in js/sprites.js: tail or wings first (behind), body `apoly`
-   with haunch and chest planes, head `apoly` with a snout wedge, pointed
-   ears, muzzle, `demonEye` x2 with the head's lid tint, feet with claw
-   ticks, `pendant`. Twenty to forty lines. Bake box roughly 50 to 60
-   units wide.
-3. Entry in DATA.enemies with `w` (draw width), `r` (about 0.38 w), a `move`
-   gait, and pool timing.
-4. If it needs a new gait, add a case to the gait block in `renderEnemy`,
-   built from rotation, squash, and hover only.
+Until it exists, `docs/preproduction/RULINGS.md` is the only art authority, and it rules on exactly
+two things: the readability rule quoted above, and the shared-room separation requirement. Anything
+else about the look of this game is undecided, and a brief that needs it must say so rather than
+quote a dead file.

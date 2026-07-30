@@ -1,8 +1,10 @@
 # AUTHENTICITY.md
 
-Binding law for Merit Badge Massacre, alongside ART_STYLE.md, LEVEL_DESIGN.md,
-MOTION_DESIGN.md and STORY_DESIGN.md. The house artist and the house level designer
-cite this file before drawing anything.
+Binding law for Merit Badge Massacre, alongside docs/preproduction/RULINGS.md,
+LEVEL_DESIGN.md, MOTION_DESIGN.md and STORY_DESIGN.md. RULINGS.md outranks this
+file where they disagree. (ART_STYLE.md was superseded 2026-07-30 and is a stub;
+the art bible that replaces it is not yet written.) The house artist and the house
+level designer cite this file before drawing anything.
 
 This is a REFERENCE, not an essay. You are here to answer one question:
 "what does a correct X look like, and what else has to be there?"
@@ -92,7 +94,8 @@ The four cheapest interrupted moments, in order of how little they cost:
    costume SHAPE survive there. Section 9 marks which details are portrait tier and
    which are world tier. A correct detail that cannot resolve is noise, and noise at
    that scale reads as mud.
-3. **FACE READABILITY.** Unchanged from ART_STYLE.md. If accuracy costs the face, accuracy loses.
+3. **FACE READABILITY.** Carried over from the superseded ART_STYLE.md, and this file now holds it.
+   If accuracy costs the face, accuracy loses.
 
 ## THE HOUSE LANGUAGE FOR WRONGNESS IS BONE
 
@@ -780,7 +783,7 @@ And the reverse: a woods that goes completely silent.
 | **Boots** [VERIFIED] | Full grain upper, a padded collar, a GUSSETED TONGUE (sewn to the upper along both edges so water cannot get in past it, which is the whole reason a hiking boot is not a shoe), eyelets low and speed hooks at the top two or three, a lugged outsole with a heel breast. Eyelets low and hooks high exist so you can lace the foot tight and the ankle separately and lock the two zones apart, which is what stops your toes hitting the front on a descent. | Laced eyelets below, hooks above, double knotted. The leather creases into a permanent fan across the ball of the foot. **The LEADING EDGE OF THE HEEL LUG rounds off first** because that is what strikes on a descent. Salt tide lines after wet then dry. The laces get a polished shiny patch exactly where they pass through the hooks. Wet boots are stuffed with newspaper or dry grass, NEVER dried against a fire, because heat shrinks and hardens leather permanently. | **One boot, upright, laces still tied in their double knot. A tied boot means a foot came out of it, and a foot does not come out of a tied boot.** |
 | **Hats** [VERIFIED] | **BROAD BRIM:** stiff felt, a four dent Montana crown pinched into a cross from above (so a straight on view shows a centre dent plus two side dents catching light at the crown corners), a flat brim with a BOUND edge, a leather band with a buckle, a chin strap hanging behind the head. The four dents are structural and the bound edge stops the felt waving; without it a soaked brim dries permanently wavy. **PEAKED CAP:** crown panels, a button at the apex, vent eyelets, a stiffened bill, an adjuster strap at the back. **BERET:** a soft wool disc, a leather headband, a drawstring, a small stalk at the crown, and it must be SHAPED, wetted and pulled down over one ear, or it sits on the head like a bowl. **BOONIE:** soft cotton with three to five rings of concentric stitching stiffening the brim, crown loops for foliage. | **The universal wear tell on any hat is the SWEAT LINE: the inner band stains and over a season it shows through to the outside as a dark tide mark rising up the crown. Draw that and the hat has been worn.** A backwards cap sits LOWER at the back with the adjuster strap crossing the forehead. A beret is asymmetric, never level. Setting a felt hat brim down flattens the brim, so anyone who owns one sets it CROWN DOWN. | A felt hat crown down in the leaf litter with rain in it. |
 
-## 6.2 TEENAGE PROPORTION AND HOW GEAR SITS ON IT [VERIFIED, and already law in ART_STYLE.md]
+## 6.2 TEENAGE PROPORTION AND HOW GEAR SITS ON IT [VERIFIED. ART_STYLE.md carried this and was superseded 2026-07-30, so this section is now its home until the new art bible exists]
 
 A small child is about five to five and a half heads tall with a large cranium and almost no
 neck. A teenager is about six and a half to seven, with a visible neck, real shoulders, and
@@ -941,8 +944,8 @@ understanding. That produces **two separate faults**, and the best ones compound
 
 ## 8.2 THE NECKERCHIEF IS A THREE WAY, NOT A TWO WAY
 
-**Research proposed a two way (scouts correct, Signed wrong). ART_STYLE.md already carries a
-better THREE way and it wins.** Flattening it would lose the best part.
+**Research proposed a two way (scouts correct, Signed wrong). The superseded ART_STYLE.md carried a
+better THREE way, restated below, and it wins.** Flattening it would lose the best part.
 
 | Who | How they wear it | Reads as |
 |---|---|---|
@@ -1043,7 +1046,7 @@ rather than treating it as decided.**
 | # | Finding | File and line | Fix |
 |---|---|---|---|
 | 1 | **The camp fire is two crossed logs under three flame layers. It is not the teepee, log cabin, lean-to, star, keyhole or reflector: it is not any lay.** It is the object the player spawns beside and Brock stands at, so it gets looked at longer than anything else in the build. | `js/camp.js:3203` (renderFire), log bars at `:3206` | Replace the two rotated roundRects with a TEEPEE: three to five sticks of visibly different thickness leaning to a shared peak, a gap on one side, a tinder bundle inside at ground level. **Same call count.** Then make the lay the camp tier: teepee at tier 1, log cabin at tier 2 (which is also what makes the existing iron tripod correct, because a pot belongs over coals), keyhole at tier 3. |
-| 2 | **All three player scouts wear the neckerchief as a bib:** a triangle from (cx-7.8, 23.6) to (cx+7.8, 23.6) to (cx, 33.5), well down the chest, plus a small square the code comment calls a square knot. The same error repeats on the Quartermaster and the mail carrier. **ART_STYLE.md:98 codifies it as house style, so it will keep propagating.** | `js/sprites.js:1543`, comment at `:1542`; `ART_STYLE.md:98` | Two tails from a SLIDE at the throat, triangle point on the BACK. Amend ART_STYLE.md:98. **Then apply the THREE WAY from 8.2, not a two way:** Brock correct, scouts teenager-sloppy, Signed bib. |
+| 2 | **All three player scouts wear the neckerchief as a bib:** a triangle from (cx-7.8, 23.6) to (cx+7.8, 23.6) to (cx, 33.5), well down the chest, plus a small square the code comment calls a square knot. The same error repeats on the Quartermaster and the mail carrier. **The superseded ART_STYLE.md codified it as house style, which is one reason that file is dead; the error survives only in the shipped code.** | `js/sprites.js:1543`, comment at `:1542` | Two tails from a SLIDE at the throat, triangle point on the BACK. The rule goes in the new art bible, not into a superseded file. **Then apply the THREE WAY from 8.2, not a two way:** Brock correct, scouts teenager-sloppy, Signed bib. |
 | 3 | **P.reed draws cattails** (the code comment says so) and act 2 uses it as the undergrowth stitching the wall line. Cattails are a MARSH plant needing nutrient rich near neutral water; they cannot grow on an acid sphagnum mat. | `js/sprites.js:3568` | Keep the cattail painter for the camp shoreline (correct: `js/camp.js:1621`) and the beaver flowage. Add a COTTON GRASS painter for the open mat: a bare stem carrying a white nodding tuft, plus tussock sedge. Roughly ten strokes. |
 | 4 | **Act 3 seeds fly agaric.** `P.mush` is an `#a83226` cap with three off white dots, at weight 14 in theme 3's deco. Fly agaric is mycorrhizal and cannot fruit where its partner trees are dead. | `js/data.js:377`, painter at `js/sprites.js:3410` | New painter for act 3 only: a MOREL (hollow pitted cone on a pale stem) plus a charcoal cup fungus. Swap the deco entry. Leave `mush` in acts 1 and 2 where it is correct. One painter, one data line. |
 | 5 | **`sapperrat` is a Norway rat in the bog, at weight 20.** (Note: it is the THIRD heaviest in act 2, not the second: ticktot 24, bogfrog 22, sapperrat 20.) A Norway rat is a commensal animal of human settlement, not a wild northern peatland animal, and it does not burrow in saturated peat. | `js/data.js:189` and `:247` | Reskin to MUSKRAT (push-up lodges, a vertically flattened rope like tail, bank burrows with underwater entrances) or STAR-NOSED MOLE (tunnels saturated ground, swims, twenty two pink nasal rays that read at sprite size; **it is not blind, it has small weak eyes that do not matter, so write it that way**). **The shipped painter is already three quarters there** (`js/sprites.js:1221`: a wet slicked swimmer, round ears, snaking tail, waterline, pondweed on its back). Widen the tail into a blade and lose the protruding incisor. Burrow mechanic unchanged. **Keep the rat: it is CORRECT at Camp Hearthwood, which has a stall and a dump. Rat at camp, muskrat on the mat.** |
@@ -1413,8 +1416,8 @@ the change to paste.
 
 ```
 2. If the thing you are painting exists in the real world, read the relevant entry in
-   AUTHENTICITY.md BEFORE you draw a stroke. It is binding law alongside ART_STYLE.md
-   and it is organised so the answer takes fifteen seconds to find. Section 7 (the
+   AUTHENTICITY.md BEFORE you draw a stroke. It is binding law alongside
+   docs/preproduction/RULINGS.md and it is organised so the answer takes fifteen seconds to find. Section 7 (the
    activity kits) covers most prop work. Section 6 covers materials and ageing.
    Section 8 covers how the Signed wear scavenged gear. If a thing is not in there,
    say so in your report rather than guessing.

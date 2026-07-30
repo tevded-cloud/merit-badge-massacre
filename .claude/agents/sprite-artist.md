@@ -11,8 +11,13 @@ style; you extend the one that exists.
 
 ## Before painting anything
 
-1. Read ART_STYLE.md COMPLETELY, including the structured high fidelity amendment.
-   It is binding law. If anything below ever disagrees with it, the file wins.
+1. ART_STYLE.md IS SUPERSEDED AND IS NO LONGER BINDING. It specified code painted
+   art and a storybook cartoon register, and both were ruled dead: assets are
+   authored now, and the tone is eerie and adult, never cute. Read the stub that
+   replaced it for the one rule that survives, then read
+   docs/preproduction/RULINGS.md, which outranks every design document. The art
+   bible that replaces ART_STYLE.md is not written yet, so if a question is not
+   answered by RULINGS.md, ask rather than inventing an answer from the old file.
 2. Read the relevant painters in js/sprites.js as quality references, especially the
    restyled critters (squirrel, fox, owl) and the scouts. Match their density of
    drawing, not the density of older simpler painters.

@@ -923,9 +923,10 @@ and they are checkable:
    (`STORY_DESIGN.md:93-95`) with "cute" removed from the front of it, **by the creator's ruling
    rather than by one document overruling another.** Note what that costs: cute was never carried
    by the cast, it is carried by the bestiary, the Marshmallow Roaster (`js/data.js:52`), the
-   Emergency S'more (`js/data.js:312`) and the `cuteEye` contract for friendlies
-   (`ART_STYLE.md:149` `[spec]`). Amending the order without ruling the animals leaves the art pass
-   with no register, which is open call 26.
+   Emergency S'more (`js/data.js:312`) and the `cuteEye` contract for friendlies (carried by the
+   superseded `ART_STYLE.md`, dead with it as of 2026-07-30, see `docs/preproduction/RULINGS.md`
+   `[spec]`). Amending the order without ruling the animals leaves the art pass with no register,
+   which is open call 26.
 
 **Scared people being funny is allowed, and each of the four has a specific mechanism for it,**
 which is how you write funny without writing quips: Hollis's crew voice applied to an impossible
@@ -939,8 +940,10 @@ one, and per `character-writing-arcs/report.md` sec 5.3 they belong in the consi
 the negative controls, not in a bio.
 
 **One production note the reboot cannot skip.** The voice recipes currently pitch the three scouts
-up by three, five and one semitones to sound like small bodies, and `ART_STYLE.md:156-159` `[spec]`
-already says they must be retuned before any voice set is generated. For a 16 to 19 cast in an
+up by three, five and one semitones to sound like small bodies, and the teenage amendment (carried
+by the superseded `ART_STYLE.md`, now homeless pending the new art bible, see
+`docs/preproduction/RULINGS.md` `[spec]`) already said they must be retuned before any voice set is
+generated. For a 16 to 19 cast in an
 adult register, the pitch shifts come out entirely.
 
 ## 10. Cuts, honestly
@@ -1453,7 +1456,7 @@ Each row is a ruling. Line refs are files opened in this repo.
 | **The tally post** (`js/camp.js:858-859`, six carvings summing to 2.00x at `js/feats.js:469-500`, reveal line at `js/feats.js:528`, `Totem.revealLine` at `:520-531`) | **SURVIVES UNCHANGED** | Generic woodcraft, protected by AUTHENTICITY as the best object in the game. Its reveal line is about a predecessor, which the caretaker ruling makes literal: covering the post was his job, and the man before him taught him to do it. Only the multiplier's currency noun changes. |
 | **The acts: THE UNDERSTORY, THE SOG, THE BURN** (`js/data.js:354`, `:387`, `:420`; `js/rooms.js:155-171`) | **SURVIVES UNCHANGED** | They are ecology. Zero scouting content in either table. |
 | **The bosses** (`js/data.js:255-261`) | **SURVIVES UNCHANGED, ids frozen** | THE TALLYMAN is an auditor figure, not a scouting one. `DATA.bosses[].id` is the `b` part of the fingerprint and a `bossnamed` bark key. Note the loose end: his badge-bound line ("has been walking off with badges since before you were born," `js/dialogue.js:248`) takes the new currency noun. |
-| **The critter roster** (18 species, `js/data.js:152-196`) | **SURVIVES UNCHANGED as a species list. Its REGISTER is unruled.** | Derived from the geography lock, not from the premise, so the list is safe. But the cute half of the old tone order lived in these animals and in `cuteEye` (`ART_STYLE.md:149` `[spec]`), and nothing in the reboot has re-toned them. That is open call 26 and it blocks the art pass, not this document. |
+| **The critter roster** (18 species, `js/data.js:152-196`) | **SURVIVES UNCHANGED as a species list. Its REGISTER is unruled.** | Derived from the geography lock, not from the premise, so the list is safe. But the cute half of the old tone order lived in these animals and in `cuteEye` (carried by the superseded `ART_STYLE.md`, dead with it, see `docs/preproduction/RULINGS.md` `[spec]`), and nothing in the reboot has re-toned them. That is open call 26 and it blocks the art pass, not this document. |
 | **AUTHENTICITY's species lock** (`AUTHENTICITY.md:588-627`) | **SURVIVES UNCHANGED, and gets promoted** | It was owner decision 7; the reboot should close it as settled. New risk the reboot creates: a sanctuary of strangers who arrived last week invites the question of where they came from. The prohibition on stating a location is at `AUTHENTICITY.md:591` ("Never say it out loud. It should only be inferable from the species mix") and `:1358` ("Not a code change and never visible as a place name"); `:1352` is the consequence if a location is ever stated (re-derive the whole species list). Rule now: the road, the town and the county stay unnamed forever. |
 | **The merit badge economy** | **BREAKS as a name and an institution. SURVIVES as a mechanism, re-housed.** | With no scouts, nothing awards a badge and nobody has a badge-shaped reason to walk into the woods, which was the economy's real structural job. The replacement is in chapter two: you cut the token off the thing you killed and bring it back. Two honest corrections to the earlier version of this row. **(a)** The token is the maker's signature, not a record that something saw YOU: it exists before you arrive and can be cut off a body you never looked at (`js/dialogue.js:103`, `:197`, `:231`). What carries your witness is the archive entry, and chapter two says so. **(b)** The ceremony lines do survive almost verbatim (`js/dialogue.js:171-173`), but the act two ask does not (`js/dialogue.js:232`): if tokens are the nightly currency, Brock has handled hundreds by act 2. That beat is one of the things the currency change rewrites, and chapter two re-scopes it to far-maker tin. So the economy swap is not free. |
 | **The 14 merit badges as dares** (`js/feats.js:94-228`) | **SURVIVES REFRAMED, ids frozen, EXCEPT four payloads** | Names and copy are player-facing strings; the ids are triple duty (save ledger key, fingerprint `f` part, derived emblem painter names `P.mb_<id>`), and the repo has done exactly this rename once and documented it (`js/feats.js:11-17`). **But three badges pay out a weapon, which ruling 2 deletes:** `js/feats.js:110` (firecracker), `:155` (Compass Boomerang), `:173` (Camp Bugle). Those payloads need designing, not renaming, and they belong in the weapons row. The fourth is `js/feats.js:182`, the `sashline` cosmetic, which belongs in the sash row. |
@@ -1805,7 +1808,8 @@ title carries and that the project already treats as an asset worth a legal opin
 (`AUTHENTICITY.md:1316`). Measured cost of the cast swap alone: 111 rendered clips plus their
 recipes, Brock's pass and re-render, the line-book rows that carry scout vocabulary,
 character-keyed sites across nine js modules, the unlock economics in `js/roster.js:8-20`, and the
-newest section of the art canon (`ART_STYLE.md:125-152`, written about Max, Junie and Gus by name).
+newest section of the art canon (the teenage amendment the superseded `ART_STYLE.md` carried,
+written about Max, Junie and Gus by name; see `docs/preproduction/RULINGS.md`).
 And the replacement raises the accuracy bar at the worst moment: `STORY_DESIGN.md:75` demands the
 right knot and the right boat, `AUTHENTICITY.md` has a large body of scoutcraft research behind that
 demand, and burn-crew, trapline and jacklighting procedure have none. The two day-one misses the
@@ -1869,14 +1873,18 @@ From the completeness critic. Split into what is now unblocked and what still is
 
 6. **The bestiary's register is unruled.** 18 species (`js/data.js:152-196`) and 5 bosses
    (`js/data.js:255-261`) are 23 of roughly 27 painted bodies in any scene, cute was carried by
-   them and not by the cast, and `ART_STYLE.md:149` `[spec]` still contracts `cuteEye` for
-   friendlies. Open call 26.
-7. **Silhouette distinctness is the worst case that exists.** `ART_STYLE.md:38-40` `[spec]` requires
-   a tell readable at 30 px, and the measured roster mean was 0.430 pairwise IoU against a 0.60
-   threshold with tails, ears and antlers available. Four human teenagers have none of that, and
-   identity cannot be parked in the tool, because `DATA.characters` splits body `spr` from `held`
-   (`js/data.js:17-18`) `[code]` and the held tool is the thing that changes most over a run. No
-   heights, builds, hair or accent colours are assigned by this document.
+   them and not by the cast. The `cuteEye` contract for friendlies died with the superseded
+   `ART_STYLE.md` on 2026-07-30 (`docs/preproduction/RULINGS.md` `[spec]`), so nothing contracts
+   the register now and nothing replaces it either. Open call 26. It still blocks the art pass.
+7. **The human cast has no silhouette tells and no assigned identity signals.** The requirement is
+   in-play readability per creature (does it read as what it is, at true game scale, in motion, with
+   its tell named), and separation is required only between creatures that share a room:
+   `docs/preproduction/RULINGS.md` `[spec]`, correction 1, which replaced the pairwise-distinctness
+   requirement this item used to carry. The animals have tells available (tails, ears, antlers). The
+   human teenagers have none of that, and identity cannot be parked in the tool, because
+   `DATA.characters` splits body `spr` from `held` (`js/data.js:17-18`) `[code]` and the held tool
+   is the thing that changes most over a run. No heights, builds, hair or accent colours are
+   assigned by this document.
 8. **The NPC population is unbudgeted.** Twenty named people plus absence states, against a shipped
    camp with exactly two NPC sprites (`npc_mailcarrier`, `npc_quartermaster`) and a ten-speaker
    voice table (`tools/voice/voices.json`) `[code]`. That is XL of new authored humans. Open call 6
