@@ -12,9 +12,12 @@ renamed in code yet, on purpose, because display names and internal ids stay
 separate (see GOTCHAS). Trust `docs\preproduction\RULINGS.md` over any name you
 find in source or README.
 
-It ships as a browser game (index.html plus plain `js/*.js` script tags, no
-bundler, no build step for the code itself) and doubles as an Electron desktop
-app (see package.json's `build` block). Every sprite is code painted at runtime
+It is BUILT as a browser game (index.html plus plain `js/*.js` script tags, no
+bundler, no build step for the code itself) and packaged as an Electron desktop
+app (see package.json's `build` block). SHIPPING IS RULED STEAM ONLY, with a
+playable demo on Steam. The browser build is retired as a shipping surface and
+kept as an internal build target, so it is still how the game is run and tested,
+just not how it reaches players. Every sprite is code painted at runtime
 (js/sprites.js) and every sound effect is synthesised in code; music and voice
 lines are the exception, pre-rendered to 223 `.webm` files plus a manifest under
 `assets\`, shipped inside the Electron package. CODE PAINTED ART IS BEING
@@ -33,9 +36,10 @@ Verified against package.json:
 - `npm run audio:music:test` -> `node tools/render/selftest.cjs` : music render self test.
 - `npm run audio:manifest` -> `node tools/manifest.cjs` : rebuilds `assets\manifest.json`.
 - `npm run rooms:check` -> `node tools/validate_rooms.cjs` : the layout validator, see below.
+- `npm test` -> `node tools/smoke.cjs` : the engine smoke test, see below.
 
-There is no `test` script, no tsconfig, no eslint config and no `.github`
-directory (checked: none present at repo root).
+There is no tsconfig, no eslint config and no `.github` directory (checked:
+none present at repo root).
 
 To play or serve the game locally in a browser (not the Electron shell): open
 `index.html` directly, or serve it to sidestep local file restrictions, per
@@ -47,14 +51,18 @@ README.md:
 
 ## WHERE CANON LIVES
 
-`docs\preproduction\RULINGS.md` is being written right now by another agent.
-Once it exists, it is the single file that outranks every other design
-document, both in `docs\preproduction\` (BOSS_DESIGN.md, COMBAT_ARCHITECTURE.md,
-ENEMY_DESIGN.md, and the rest) and at the repo root (ART_STYLE.md,
-BUILD_ARCHITECTURE.md, COOP_DESIGN.md, LEVEL_DESIGN.md, and the rest). Those
-documents are large (several run past 100 KB) and must not be quoted directly
-in a brief or a commit once RULINGS.md covers the point: point at RULINGS.md
-instead.
+`docs\preproduction\RULINGS.md` EXISTS AND IT OUTRANKS EVERYTHING. It is the
+single file that governs every other design document, both in
+`docs\preproduction\` (BOSS_DESIGN.md, COMBAT_ARCHITECTURE.md, ENEMY_DESIGN.md,
+and the rest) and at the repo root (ART_STYLE.md, BUILD_ARCHITECTURE.md,
+COOP_DESIGN.md, LEVEL_DESIGN.md, and the rest). Those documents are large
+(several run past 100 KB) and must not be quoted directly in a brief or a
+commit once RULINGS.md covers the point: point at RULINGS.md instead.
+
+Read it before writing any brief. It exists because the three grounding audits
+contradicted each other in eleven places and two claims in canon were
+factually wrong, so a document that looks authoritative may be superseded on
+exactly the point you are about to cite.
 
 ## THE CANONICAL PATTERN
 
@@ -69,16 +77,28 @@ nobody checks.
 
 ## THE VALIDATOR PATTERN
 
-`tools\validate_rooms.cjs` is the only working automated gate in the repo.
-It concatenates the real engine source (`data.js`, `props.js`, `collide.js`,
-`room.js`, `rooms.js`) behind a small stub and evaluates it once in a Node
-`vm` context: no DOM, no canvas, no game state, just the real logic run
-headlessly. It has a documented CLI (`--layout <id>`, `--json`, `--verbose`,
-`--selftest`) and exits 1 if any layout fails a predicate that was actually
-evaluated, 0 otherwise (verified by running it: current baseline is 33 of 46
-layouts failing at least one predicate, 85 failures, exit code 1). New
-tooling should copy this shape: load real engine code headlessly, expose a
-CLI with `--json` and `--selftest`, and return a real nonzero exit code on
+`tools\validate_rooms.cjs` and `tools\smoke.cjs` are the working automated
+gates in the repo, and they are the same shape.
+
+`validate_rooms.cjs` concatenates the real engine source (`data.js`,
+`props.js`, `collide.js`, `room.js`, `rooms.js`) behind a small stub and
+evaluates it once in a Node `vm` context: no DOM, no canvas, no game state,
+just the real logic run headlessly. It has a documented CLI (`--layout <id>`,
+`--json`, `--verbose`, `--selftest`) and exits 1 if any layout fails a
+predicate that was actually evaluated, 0 otherwise. ITS CURRENT BASELINE IS A
+FAILURE: 33 of 46 layouts fail at least one predicate, 85 failures, exit code
+1. That is the known state, not a regression you just caused.
+
+`smoke.cjs` is `npm test` and copies that pattern with ten engine files. Four
+checks: a META save round trip, seed reproducibility through `Run.begin`, the
+rng cursor read and seek, and item offer determinism. It exits 0 today. It
+stops below `js\ui.js`, which takes a 2d canvas context at file scope, so no
+Node harness can load that file. It also prints a `Math.random` call site
+count as a RATCHET rather than a gate: 51 real sites, and the number should
+only ever go down.
+
+New tooling copies this shape: load real engine code headlessly, expose a CLI
+with `--json` and `--selftest`, and return a real nonzero exit code on
 failure.
 
 ## GOTCHAS
