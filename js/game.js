@@ -237,10 +237,25 @@ class Game {
   // ---------------- 3.0 substrate ----------------
 
   // The simulation's random stream, and the only one a trait, a hook or an
-  // item is allowed to draw from (COOP_DESIGN.md C7). It delegates to
-  // Math.random today and it exists so that seeding it later is a one line
-  // change in one file rather than an audit of the whole item catalogue.
-  rng() { return Math.random(); }
+  // item is allowed to draw from (COOP_DESIGN.md C7). Delegates to the run's
+  // seeded stream (js/run.js's Run.rng, the same mulberry32 stream Room
+  // draws its own placement from, js/run.js:942) whenever a run is actually
+  // driving this game, so a replay and a desync check have one place to
+  // seed, which is what this comment used to only promise.
+  //
+  // Falls back to Math.random when no run is active. Two real paths hit
+  // that fallback and both are supposed to: a Game is constructed before
+  // Run.begin() runs (js/ui.js:164 builds the Game, js/ui.js:174 calls
+  // Run.begin(), in that order, so Run.active can even still be true and
+  // stale from a PREVIOUS night for the first few lines of a fresh Game's
+  // constructor), and the MBM_FIELD open field debug path (js/ui.js:7)
+  // never calls Run.begin() at all, so Run.active stays false for the
+  // whole of a field session and every draw here is exactly what it was
+  // before this change.
+  rng() {
+    if (typeof Run !== 'undefined' && Run && Run.active && Run.rng) return Run.rng();
+    return Math.random();
+  }
 
   // Whose damage this is. The caller says so when it knows, a projectile
   // carries the scout who fired it, and anything that names nobody belongs
@@ -627,7 +642,11 @@ class Game {
         out.push({ kind: 'filler', id: f.id, isNew: false, lvl: 0 });
       }
     } else {
-      out = Pool.offer(owner, n, this, { entries });
+      // rng: this.rng() is the seeded stream (see rng() above) whenever a
+      // run is driving this game, so a level up offer draws from the same
+      // one place a seeded replay reseeds. opts.rng falls back to
+      // Math.random on its own (js/pool.js:238) if this were ever left out.
+      out = Pool.offer(owner, n, this, { entries, rng: () => this.rng() });
     }
     // What the open panel is showing, so applyChoice can tell the pool's
     // memory which of these cards was turned down (rule 1).

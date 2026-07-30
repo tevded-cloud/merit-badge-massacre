@@ -14,7 +14,8 @@
     "audio:music": "electron tools/render && node tools/render/encode.cjs",
     "audio:music:test": "node tools/render/selftest.cjs",
     "audio:manifest": "node tools/manifest.cjs",
-    "rooms:check": "node tools/validate_rooms.cjs"
+    "rooms:check": "node tools/validate_rooms.cjs",
+    "test": "node tools/smoke.cjs"
   },
   "devDependencies": {
     "electron": "^31.3.0",
