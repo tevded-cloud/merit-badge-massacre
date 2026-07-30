@@ -1,9 +1,9 @@
 // Merit Badge Massacre: the room catalogue. Room kinds, the per-act running
 // order, and the wave tables the combat rooms draw from.
 //
-// Nothing in this file runs today. The 1.0 game is still one open timed field
-// and reads none of it; the room runtime lands in a later wave. This is pure
-// authored content, safe to load beside the field game.
+// The room runtime is the live default path: js/ui.js:7 sets MBM_FIELD = false,
+// and js/room.js:5 says every night is rooms now. The 1.0 open timed field
+// survives only behind that MBM_FIELD debug flag, for debugging.
 //
 // ---------------------------------------------------------------------------
 // RoomDef
