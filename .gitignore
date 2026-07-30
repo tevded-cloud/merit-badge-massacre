@@ -3,3 +3,11 @@ dist/
 
 # Throwaway harnesses the verification passes drop in the root.
 __verify_*
+
+# The 2026-07-29 art method test and its output. Code painted art (illustrated
+# vector and two pixel variants) was rendered as full scene boards and REJECTED
+# by the creator, so this is the evidence for a decision that is already
+# recorded, not work in progress. Ignored rather than deleted: deleting someone
+# else's evidence is their call, not the repo's.
+artifacts/
+experiments/
