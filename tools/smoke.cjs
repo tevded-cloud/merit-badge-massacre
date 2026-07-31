@@ -425,6 +425,203 @@ function testPoolOfferDeterminism(ENGINE) {
 }
 
 // ---------------------------------------------------------------------------
+// Assertion 6: WORLD STREAM ISOLATION. js/run.js used to draw the world (the
+// plan, doors, room placement) and the simulation (traits, item rolls, level
+// ups) from the SAME mulberry32 counter, so how a fight went changed which
+// rooms came after it. This unit splits that into Run.rng (the world stream,
+// unchanged name and unchanged snapshot field on purpose, see the doctrine
+// comment at js/run.js:72) and Run.simRng (a second stream derived from the
+// same seed but decorrelated, js/run.js:130's deriveSimSeed). This is the
+// point of the whole unit: begin the same seed twice, draw nothing but world
+// draws the first time, interleave a few hundred sim draws between world
+// draws the second time, and the world draws must come out identical either
+// way. Before the split this would have failed, because the interleaved
+// draws would have come off the exact same counter the world draws do.
+//
+// simDraw() below mirrors js/game.js:260's Game.prototype.rng() delegation
+// (js/game.js:261: Run.simRng() when a run is active, Math.random()
+// otherwise) exactly. js/game.js itself is not loaded by this harness (see
+// the header comment for why: it pulls in js/hooks.js and window sized
+// globals this test does not want to stub), so this is how that delegation
+// gets exercised here rather than through a live Game instance.
+// ---------------------------------------------------------------------------
+function simDraw(Run) {
+  if (Run && Run.active && Run.simRng) return Run.simRng();
+  return Math.random();
+}
+
+// ---------------------------------------------------------------------------
+// The check that closes the hole simDraw() opens. Because simDraw is a COPY of
+// Game.prototype.rng()'s delegation rather than the method itself, every check
+// above would still pass if someone edited js/game.js to draw from Run.rng
+// again: the copy would keep drawing from the sim stream and the real game
+// would be back to one shared counter, with nothing failing. That is the
+// classic case of a test proving its own stand in.
+//
+// So this reads the real method out of js/game.js and asserts what it draws
+// from. A source assertion is a blunt instrument and this is deliberately the
+// only one in the file, but the regression it guards is exactly one
+// identifier, which is the shape a source check is actually right for. If the
+// method is ever restructured so this cannot find it, the check FAILS rather
+// than silently passing, which is the behaviour that matters.
+// ---------------------------------------------------------------------------
+function testGameRngDrawsFromSimStream() {
+  const src = fs.readFileSync(path.join(JS_DIR, 'game.js'), 'utf8');
+  const m = src.match(/\n\s*rng\(\)\s*\{([\s\S]*?)\n\s*\}/);
+  if (!m) {
+    throw new Error('could not find Game.prototype.rng()\'s body in js/game.js. ' +
+      'Either the method was renamed or restructured: this check must be updated to match it, ' +
+      'not deleted, because it is the only thing tying the real method to the sim stream.');
+  }
+  const body = m[1];
+  if (body.indexOf('Run.simRng') === -1) {
+    throw new Error('js/game.js\'s rng() does not reference Run.simRng. The simulation must draw ' +
+      'from the sim stream, or how a player fights changes which rooms the night deals.');
+  }
+  if (/Run\.rng\b/.test(body)) {
+    throw new Error('js/game.js\'s rng() references Run.rng, the WORLD stream. That is the shared ' +
+      'counter this split removed: world generation and combat must not read the same dice.');
+  }
+}
+
+function testWorldStreamIsolation(ENGINE) {
+  const Run = ENGINE.Run;
+  const charId = Object.keys(ENGINE.DATA.characters)[0];
+  const seed = 0xFACADE;
+  const WORLD_DRAWS = 20;
+  const SIM_DRAWS_PER_STEP = 15; // 20 * 15 = 300 sim draws total: "a few hundred".
+
+  const planBase = flattenPlan(Run.begin(charId, seed));
+  const worldBase = [];
+  for (let i = 0; i < WORLD_DRAWS; i++) worldBase.push(Run.rng());
+
+  const planInterleaved = flattenPlan(Run.begin(charId, seed));
+  const worldInterleaved = [];
+  for (let i = 0; i < WORLD_DRAWS; i++) {
+    for (let j = 0; j < SIM_DRAWS_PER_STEP; j++) simDraw(Run);
+    worldInterleaved.push(Run.rng());
+  }
+
+  assertDeepEqual(planInterleaved, planBase,
+    'the plan built inside begin() must be identical whether or not the sim stream is later drawn ' +
+    'from hundreds of times; the plan is built before either script touches either stream by hand');
+  assertDeepEqual(worldInterleaved, worldBase,
+    'Run.rng (the world stream) must be unaffected by ' + (WORLD_DRAWS * SIM_DRAWS_PER_STEP) +
+    ' draws from Run.simRng (the sim stream) interleaved between them. A mismatch here means the two ' +
+    'streams are not actually independent: before this unit split them, simulation draws (traits, ' +
+    'item rolls, level ups) came off the same counter the world reads, so how the player fought a ' +
+    'room changed which room the plan or a door dealt next.');
+}
+
+// ---------------------------------------------------------------------------
+// Assertion 7: THE TWO STREAMS ARE ACTUALLY DIFFERENT. Isolation alone is not
+// enough to prove the split is real: two independently seeded but identical
+// generators would also pass assertion 6. js/run.js:130's deriveSimSeed runs
+// the world seed through the same avalanche mix entropySeed() uses on the
+// clock, with a distinct constant folded in first, specifically so the sim
+// seed lands nowhere near the world seed. This draws the first few values of
+// each stream from the same seed and checks they diverge.
+//
+// Run.rng has already been drawn from by buildPlan() inside begin(), so it
+// is seeked back to its own pristine start first: mulberry32's internal
+// counter begins equal to its seed before any draw touches it (the same fact
+// assertion 3 above, testRngCursor, already exercises), so this is a fair
+// first-N-draws comparison against Run.simRng, which begin() never draws
+// from at all.
+// ---------------------------------------------------------------------------
+function testStreamsAreActuallyDifferent(ENGINE) {
+  const Run = ENGINE.Run;
+  const charId = Object.keys(ENGINE.DATA.characters)[0];
+  const seed = 0x1234;
+  Run.begin(charId, seed);
+  Run.rng.seek(seed);
+
+  const worldDraws = [];
+  for (let i = 0; i < 8; i++) worldDraws.push(Run.rng());
+  const simDraws = [];
+  for (let i = 0; i < 8; i++) simDraws.push(Run.simRng());
+
+  if (deepEqual(worldDraws, simDraws)) {
+    throw new Error('Run.rng and Run.simRng produced identical first 8 draws from the same seed ' +
+      '0x1234 (world=' + jsonish(worldDraws) + ', sim=' + jsonish(simDraws) + '). That means either ' +
+      'deriveSimSeed (js/run.js:130) is not actually decorrelating the sim seed from the world seed, ' +
+      'which would be a broken derivation, or this is a genuine collision, which would be a real ' +
+      'coincidence worth investigating rather than assuming away.');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Assertion 8: SIMRNG IS NOT REQUIRED ON A LOADED SNAPSHOT. js/run.js:301's
+// parseSave() deliberately does not require s.simRng, and js/run.js:1118's
+// resume() tolerates its absence by leaving Run.simRng exactly where begin()
+// just seeded it fresh, rather than seeking it. This is the one thing in the
+// whole unit that can silently destroy a player's saved night if it is ever
+// gotten wrong, so it gets its own check: build a snapshot in exactly the
+// shape js/run.js:1044-1058's _write() produces, but from a build before
+// this unit (no simRng field at all), drop it straight into the stub
+// localStorage under Run's own save key, and confirm Run.peek() (which reads
+// through parseSave()) still accepts it.
+//
+// This harness cannot drive a snapshot all the way through Run.resume() and
+// Run.advance() to a built room: advance() reads gameRef() (js/run.js:447),
+// which reads App.game, and App is never stubbed here on purpose, the same
+// reason this harness never calls Room.enter() (see the file header comment)
+// (grepped App/room.enter/gameRef across this file before writing this
+// comment: neither is referenced anywhere else in this harness). What this
+// proves is the validation gate itself: a snapshot missing simRng is not
+// rejected outright, which is the failure mode that would destroy a save.
+// ---------------------------------------------------------------------------
+const RUN_SAVE_KEY = 'mbm_run'; // must match SAVE_KEY in js/run.js; not exported, so mirrored here.
+const RUN_SAVE_VERSION = 2; // must match SAVE_VERSION in js/run.js.
+
+function planToStored(plan) {
+  return plan.map((act) => act.map((slot) => ({
+    t: slot.type,
+    l: slot.layoutId || null,
+    b: (slot.bossDef && slot.bossDef.id) || null,
+  })));
+}
+
+function testSnapshotWithoutSimRngStillLoads(ENGINE) {
+  const Run = ENGINE.Run;
+  const DATA = ENGINE.DATA;
+  const charId = Object.keys(DATA.characters)[0];
+  const weaponId = DATA.characters[charId].weapon;
+  const seed = 999331;
+
+  const plan = Run.begin(charId, seed);
+
+  const fixture = {
+    v: RUN_SAVE_VERSION,
+    id: 'smoke-fixture-no-simrng',
+    at: Date.now(),
+    seed,
+    rng: 0,
+    // simRng intentionally left out: this is the pre-this-unit snapshot shape.
+    charId,
+    act: 1,
+    roomIdx: 0,
+    recent: [],
+    carvings: [],
+    plan: planToStored(plan),
+    game: { weapons: [{ id: weaponId, lvl: 1 }], passives: {} },
+  };
+
+  ENGINE.localStorage.setItem(RUN_SAVE_KEY, JSON.stringify(fixture));
+  const loaded = Run.peek();
+
+  if (!loaded) {
+    throw new Error('a v2 snapshot with no simRng field was rejected outright by Run.peek(). An ' +
+      'absent simRng must be tolerated (reseed the sim stream from the run\'s own seed and continue), ' +
+      'not treated as an invalid save: this is the one thing in this unit that can silently destroy a ' +
+      'real player\'s saved night.');
+  }
+  assertEqual(loaded.simRng, undefined,
+    'the fixture must genuinely have no simRng field for this check to mean anything');
+  assertEqual(loaded.seed, seed, 'the rest of a snapshot missing only simRng must still come back intact');
+}
+
+// ---------------------------------------------------------------------------
 // --selftest: exercises this file's OWN assertion helpers against synthetic
 // data made up for the purpose, so the harness itself is under test at least
 // once, the same shape tools/validate_rooms.cjs's --selftest promises for
@@ -551,6 +748,10 @@ function main() {
       check('seed reproducibility (Run.begin)', () => testSeedReproducibility(ENGINE)),
       check('rng cursor read/seek (Run.rng)', () => testRngCursor(ENGINE)),
       check('pool offer determinism (js/game.js:630 seam)', () => testPoolOfferDeterminism(ENGINE)),
+      check('world stream isolation from sim draws (Run.rng vs Run.simRng)', () => testWorldStreamIsolation(ENGINE)),
+      check('world and sim streams differ from the same seed', () => testStreamsAreActuallyDifferent(ENGINE)),
+      check('a snapshot with no simRng field still loads (backward compatibility)', () => testSnapshotWithoutSimRngStillLoads(ENGINE)),
+      check('Game.prototype.rng() really draws from the sim stream (source check)', () => testGameRngDrawsFromSimStream()),
     ];
     mathRandom = measureMathRandom();
   }

@@ -70,6 +70,18 @@ const Run = (function () {
   };
 
   // ------------------------------------------------------------------ rng --
+  // Run.rng IS THE WORLD STREAM. Every draw that decides which rooms exist
+  // and what is in them goes through it: the plan (buildPlan), the door
+  // offers at every boundary, and the concrete layout a Room places on
+  // entry. Nothing input dependent may read it. The simulation (trait procs,
+  // item rolls, level up offers) draws from Run.simRng instead, a second
+  // stream below, derived from the same seed but decorrelated from this one,
+  // so how the player fights a night never changes which rooms that night
+  // deals. The name stays Run.rng rather than something like Run.worldRng,
+  // and the snapshot field stays s.rng: both are save surface, and renaming
+  // either would break every night saved before this split (display names
+  // and internal ids stay separate forever, see CLAUDE.md GOTCHAS).
+  //
   // The whole stream is one 32 bit counter, so where the dice have got to is
   // a single number. read and seek let a continued night pick the stream back
   // up exactly where it was rather than starting a new one.
@@ -103,6 +115,20 @@ const Run = (function () {
       b = Math.floor(performance.now() * 1000) >>> 0;
     }
     let h = (a ^ ((b + 0x9e3779b9) >>> 0)) >>> 0;
+    h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0;
+    h = Math.imul(h ^ (h >>> 13), 3266489909) >>> 0;
+    return (h ^ (h >>> 16)) >>> 0;
+  }
+
+  // The sim stream's seed, derived from the world seed rather than drawn from
+  // entropy: one seed still has to determine a whole night. Runs the same
+  // avalanche mix entropySeed folds the clock through above (two Math.imul
+  // rounds, the finalizer half of MurmurHash3) over the world seed instead,
+  // with a distinct odd constant folded in first rather than a bare seed + 1
+  // or a bare XOR, so the two streams a single seed produces start nowhere
+  // near each other.
+  function deriveSimSeed(seed) {
+    let h = ((seed >>> 0) ^ 0x9e3779b9) >>> 0;
     h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0;
     h = Math.imul(h ^ (h >>> 13), 3266489909) >>> 0;
     return (h ^ (h >>> 16)) >>> 0;
@@ -273,6 +299,12 @@ const Run = (function () {
     if (typeof s.id !== 'string' || !s.id) return null;
     if (isDone(s.id)) return null;
     if (!isNum(s.seed) || !isNum(s.rng)) return null;
+    // s.simRng is NOT required here, on purpose. A snapshot written before
+    // the sim stream existed has no such field, and refusing the snapshot
+    // over it would throw away a real player's saved night. resume() already
+    // tolerates an absent s.simRng: it leaves Run.simRng exactly where
+    // begin() just seeded it fresh from the run's own seed, rather than
+    // seeking it, so an old snapshot still loads.
     if (!isNum(s.act) || !isNum(s.roomIdx) || s.act < 1 || s.roomIdx < 0) return null;
     if (typeof s.charId !== 'string') return null;
     if (typeof DATA === 'undefined' || !DATA || !DATA.characters || !DATA.characters[s.charId]) return null;
@@ -790,6 +822,7 @@ const Run = (function () {
     charId: null,
     seed: 0,
     rng: null,
+    simRng: null,
     act: 1,
     roomIdx: 0,
     plan: null,
@@ -807,6 +840,9 @@ const Run = (function () {
       this.charId = charId || ((typeof META !== 'undefined' && META && META.selected) || 'max');
       this.seed = s;
       this.rng = mulberry32(s);
+      // Same seed, decorrelated stream (see deriveSimSeed and the WORLD
+      // STREAM doctrine comment on Run.rng above).
+      this.simRng = mulberry32(deriveSimSeed(s));
       // A fresh night is a new night, whatever it was dealt from. resume puts
       // the saved id back over this one, because a continued night is the same
       // night and has to end as the same night.
@@ -832,6 +868,7 @@ const Run = (function () {
       this.plan = null;
       this.doors = [];
       this.rng = null;
+      this.simRng = null;
       this.act = 1;
       this.roomIdx = 0;
       this._entered = false;
@@ -932,8 +969,11 @@ const Run = (function () {
       // the slot the player is walking into is decided, and nothing inside the
       // room has run yet. The dice and the recent layouts are read from before
       // the room takes its turn with them, so continuing replays this room
-      // exactly rather than dealing a different one.
-      const pre = { recent: this._recent.slice(), rng: rngRead(this.rng) };
+      // exactly rather than dealing a different one. Both streams are read
+      // here, at the same moment: the sim stream has already drawn plenty by
+      // this point (traits, item rolls from the room just left), and pre.simRng
+      // is where the NEXT room's simulation should pick back up from.
+      const pre = { recent: this._recent.slice(), rng: rngRead(this.rng), simRng: rngRead(this.simRng) };
 
       noteLayout(this._recent, slot.layoutId);
 
@@ -1007,6 +1047,7 @@ const Run = (function () {
         at: Date.now(),
         seed: this.seed >>> 0,
         rng: pre.rng >>> 0,
+        simRng: pre.simRng >>> 0,
         charId: this.charId,
         act: cur.act,
         roomIdx: cur.idx,
@@ -1074,6 +1115,13 @@ const Run = (function () {
       // repeats, and the next room's door would offer the wrong thing.
       this._recent = Array.isArray(s.recent) ? s.recent.slice(-2) : [];
       rngSeek(this.rng, s.rng);
+      // A snapshot saved before the sim stream existed has no s.simRng:
+      // isNum fails inside rngSeek, the seek is a silent no-op, and the
+      // stream stays exactly where begin() (called above) just seeded it,
+      // freshly derived from the run's own seed. That is a deliberate
+      // backward compatibility path, not an oversight: a night saved under
+      // the old shared stream still resumes rather than being refused.
+      rngSeek(this.simRng, s.simRng);
       this.act = s.act;
       this.roomIdx = s.roomIdx;
       this._entered = false;

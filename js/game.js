@@ -238,10 +238,15 @@ class Game {
 
   // The simulation's random stream, and the only one a trait, a hook or an
   // item is allowed to draw from (COOP_DESIGN.md C7). Delegates to the run's
-  // seeded stream (js/run.js's Run.rng, the same mulberry32 stream Room
-  // draws its own placement from, js/run.js:942) whenever a run is actually
-  // driving this game, so a replay and a desync check have one place to
-  // seed, which is what this comment used to only promise.
+  // SIM stream (js/run.js's Run.simRng), never to Run.rng. Run.rng is the
+  // WORLD stream: js/run.js:942 is where Room draws its own placement from
+  // it, and this draw must NOT be that same stream. Before the split they
+  // were one counter, so a trait proc or an item roll consumed a draw the
+  // world would otherwise have read next, and which rooms the plan dealt
+  // afterward silently depended on how the player had just fought. Two
+  // streams from one seed fixes that: seed plus inputs still reproduces a
+  // night exactly, and seed alone now reproduces the woods regardless of how
+  // anyone plays.
   //
   // Falls back to Math.random when no run is active. Two real paths hit
   // that fallback and both are supposed to: a Game is constructed before
@@ -253,7 +258,7 @@ class Game {
   // whole of a field session and every draw here is exactly what it was
   // before this change.
   rng() {
-    if (typeof Run !== 'undefined' && Run && Run.active && Run.rng) return Run.rng();
+    if (typeof Run !== 'undefined' && Run && Run.active && Run.simRng) return Run.simRng();
     return Math.random();
   }
 
