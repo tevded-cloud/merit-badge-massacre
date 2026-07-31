@@ -1,6 +1,6 @@
 ---
 name: release-gate
-description: The pre-ship verification pass for this game. Use before ANY internal build handed to the owner, before packaging a desktop build, before anything that would go to Steam, and at the end of any wave large enough that the orchestrator wants a real verdict. Runs the full eleven area matrix and returns SHIP or DO NOT SHIP with defects ranked by player impact.
+description: The pre-ship verification pass for this game. Use before ANY internal build handed to the owner, before packaging a desktop build, before anything that would go to Steam, and at the end of any wave large enough that the orchestrator wants a real verdict. Runs the full twelve area matrix and returns SHIP or DO NOT SHIP with defects ranked by player impact.
 model: opus
 ---
 
@@ -60,7 +60,7 @@ This file itself gets checked against the repo on every run, because it
 rotted once already: if its REPO line or any area below no longer matches
 what you find, say so before anything else in your report.
 
-## The eleven areas
+## The twelve areas
 
 Run all of them. A pass in one area never excuses skipping another.
 
@@ -73,6 +73,13 @@ Run all of them. A pass in one area never excuses skipping another.
    cast's names and that is correct: display names and internal ids are separate
    forever, so an id that does not match a current character is not a defect and
    is never to be renamed.
+   ON THE SAME WALK, CONFIRM NO SEED IS EXPOSED ANYWHERE. Seed selection and
+   seed input are ruled out: starting a night is the only input a player gives,
+   and no screen shows, offers or accepts a seed. Check the title, the camp, the
+   trailhead, the pause menu and the results screen. The seed still exists and is
+   still stored, which is correct and is what makes save, resume and bug
+   reproduction work; it is simply never player facing. A seed visible on any
+   shipped screen is a finding.
 
 2. A WINNING RUN. Reach and kill all three bosses, unwarped where you can and
    warped where you must (say which). Confirm every boss phases correctly and
@@ -123,12 +130,18 @@ Run all of them. A pass in one area never excuses skipping another.
    output, and compare each against its KNOWN STANDING below. A change in either
    direction is a finding. Matching the known standing is not a finding, and
    reporting a known standing as a fresh break is itself a defect in your report.
-   - `npm test` (`tools/smoke.cjs`). Four engine checks: a META save round trip,
-     seed reproducibility through Run.begin, the rng cursor read and seek, and
-     item offer determinism. KNOWN STANDING: 4 pass, 0 fail, EXIT 0. Any failure
-     here is a blocker. It also prints a Math.random call site count as a RATCHET
-     and not a gate, 51 real sites under top level js/*.js; that number going up
-     is a finding, going down is progress.
+   - `npm test` (`tools/smoke.cjs`). Eight engine checks: a META save round trip,
+     seed reproducibility through Run.begin, the rng cursor read and seek, item
+     offer determinism, the world stream staying unaffected by simulation draws,
+     the two streams differing from one seed, an old snapshot with no simRng
+     field still loading, and a source check that Game.prototype.rng() really
+     draws from the sim stream. KNOWN STANDING: 8 pass, 0 fail, EXIT 0. Any
+     failure here is a blocker. That last check is a source assertion on purpose:
+     js/game.js cannot load in a Node harness, so without it every other stream
+     check would still pass while the real game drew from the wrong one. It also
+     prints a Math.random call site count as a RATCHET and not a gate, 51 real
+     sites under top level js/*.js; that number going up is a finding, going down
+     is progress.
    - `npm run masters:check` (`tools/validate_masters.cjs`). The master file
      gate. It fails when a folder gains a file its master does not name, when a
      master cites a path that does not exist, when a master stops being reachable
@@ -148,7 +161,7 @@ Run all of them. A pass in one area never excuses skipping another.
     about controls and about run structure before, and a manual that lies is a
     real defect.
 
-11. DISTINCTIVENESS. The other ten areas contain zero craft checks; this one
+11. DISTINCTIVENESS. The other eleven areas contain zero craft checks; this one
     exists because a build can pass every one of them and still be forgettable.
     Would this be mistaken for a generic entry in its genre? Does any line, any
     room, any sound read as filler rather than authored? Name at least one
@@ -158,6 +171,29 @@ Run all of them. A pass in one area never excuses skipping another.
     readability is measured per creature, and separation is required only between
     creatures that share a room. Two creatures that never spawn together looking
     alike is not a defect and is not a finding.
+
+12. THE GORE TOGGLE. Gore ships and a settings toggle suppresses it, ruled
+    2026-07-30 (RULINGS.md, ruling 5). AS OF THIS WRITING NEITHER THE CONTENT NOR
+    THE TOGGLE EXISTS, so this area is NOT APPLICABLE and "not applicable, no gore
+    content on disk, checked" is the correct result today. Do not report the
+    absence as a defect, and do not certify it PASS either. What was checked, so
+    you can re-check it rather than trusting this paragraph: settings live in one
+    object at js/ui.js:11 holding musicVol, sfxVol, voiceVol, shake, dmgNums and
+    subtitles, persisted to the mbm_settings localStorage key at js/ui.js:17, with
+    no gore key in it; and a case-insensitive grep for gore, gory and blood across
+    js\ finds no gore system, only prose in comments and devtools hint text, the
+    blood trait FAMILY name at js/pool.js:41, a card palette entry at
+    js/sprites.js:2486 and one dialogue line at js/dialogue.js:103.
+
+    ONCE GORE CONTENT EXISTS, PASS means all four of these and you prove each one.
+    The toggle is reachable in the settings screen and its state survives a
+    reload. With it OFF, no gore is drawn or played anywhere you can reach: in a
+    run, at camp, and on the death and results screens. With it off the game is
+    STILL UNSETTLING, which is the ruling's own rule that anything a toggle can
+    remove cannot be load bearing; that one is a judgement and it belongs here
+    because no other area measures it. And the toggle changes ONLY gore: same
+    difficulty, same drops, same everything else. A toggle that also softens the
+    game is a defect, not a courtesy.
 
 ## How to work
 
@@ -184,7 +220,7 @@ this and does not want jargon. Say "the badge screen", not "the feats modal".
 Open with the VERDICT in one line: SHIP or DO NOT SHIP. If a tree moved under
 you, say that first instead.
 
-Then a table of the eleven areas with PASS or FAIL and the single strongest piece
+Then a table of the twelve areas with PASS or FAIL and the single strongest piece
 of evidence for each.
 
 Then DEFECTS RANKED BY PLAYER IMPACT, not by area and not by severity label. For

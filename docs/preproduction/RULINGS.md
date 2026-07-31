@@ -57,15 +57,19 @@ Ruled, closed, not up for debate. Sourced from the creator rulings block at
     are the resting-thumb verbs glass is structurally worst at.
     `COMBAT_ARCHITECTURE.md:1050-1055`, `GROUNDING_AUDIT_1.md:165-166` and `:191`.
 11. **ART IS AUTHORED, MADE WITH THE CREATOR'S OWN TOOL.** Procedural and code-generated art is
-    rejected. The register is eerie, cute is dead everywhere, and the register spec goes in an art
-    bible handed to GTS. `PREMISE_2.md:36-39`. See TASK: ART BIBLE below.
+    rejected. The register is eerie, and the register spec goes in an art bible handed to GTS.
+    `PREMISE_2.md:36-39`. The art bible is tracked under WHAT THESE RULINGS OPENED below.
+    **AMENDED BY RULING 6.** This item used to read "cute is dead everywhere". The creator narrowed
+    that on 2026-07-30: cute is not a north star and is never aimed for, but a creature that happens
+    to read as cute is not a defect. Read this item together with ruling 6, which is the later text
+    and governs the register question.
 12. **FULL HUMAN VOICE ACTING IS THE TARGET.** `PREMISE_2.md:94`.
 
 ---
 
 ## RULINGS MADE 2026-07-30
 
-Four new creator rulings. Quoted text is verbatim.
+Seven new creator rulings. Quoted text is verbatim.
 
 ### 1. CO-OP SHIPS AS A SEPARATE TENSE MODE
 
@@ -148,6 +152,170 @@ One consequence to record: `GROUNDING_AUDIT_1.md:169` argued against building an
 because it would freeze the ledger count as a scale term. Under this ruling the ledger count is no
 longer a scale term for the active, so that argument no longer applies. The cap of one was already
 in `BUILD_ARCHITECTURE.md` regardless.
+
+### 5. GORE IS IN, WITH A SETTINGS TOGGLE
+
+Creator's words, verbatim:
+
+> "gore is IN, but like games have, we can have a toggle in the settings that blood with the tags
+> just arent shown right?"
+
+**GORE SHIPS.** It is toggleable in the settings the ordinary way games are, and the toggle
+suppresses gore content and changes nothing else about the game: same difficulty, same drops, same
+everything else.
+
+This closes a question two agent definitions were answering in opposite directions.
+`.claude/agents/sound-designer.md` carried "Never gory" and `.claude/agents/sprite-artist.md`
+carried gore permitted at Isaac's level and toggleable. **The "Never gory" line is dead, and the
+permission is confirmed rather than merely tolerated.**
+
+**THE ARCHITECTURE THIS FORCES, which is the part worth writing down.** Gore is authored as
+SEPARATELY TAGGED CONTENT that can simply not be shown. It is never baked into a base asset,
+because a blood-stained base sprite cannot be un-stained by a setting, which would make the setting
+a lie. This is the same principle the old doctrine had, but the old doctrine stated it as "a
+separate, last-applied layer in every painter" and argued it was cheap "because our art is code",
+which was written for the code-painting method settled item 11 retires. Restated for AUTHORED
+ASSETS: gore is its own tagged content, and the toggle is a filter on what gets drawn. The craft
+half holds under either method: never mix blood into a base colour, a fur clump or an outline, and
+never bake a wet layer into a cue that also carries the hit.
+
+**THE RULE THAT ALREADY SURVIVED THIS QUESTION STAYS, and it is now MORE load bearing rather than
+less:**
+
+  IF THE TOGGLE CAN REMOVE IT, IT CANNOT BE LOAD-BEARING.
+
+The toggle exists and players will use it, so whatever carries the unease has to work with gore
+switched off, or the game is not frightening for every player who turns it off. Blood is
+punctuation on top of something that was already wrong. The acceptance test that goes with it
+stands, on every creature, cue and room: render it with gore off, and ask whether it is still
+wrong. If the honest answer is no, the work is not finished and adding blood would not finish it.
+
+**WHAT THIS RULING DOES NOT SETTLE.** It covers the ART AND AUDIO PERMISSION and the TOGGLE'S
+EXISTENCE. It does not specify the settings UI, the tag vocabulary, or how the filter is
+implemented. All three are unwritten and are recorded under WHAT THESE RULINGS OPENED below rather
+than invented here.
+
+### 6. CUTE IS NOT A NORTH STAR
+
+Creator's words, verbatim:
+
+> "just kill cute if its still in, like there CAN be a cute animal you know? just thats not a north
+> star??"
+
+Read the two halves separately, because the distinction is the whole ruling.
+
+**CUTE IS NOT A TARGET.** Not a register, not a goal, not something to preserve. Every instruction
+to aim for cute, to protect cute, or to lead with cute is dead. That includes the sprite doctrine's
+"you are NOT abandoning the cute" and any tone ordering that begins at cute.
+
+**A CREATURE THAT HAPPENS TO READ AS CUTE IS NOT A DEFECT.** Some animals are cute; that is what
+they look like. The defect is AIMING for it. So do not overcorrect into making everything
+monstrous, and do not write a rule saying creatures must not look cute. The old doctrine's fear of
+"making monsters" was answering a real risk and that risk still exists. What changes is that cute
+is no longer the tool used to avoid it.
+
+**WHAT THIS DOES TO THE CRAFT RULES.** Several rules in `.claude/agents/sprite-artist.md` were
+justified BY cute and several were justified by READABILITY while sitting in a cute-shaped
+paragraph. They separate, one at a time:
+
+- A rule justified only by cute is dead.
+- A rule justified by readability KEEPS ITS FORCE and is re-derived from readability. The clearest
+  case is the IDENTITY law about eye size, which sat beside the sentence "faces are big, readable,
+  and forward: if a shape change costs face readability, the shape change loses." That
+  justification is readability and it survives. **THE READABILITY REQUIREMENT IS BINDING; THE
+  SPECIFIC PROPORTION IS NOT.** Whether eyes must own at least a third of the head width is a
+  cute-register number, and it is now undecided and belongs to the art bible.
+- `cuteEye()` is an INTERNAL ID in `js/sprites.js` (9 occurrences, and a grep for `cuteEye` over
+  `js/` matches that one file) and **IS NEVER RENAMED**, under this repo's standing rule that
+  display names and internal ids are separate forever. It draws a friendly-reading eye with its
+  wet specular and lower lid crescent. Keep it as a code fact and stop reading its NAME as
+  doctrine.
+
+**THE TONE ORDERING BECOMES:** the wrong is allowed to stay, and the discomfort is not resolved
+inside the sprite or the cue. The old third beat, a joke after every heavy moment, was already
+struck as a flinch, and it is not to be reintroduced.
+
+**WHAT THIS RULING DOES NOT SETTLE.** The register spec still belongs to the unwritten art bible,
+and the eye proportion goes with it. This ruling amends settled item 11's "cute is dead everywhere"
+wording and does not touch anything else in that item.
+
+### 7. THE SIGNED WEAR HUMAN THINGS THEY HAVE FOUND
+
+Creator's words, verbatim:
+
+> "Just human things they have found, maybe some have scout gear who knows"
+
+**THE CATEGORY IS FOUND HUMAN THINGS, NOT SCOUT GEAR.** `.claude/agents/sprite-artist.md` made
+"SCAVENGED SCOUT GEAR" the lore rule that makes its costume-density bar work at every size. That
+framing is dead AS THE RULE. Scout gear is now one possible source among many, allowed and
+unremarkable, not the identity.
+
+**WHY IT CHANGED, and it explains itself in one line.** The cast are no longer scouts (settled item
+3), so a universal scout-gear costume on every enemy was a leftover from the premise the reboot
+replaced. The camp is a sanctuary for whoever was in or near the woods, and what the Signed find
+reflects that.
+
+**THE MECHANISM SURVIVES COMPLETELY, and it is the part that carries the unease, so it keeps its
+reasoning.** Human gear on an animal that does not understand it, worn wrong, SIZED FOR A PERSON
+AND NOT FOR THAT ANIMAL, so it reads as TAKEN FROM SOMEBODY rather than as a costume tailored to
+the creature. The old line stands: if a Signed critter's gear looks tailored to it, you have
+painted a mascot. Imitation without comprehension is still the whole point.
+
+**WHAT WIDENS IS ONLY THE SOURCE POOL.** Anything human that could be out there or was left behind.
+Scout kit is in that pool because a scout camp is right there, and so is everything else a person
+might have carried, worn or dropped. **DO NOT ENUMERATE A CANONICAL LIST.** The creator's "who
+knows" is deliberate range, and pinning a list now would be inventing doctrine.
+
+**THE TOKEN RULE IS UNTOUCHED AND STAYS SEPARATE.** Gear says "it is copying people". The stamped
+tin Token, the red eyes and the eye-in-ring Sign say "it has been Signed". A critter needs the
+second; the first is what makes it characterful. That distinction was never part of the open
+question and survives intact.
+
+**WHAT THIS RULING DOES NOT SETTLE.** Which species carry what, whether gear varies by act or by
+depth, and whether any gear is authored as a readable tell rather than as decoration. That is art
+bible work, the art bible is not written, and it is recorded under WHAT THESE RULINGS OPENED below.
+
+### 8. NO SEED SELECTION AND NO SEED INPUT. EVERY RUN JUST STARTS.
+
+Creator's words, verbatim:
+
+> "There should be no seed selection or input other than starting a run? Like hades doesnt have that"
+
+**THE PLAYER NEVER SEES A SEED.** No seed field, no seed on the run summary, no seed in the pause
+menu, no copying and no sharing. Starting a night is the only input. Hades is the named reference
+and it works exactly this way.
+
+**THE SEED STILL EXISTS AND STAYS INTERNAL.** It is being kept private, not removed. `js/run.js`
+reads entropy exactly once per night (`entropySeed()`), stores that number, and everything after it
+comes out of it. Three things depend on that and none are player facing:
+
+1. **SAVE AND RESUME.** A continued night is the same night, rebuilt from the stored seed plus a
+   cursor.
+2. **BUG REPRODUCTION.** A crash report or a QA repro can carry the seed even though no player ever
+   reads one.
+3. **CO-OP**, which ruling 1 ships as a separate tense mode. Two clients have to agree on a world.
+
+**THIS DOES NOT UNDO THE STREAM SPLIT, and the reason is worth stating because the justification
+first given for that split is now dead.** The split (commit `3b40475`) was argued for on seed
+sharing, and there is no seed sharing. It stands anyway, because it removed a COUPLING rather than
+enabling a feature: combat draws were advancing the same counter room generation read next, so a
+reported bug could not be reproduced without the reporter's exact inputs, and under co-op the world
+itself would have depended on network input timing, which is how desyncs are manufactured. Both
+hold with no seed ever shown to anyone.
+
+**THE NUMBER PEOPLE WILL REACH FOR THE SEED TO EXPLAIN, measured 2026-07-30 against the real engine
+loaded headlessly.** The seed is 32 bits (`mulberry32` takes `a >>> 0`), so 4,294,967,296 are
+possible, and 200,000 sampled seeds produced 200,000 distinct night plans with zero collisions.
+**VARIETY IS NOT LIMITED BY THE SEED. It is limited by content: 63 distinct layout ids across 27
+rooms in a night.** That second number is what decides whether night 40 feels like night 5, and no
+quantity of seeds compensates for it. Size the layout pool against it rather than against the seed
+space.
+
+**WHAT THIS RULING DOES NOT SETTLE.** Whether a developer overlay may show the seed: `js/devtools.js`
+is loaded unconditionally at `index.html:666` and ships in the public build, which is already
+tracked as its own open item, so a debug seed display is entangled with that and is not resolved
+here. And whether a future daily-run or seeded-challenge mode reopens it. Nothing rules that in or
+out; it is simply not in scope.
 
 ---
 
@@ -521,8 +689,36 @@ Outstanding, tracked, not resolved by this file.
    stub; nothing replaces it yet. Tracked in the plan at `~\.claude\plans\`. Size L. Two specific
    things died with that file and need a decision in the new bible: the two-tier line weight rule,
    and the teenage-proportion amendment that four other documents cite. Both are recorded in the
-   ART_STYLE.md stub.
+   ART_STYLE.md stub. **RULINGS 6 and 7 add four more, all of them art bible work and none of them
+   decided here:** the EYE PROPORTION (ruling 6 keeps face readability binding and retires the
+   cute-register number that expressed it, eyes at a third of the head width); and from ruling 7,
+   WHICH SPECIES CARRY WHAT found human gear, whether that gear VARIES BY ACT OR BY DEPTH, and
+   whether any of it is authored as a READABLE TELL rather than as decoration. Size S each, inside
+   the bible.
 4. **The unkillable thing is ruled but not designed.** RULING 3. Size L.
 5. **The named starting actives do not exist.** RULING 4 requires one named active per survivor,
    five of them, plus the passive-modulation rules. Size L.
 6. **Character arrival triggers need authoring.** C-5. Milestones, not run counts. Size S.
+7. **The gore toggle's surface and plumbing are unspecified.** RULING 5 settles that gore ships and
+   that a settings toggle suppresses it. It does not specify the settings UI, the tag vocabulary,
+   or how the filter is implemented, and none of the three is to be invented in a brief. Where the
+   settings surface is today, opened and verified: one object at `js/ui.js:11` holding `musicVol`,
+   `sfxVol`, `voiceVol`, `shake`, `dmgNums` and `subtitles`, persisted to the `mbm_settings`
+   localStorage key at `js/ui.js:17`, with no gore key in it. No gore system exists in the code
+   either: a case-insensitive grep for gore, gory and blood across `js/` returns only prose in
+   comments and devtools hint text, the `blood` trait FAMILY name at `js/pool.js:41`, a card
+   palette entry at `js/sprites.js:2486`, and one dialogue line at `js/dialogue.js:103`. Size M.
+8. **Whether a developer overlay may show the seed.** RULING 8 hides the seed from players and says
+   nothing about developers. It is entangled with an item that was already open before these
+   rulings: `js/devtools.js` is loaded unconditionally at `index.html:666` and ships in the public
+   build, so "a debug seed display" and "the dev overlay ships to players" are one decision, not
+   two. Decide them together. Size S.
+9. **Whether a daily-run or seeded-challenge mode ever reopens seed input.** RULING 8 rules it out
+   of scope now and does not rule it out forever. Nothing depends on it today. Size S to decide, and
+   only worth deciding if such a mode is ever wanted.
+10. **The layout pool is smaller than the variety target implies.** Measured 2026-07-30 against the
+    real engine: 63 distinct layout ids across 27 rooms in a night, against a seed space of
+    4,294,967,296 that is nowhere near the binding constraint. RULING 8 records the measurement.
+    Nobody has ruled on how large the pool needs to be for night 40 to feel unlike night 5, and it
+    is a cheaper decision now than after the rooms are authored. Size S to decide the target, L to
+    reach it.

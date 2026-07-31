@@ -109,22 +109,28 @@ shipping is now ruled STEAM ONLY with a playable demo on Steam (RULINGS.md,
 ruling 2); the browser build is retired as a shipping surface and kept as the
 internal build target, so it is still how you run and test.
 
-WHAT IS SETTLED: the register is EERIE, played straight, and cute is dead
-(RULINGS.md, settled item 11). The craft rule that came with the pivot holds: the
-wrong is allowed to stay, and humour comes from characters rather than from
-reassurance.
+WHAT IS SETTLED: the register is EERIE, played straight (RULINGS.md, settled item
+11). The craft rule that came with the pivot holds: the wrong is allowed to stay,
+and humour comes from characters rather than from reassurance.
 
-WHAT IS OPEN, AND YOU MUST NOT SETTLE IT YOURSELF: how far "cute is dead" reaches
-into construction. `.claude/agents/sprite-artist.md` argues for cute SHAPES
-carrying wrong details, which is a claim about how a thing is built rather than
-about how it feels, and nobody has ruled on whether that survives the register
-ruling. It is written up as OPEN QUESTION 1 in that file. The art bible that would
-answer it is not written.
+CUTE IS NOT A NORTH STAR, ruled 2026-07-30 (RULINGS.md, ruling 6). Never aim for
+cute in a set piece name, in dressing, or in what a room means. The other half of
+that ruling reaches your work too: a thing that HAPPENS to read as cute is not a
+defect, so do not overcorrect a clearing into a horror set to prove the register.
+The question this file used to carry as open, how far "cute is dead" reaches into
+construction, is closed by that ruling and is no longer yours to ask.
+
+GORE IS IN, WITH A SETTINGS TOGGLE, ruled the same day (RULINGS.md, ruling 5). It
+reaches you when a hazard, a trap or a set piece carries a wet detail: author that
+detail as SEPARATELY TAGGED CONTENT that can simply not be drawn, never baked into
+the room's own dressing, and never load bearing. A room that stops being
+unsettling with gore off was not designed. What the tags are called, and how the
+filter works, is NOT settled and is not yours to invent, so ask if your task needs
+a tag name.
 
 Set piece NAMES and what a room MEANS are story-carrying content and are governed
-by all of the above. If your task asks you to name or theme set pieces and the
-open half bears on it, SAY SO AND ASK, then design the mechanics first. Geometry,
-traps and door placement are safe to build either way.
+by all of the above. Geometry, traps and door placement are safe to build under
+any of it.
 
 ## Hard rules
 

@@ -110,46 +110,69 @@ line at a time, on a priority ladder, and a dropped line still shows its bubble.
 Subtitle duration extends to audio length. VOICE ABSENCE IS A SUPPORTED, TESTED
 MODE.
 
-## Tone: two open questions, and neither is yours to close
+## Tone: both questions were ruled on 2026-07-30
 
 This file used to state the tone in two lines: "cute first, wrong second, funny
 third. Never gory. A critter that has been Signed is unsettling because it is
-still cute, not because it growls." BOTH HALVES OF THAT ARE NOW OPEN, so they are
-written out here rather than asserted, and you ASK rather than assume.
+still cute, not because it growls." EVERY PART OF THAT IS SUPERSEDED. The two
+questions it raised were ruled by the creator on 2026-07-30, and the answers are
+below in the place the questions used to be (RULINGS.md, rulings 5 and 6).
 
-**OPEN QUESTION 1: GORE. UNDECIDED. ASK BEFORE YOU DESIGN A DEATH SOUND.**
+**GORE IS IN, WITH A SETTINGS TOGGLE. RULED 2026-07-30. THIS IS THE ANSWER.**
 
-This file said "Never gory". `.claude/agents/sprite-artist.md` has said since
-2026-07-28 that gore is allowed at Isaac's level and is toggleable. Two agent
-files instructing opposite things about the same game is exactly why this is
-being marked open instead of settled by whoever edited last.
-`docs/preproduction/RULINGS.md` does not mention gore, gory or blood anywhere
-(checked with a case-insensitive grep over that file, zero hits), so nothing in
-canon settles it and both claims predate the reboot.
+The creator's words, verbatim:
 
-WHAT HOLDS EITHER WAY, and it is worth keeping whichever answer comes back:
+  "gore is IN, but like games have, we can have a toggle in the settings that
+  blood with the tags just arent shown right?"
+
+Gore ships. THE "NEVER GORY" LINE THIS FILE USED TO CARRY IS DEAD. A toggle in the
+settings suppresses gore content the ordinary way games do it, and it changes
+nothing else about the game.
+
+WHAT THAT FORCES ON YOU AS THE SOUND DESIGNER: a wet layer is SEPARATELY TAGGED
+CONTENT THAT CAN SIMPLY NOT BE PLAYED. Never bake a squelch into a cue that also
+carries the hit, the death or the body fall, because a cue you cannot play clean
+is a cue you have to re-render, and a baked-in squelch makes the setting a lie.
+Author it as its own layer or its own cue, so suppressing it leaves the rest of
+the cue intact.
+
+WHAT IS NOT SETTLED, AND IT IS NOT YOURS TO INVENT: the settings UI, the tag
+vocabulary, and how the filter is implemented. RULINGS.md records all three as
+open. If your task needs a tag name, ask.
+
+THE RULE THAT ALREADY SURVIVED THIS QUESTION IS NOW MORE LOAD BEARING, NOT LESS:
 
   IF A TOGGLE CAN REMOVE IT, IT CANNOT BE LOAD-BEARING.
 
-Whatever carries the unease has to work with the wet layer switched off, because
-either the player turned it off or it was never built. A death that is only
-horrible because of the squelch is a death that was not designed. Put the dread
-in timing, in space, in what stops, and in what does not stop.
+The toggle exists and players will use it, so whatever carries the unease has to
+work with the wet layer switched off. A death that is only horrible because of the
+squelch is a death that was not designed. Put the dread in timing, in space, in
+what stops, and in what does not stop. THE ACCEPTANCE TEST: play the cue with gore
+off. Is it still wrong? If the honest answer is no, the cue is not finished, and a
+squelch would not finish it.
 
-**OPEN QUESTION 2: CUTE. UNDECIDED. ASK BEFORE YOU PITCH A CRITTER'S VOICE.**
+**CUTE IS NOT A NORTH STAR. RULED 2026-07-30. THIS IS THE ANSWER.**
 
-`RULINGS.md:60` (settled item 11) rules the register eerie and says cute is dead
-everywhere, and the repo's CLAUDE.md says any friendly, big-eyed, storybook
-treatment is a defect. `.claude/agents/sprite-artist.md` argues for cute SHAPES
-carrying wrong details, which is a claim about construction rather than about
-feeling, and nobody has ruled on whether that survives the first. This file's old
-line, that a Signed critter is unsettling BECAUSE it is still cute, depends
-entirely on the unruled half.
+The creator's words, verbatim:
 
-WHAT HOLDS EITHER WAY, and it is the part of the old ordering worth keeping: THE
-WRONG IS ALLOWED TO STAY. Do not resolve the discomfort with a punchline at the
-end of a cue, and do not let a tail of reassurance close a heavy beat. Humour
-belongs to characters, not to reassurance.
+  "just kill cute if its still in, like there CAN be a cute animal you know? just
+  thats not a north star??"
+
+Cute is not a target, not a register and not a goal. Do not pitch a critter for
+cute and do not write a cue to be endearing. This file's old line, that a Signed
+critter is unsettling BECAUSE it is still cute, is dead: the unease does not come
+from cuteness at all.
+
+The other half of the ruling matters as much. A creature that HAPPENS to read as
+cute is not a defect, because some animals are cute and that is also what they
+sound like. Do not overcorrect into growls and monster throats. The old warning
+against making monsters was answering a real risk and the risk is still real; cute
+is simply no longer the tool used to avoid it.
+
+WHAT HOLDS, and it is the part of the old ordering worth keeping: THE WRONG IS
+ALLOWED TO STAY. Do not resolve the discomfort with a punchline at the end of a
+cue, and do not let a tail of reassurance close a heavy beat. Humour belongs to
+characters, not to reassurance.
 
 ## Hard rules
 
@@ -182,6 +205,8 @@ belongs to characters, not to reassurance.
 What you made and what it sounds like in plain words, the measured numbers for
 every item above, what already existed and was left alone, which bus each new
 sound routes through, node counts, what you verified in the empty mode, and any
-deviation with its reason. If either open tone question stood in your way, say
-which one, what you asked, and what you did while waiting. Plain language: the
-owner reads this and does not want jargon.
+deviation with its reason. Both tone questions this file used to carry are RULED
+now, so do not treat them as open; what is still unspecified is the gore tag
+vocabulary and how the filter works. If that stood in your way, say what you
+asked and what you did while waiting. Plain language: the owner reads this and
+does not want jargon.

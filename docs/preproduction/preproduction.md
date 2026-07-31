@@ -11,7 +11,7 @@ on the first try and know, before you open it, how much of it is still true.
 
 ## RULINGS.md OUTRANKS EVERYTHING. READ IT FIRST AND READ IT WHOLE.
 
-`RULINGS.md` (528 lines, the smallest of the load-bearing documents) is the canon of record. It
+`RULINGS.md` (668 lines, the smallest of the load-bearing documents) is the canon of record. It
 outranks every other design document in this repo on any point where they disagree: the other 12
 files in this folder, and the ones at the repo root (`PREMISE_2.md`, `COMBAT_ARCHITECTURE.md`,
 `COOP_DESIGN.md`, `BUILD_ARCHITECTURE.md`, `LEVEL_DESIGN.md`, `AUTHENTICITY.md`, `MOTION_DESIGN.md`,
@@ -24,18 +24,25 @@ into a brief is how superseded design gets re-imported.
 
 What RULINGS.md contains, in its own five parts:
 
-1. **THE SETTLED DESIGN** (`:20-62`), twelve items that are closed and not up for debate: the reboot
+1. **THE SETTLED DESIGN** (`:20-66`), twelve items that are closed and not up for debate: the reboot
    taken as written, the working title, the five survivors and their one carried tool each, tin and
    the Reading, the sight cost, death as rotation, the roster of three, no firearms above a BB gun,
    difficulty from depth plus opt-in modifiers, controller required and touch dropped, art is
-   authored (procedural and code-generated art rejected, cute dead everywhere), full human voice
-   acting as the target.
-2. **FOUR RULINGS MADE 2026-07-30** (`:66-151`): co-op ships as a separate tense mode over hole
+   authored (procedural and code-generated art rejected), full human voice acting as the target.
+   Item 11 was AMENDED on 2026-07-30: it used to read "cute is dead everywhere" and ruling 6
+   narrowed that, so read the item and ruling 6 together.
+2. **EIGHT RULINGS MADE 2026-07-30** (`:70-321`): co-op ships as a separate tense mode over hole
    punching plus a relay library; shipping is Steam only with a playable demo on Steam and the
-   browser build retired to an internal build target; one unkillable thing in the woods ships; and
-   the flagship ability becomes a named swappable active whose effect is modulated by the player's
-   passive items.
-3. **TWO FACTUAL CORRECTIONS** (`:154-259`). Correction 1 retracts the silhouette-distinctness claim:
+   browser build retired to an internal build target; one unkillable thing in the woods ships; the
+   flagship ability becomes a named swappable active whose effect is modulated by the player's
+   passive items; gore is in, with a settings toggle, which forces gore to be authored as separately
+   tagged content rather than baked into any base asset; cute is not a north star, which kills cute
+   as a target without making a creature that happens to read as cute a defect; and the Signed wear
+   human things they have found, which retires scout gear as the rule and keeps the mechanism
+   (gear sized for a person, worn by something that does not understand it); and no seed selection
+   and no seed input, so the player never sees a seed and starting a night is the only input, with
+   the seed kept internal for save and resume, bug reproduction and co-op.
+3. **TWO FACTUAL CORRECTIONS** (`:322-430`). Correction 1 retracts the silhouette-distinctness claim:
    canon cited `ART_STYLE.md:38-40` for a 0.60 pairwise IoU bar that file never contained, the real
    0.60 is a fidelity check from a research report where high overlap is good, and it had been
    applied as a distinctness bar where low would be good, so pass and fail were inverted. The
@@ -43,15 +50,17 @@ What RULINGS.md contains, in its own five parts:
    readability measured per creature, plus separation required only between creatures that share a
    room, checkable against the real spawn tables in `js/rooms.js`. Correction 2 flattens the death
    walk: a flat 2 nights every time, no escalation, no banked debt, `META.debt` deleted.
-4. **THE ELEVEN CONTRADICTIONS, RESOLVED** (`:263-431`), C-1 through C-11, the places the three
+4. **THE ELEVEN CONTRADICTIONS, RESOLVED** (`:431-602`), C-1 through C-11, the places the three
    grounding audits disagreed with each other. Two are pure counting disputes; nine are design
    contradictions and each is resolved with a named winner or a creator ruling.
-5. **PINNED NUMBERS** (`:435-507`) and **WHAT THESE RULINGS OPENED** (`:511-528`), six outstanding
-   items that this file tracks but does not resolve.
+5. **PINNED NUMBERS** (`:603-678`) and **WHAT THESE RULINGS OPENED** (`:679-724`), ten outstanding
+   items that this file tracks but does not resolve. The last of them is worth knowing before any
+   room authoring starts: measured 2026-07-30, the game has 63 distinct layouts across 27 rooms in
+   a night, and that, not the seed space, is what decides whether nights start feeling alike.
 
 One rule inside RULINGS.md that binds anyone quoting it: the research library denominator is
 deliberately NOT pinned, because the library is live and grew while the file was being written
-(`RULINGS.md:475-492`). Every coverage figure carries the date and the command that produced it.
+(`RULINGS.md:601-618`). Every coverage figure carries the date and the command that produced it.
 
 ---
 
@@ -133,7 +142,7 @@ making, by reading the machine-readable `determines` field, instead of guessing 
 **STANDING: LIVE AS A TOOL, DATED AS DATA.** The library is outside this repo and is still being
 written, so this file is a snapshot, not a live view. It records 727 reports at `:5`, which matches
 what waves 1 and 2 counted; wave 3 counted 729, and RULINGS.md records 729 authored reports on the
-evening of 2026-07-30 after four reports were authored in six hours (`RULINGS.md:475-492`). Re-run
+evening of 2026-07-30 after four reports were authored in six hours (`RULINGS.md:601-618`). Re-run
 the count before quoting coverage, and expect it to have moved. The per-domain table at `:11-27` is
 stale in the same direction: `visual` is listed at 2 reports and three new visual reports landed on
 2026-07-30, one of which (the visual domain's species-silhouette-morphology report) bears directly on correction 1 and
@@ -224,7 +233,7 @@ strategy, and what an art bible must specify.
   retracted the whole pairwise requirement rather than re-baring it; audit 1 filed run-count roster
   arrival under WHAT THE LIBRARY CONFIRMS at `:190`, a heading whose whole purpose is that settled
   things stay settled, and C-5 reopens it explicitly and rules against it.
-- **One structural trap named in RULINGS.md itself** (`:395-397`, C-9): two audit sentences can each
+- **One structural trap named in RULINGS.md itself** (`:521-523`, C-9): two audit sentences can each
   be true at different levels and still produce a brief that argues with itself if both are copied
   verbatim. Cite the ruling, not the pair.
 - **One scope decision inside audit 3 is void.** `GROUNDING_AUDIT_3.md:320` placed the multiplayer domain's
@@ -275,11 +284,15 @@ condemned text preserved in the companion file) is worth reusing for the new cas
 
 Recorded, not fixed by this master.
 
-1. **Six items are outstanding by RULINGS.md's own account** (`:511-528`): the 13 unread
+1. **Seven items are outstanding by RULINGS.md's own account** (`:637-668`): the 13 unread
    multiplayer domain reports (size M), the undecided suspend-and-resume question which gates the
-   determinism unit's scope (size S to decide), the unwritten art bible (size L), the ruled but
-   undesigned unkillable thing (size L), the five named starting actives that do not exist (size L),
-   and the character arrival triggers that need authoring as milestones (size S).
+   determinism unit's scope (size S to decide), the unwritten art bible (size L, and rulings 6 and 7
+   added four more decisions to it: the eye proportion, which species carry what found human gear,
+   whether that gear varies by act or depth, and whether any of it is a readable tell), the ruled
+   but undesigned unkillable thing (size L), the five named starting actives that do not exist (size
+   L), the character arrival triggers that need authoring as milestones (size S), and the gore
+   toggle's unspecified surface and plumbing, meaning the settings UI, the tag vocabulary and the
+   filter (size M).
 2. **`COMBAT_ARCHITECTURE.md:41-47` and `:65` are superseded and unannotated.** Every other
    superseded block in that file carries a marker. These two do not, so they read as live.
 3. **`PREMISE_2.md` open call 29 is answered but still open in the text.** The line book is at
